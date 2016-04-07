@@ -1,0 +1,22 @@
+{
+    "name": "atom-solidity",
+    "main": "./lib/atom-solidity",
+    "version": "0.0.0",
+    "description": "Solidity compiler for hackable atom editor.",
+    "keywords": [
+    ],
+    "activationCommands": {
+        "atom-workspace": "atom-solidity:compile"
+    },
+    "repository": "https://github.com/gmtcreators/atom-solidity.git",
+    "license": "MIT",
+    "engines": {
+        "atom": ">=1.0.0 <2.0.0"
+    },
+    "dependencies": {
+        "web3": "~0.15.3",
+        "atom-message-panel": "~1.2.4",
+        "react": "~0.14.8",
+        "react-dom": "~0.14.8"
+    }
+}
