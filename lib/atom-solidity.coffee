@@ -14,7 +14,7 @@ module.exports = AtomSolidity =
     activate: (state) ->
         web3.setProvider new web3.providers.HttpProvider('http://192.168.122.2:8545')
         @atomSolidityView = new AtomSolidityView(state.atomSolidityViewState)
-        @modalPanel = atom.workspace.addModalPanel(item: @atomSolidityView.getElement(), visible: false)
+        @modalPanel = atom.workspace.addRightPanel(item: @atomSolidityView.getElement(), visible: false)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
@@ -50,7 +50,7 @@ module.exports = AtomSolidity =
             @compiled = web3.eth.compile.solidity(source);
             console.log @compiled
             # Clean View before creating
-            @atomEthereumCompilerView.destroyCompiled()
+            @atomSolidityView.destroyCompiled()
             for contractName of @compiled
                 # contractName is the name of contract in JSON object
                 bytecode = @compiled[contractName].code
@@ -63,7 +63,7 @@ module.exports = AtomSolidity =
                         inputs = ContractABI[abiObj].inputs
 
                 # Create View
-                @atomEthereumCompilerView.setMessage(contractName, bytecode, ContractABI, inputs)
+                @atomSolidityView.setMessage(contractName, bytecode, ContractABI, inputs)
 
             # Show contract code
             if not @modalPanel.isVisible()
@@ -102,7 +102,7 @@ module.exports = AtomSolidity =
                     displayName: 'createButton'
                     _handleSubmit: ->
                         console.log 'Handling submit'
-                        that.createContract(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, contractVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0])
+                        that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, contractVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0])
                     render: ->
                         React.createElement('form', { onSubmit: this._handleSubmit },
                         React.createElement('input', {type: 'submit', value: 'Create', ref: contractName}, null, null))

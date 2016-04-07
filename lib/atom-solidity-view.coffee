@@ -1,5 +1,5 @@
 module.exports =
-    class AtomSolidityView
+class AtomSolidityView
     constructor: (serializedState) ->
         # Create root element
         @element = document.createElement('div')
