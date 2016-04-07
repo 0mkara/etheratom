@@ -24,6 +24,10 @@
           'label': 'Create'
           'command': 'atom-solidity:create'
         }
+        {
+          'label': 'Create'
+          'command': 'atom-solidity:toggle'
+        }
       ]
     ]
   }

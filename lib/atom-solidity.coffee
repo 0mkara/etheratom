@@ -14,7 +14,7 @@ module.exports = AtomSolidity =
     activate: (state) ->
         web3.setProvider new web3.providers.HttpProvider('http://192.168.122.2:8545')
         @atomSolidityView = new AtomSolidityView(state.atomSolidityViewState)
-        @modalPanel = atom.workspace.addModalPanel(item: @atomSolidityView.getElement(), visible: false)
+        @modalPanel = atom.workspace.addRightPanel(item: @atomSolidityView.getElement(), visible: false)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
@@ -23,6 +23,7 @@ module.exports = AtomSolidity =
         @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:compile': => @compile()
         @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:deploy': => @deploy()
         @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:create': => @create()
+        @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:toggle': => @toggleView()
 
     deactivate: ->
         @modalPanel.destroy()
@@ -31,6 +32,12 @@ module.exports = AtomSolidity =
 
     serialize: ->
         atomSolidityViewState: @atomSolidityView.serialize()
+
+    toggleView: ->
+        if @modalPanel.isVisible()
+            @modalPanel.hide()
+        else
+            @modalPanel.show()
 
     compile: ->
         console.log 'Compilation started....'
@@ -50,7 +57,7 @@ module.exports = AtomSolidity =
             @compiled = web3.eth.compile.solidity(source);
             console.log @compiled
             # Clean View before creating
-            @atomEthereumCompilerView.destroyCompiled()
+            @atomSolidityView.destroyCompiled()
             for contractName of @compiled
                 # contractName is the name of contract in JSON object
                 bytecode = @compiled[contractName].code
@@ -63,7 +70,7 @@ module.exports = AtomSolidity =
                         inputs = ContractABI[abiObj].inputs
 
                 # Create View
-                @atomEthereumCompilerView.setMessage(contractName, bytecode, ContractABI, inputs)
+                @atomSolidityView.setMessage(contractName, bytecode, ContractABI, inputs)
 
             # Show contract code
             if not @modalPanel.isVisible()
