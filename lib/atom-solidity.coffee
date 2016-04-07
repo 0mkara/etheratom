@@ -21,8 +21,9 @@ module.exports = AtomSolidity =
 
         # Register command that toggles this view
         @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:compile': => @compile()
-        @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:deploy': => @deploy()
+        @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:submit': => @submit()
         @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:create': => @create()
+        @subscriptions.add atom.commands.add 'atom-workspace', 'atom-solidity:toggle': => @toggleView()
 
     deactivate: ->
         @modalPanel.destroy()
@@ -31,6 +32,12 @@ module.exports = AtomSolidity =
 
     serialize: ->
         atomSolidityViewState: @atomSolidityView.serialize()
+
+    toggleView: ->
+        if @modalPanel.isVisible()
+            @modalPanel.hide()
+        else
+            @modalPanel.show()
 
     compile: ->
         console.log 'Compilation started....'
@@ -69,8 +76,8 @@ module.exports = AtomSolidity =
             if not @modalPanel.isVisible()
                 @modalPanel.show()
 
-    deploy: ->
-        console.log 'Deploying compiled code...'
+    submit: ->
+        console.log 'Sending compiled code to ethereum node...'
         that = this
         contractVars = []
         i = 0
@@ -109,7 +116,7 @@ module.exports = AtomSolidity =
                     )
                 ReactDOM.render React.createElement(createButton, null), document.getElementById(contractName + '_create')
 
-    create: ->
+    create: (@abi, @code, @inputObj, @contractName) ->
         console.log 'Creating contract...'
         # hide create button
         if document.getElementById(@contractName + '_create')

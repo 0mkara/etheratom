@@ -9,5 +9,6 @@
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
 'atom-workspace':
   'ctrl-alt-c': 'atom-solidity:compile'
-  'ctrl-alt-d': 'atom-solidity:deploy'
+  'ctrl-alt-s': 'atom-solidity:submit'
   'ctrl-alt-e': 'atom-solidity:create'
+  'ctrl-alt-v': 'atom-solidity:toggle'

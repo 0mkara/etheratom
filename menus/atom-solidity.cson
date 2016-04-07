@@ -18,11 +18,15 @@
         }
         {
           'label': 'Deploy'
-          'command': 'atom-solidity:deploy'
+          'command': 'atom-solidity:submit'
         }
         {
           'label': 'Create'
           'command': 'atom-solidity:create'
+        }
+        {
+          'label': 'Togggle view'
+          'command': 'atom-solidity:toggle'
         }
       ]
     ]
