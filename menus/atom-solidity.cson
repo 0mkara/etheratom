@@ -17,8 +17,8 @@
           'command': 'atom-solidity:compile'
         }
         {
-          'label': 'Deploy'
-          'command': 'atom-solidity:submit'
+          'label': 'Build'
+          'command': 'atom-solidity:build'
         }
         {
           'label': 'Create'
