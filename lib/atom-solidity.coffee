@@ -162,14 +162,15 @@ module.exports = AtomSolidity =
                     else if contract.address
                         myContract = contract
                         console.log 'address: ' + myContract.address
-                        document.getElementById(@contractName + '_address').innerText = myContract.address
-                        document.getElementById(@contractName + '_stat').innerText = 'Mined!'
+                        document.getElementById(that.contractName + '_address').innerText = myContract.address
+                        document.getElementById(that.contractName + '_stat').innerText = 'Mined!'
                     else if !contract.address
+                        document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
                         console.log "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
                     return
 
     toggle: ->
-        console.log 'AtomSolidity was toggled!'
+        console.log 'Atom Solidity View was toggled!'
 
         if @modalPanel.isVisible()
             @modalPanel.hide()

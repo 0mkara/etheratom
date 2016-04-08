@@ -21,10 +21,6 @@
           'command': 'atom-solidity:build'
         }
         {
-          'label': 'Create'
-          'command': 'atom-solidity:create'
-        }
-        {
           'label': 'Togggle view'
           'command': 'atom-solidity:toggle'
         }

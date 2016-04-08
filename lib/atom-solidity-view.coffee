@@ -118,6 +118,9 @@ class AtomSolidityView
         att = document.createAttribute('id')
         att.value = contractName + '_address'
         createAddr.setAttributeNode(att)
+        att = document.createAttribute('span')
+        att.value = contractName
+        createAddr.setAttributeNode(att)
         cNode.appendChild(createAddr)
 
         @compiledNode.appendChild(cNode)
