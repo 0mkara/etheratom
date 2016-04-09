@@ -123,5 +123,12 @@ class AtomSolidityView
         createAddr.setAttributeNode(att)
         cNode.appendChild(createAddr)
 
+        # Call button
+        callButton = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = contractName + '_call'
+        callButton.setAttributeNode(att)
+        cNode.appendChild(callButton)
+
         @compiledNode.appendChild(cNode)
         @element.appendChild(@compiledNode)

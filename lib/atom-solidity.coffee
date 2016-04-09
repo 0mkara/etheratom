@@ -69,6 +69,9 @@ module.exports = AtomSolidity =
             else
                 # Set coinbase
                 web3.eth.defaultAccount = web3.eth.coinbase;
+                ###
+                # TODO: Handle Compilation asynchronously and handle errors
+                ###
                 that.compiled = web3.eth.compile.solidity(source);
                 console.log that.compiled
                 # Clean View before creating
@@ -78,7 +81,7 @@ module.exports = AtomSolidity =
                     bytecode = that.compiled[contractName].code
                     # Get contract  abi
                     ContractABI = that.compiled[contractName].info.abiDefinition
-                    # set variables and render display
+                    # get constructors for rendering display
                     inputs = []
                     for abiObj of ContractABI
                         if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
@@ -95,7 +98,7 @@ module.exports = AtomSolidity =
     build: ->
         console.log 'Sending compiled code to ethereum node...'
         that = this
-        contractVars = []
+        constructVars = []
         i = 0
 
         console.log @compiled
@@ -109,24 +112,26 @@ module.exports = AtomSolidity =
                 # Collect variable inputs
                 inputVars = if document.getElementById(contractName + '_inputs') then document.getElementById(contractName + '_inputs').getElementsByTagName('input')
                 if inputVars
-                    while i < inputVars.length - 1
-                        console.log inputVars.item(i).value
+                    while i < inputVars.length
                         inputObj = {
                             "varName": inputVars.item(i).getAttribute('id'),
                             "varValue": inputVars.item(i).value
                         }
                         variables[i] = inputObj
-                        i++
-                    contractVars[contractName] = {
+                        if inputVars.item(i).nextSibling.getAttribute('id') == contractName + '_create'
+                            break
+                        else
+                            i++
+                    constructVars[contractName] = {
                         'contractName': contractName,
                         'inputVariables': variables
                     }
-                    console.log contractVars
+                    console.log constructVars
                 createButton = React.createClass(
                     displayName: 'createButton'
                     _handleSubmit: ->
                         console.log 'Handling submit'
-                        that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, contractVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0])
+                        that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0])
                     render: ->
                         React.createElement('form', { onSubmit: this._handleSubmit },
                         React.createElement('input', {type: 'submit', value: 'Create', ref: contractName}, null, null))
@@ -142,7 +147,7 @@ module.exports = AtomSolidity =
             e = new Error('Could not parse input')
             callback(e, null)
 
-    create: (@abi, @code, @inputObj, @contractName) ->
+    create: (@abi, @code, @constructVars, @contractName) ->
         console.log 'Creating contract...'
         that = this
         # hide create button
@@ -152,8 +157,15 @@ module.exports = AtomSolidity =
             else
                 # let's assume that coinbase is our account
                 web3.eth.defaultAccount = web3.eth.coinbase
+                # set variables and render display
+                constructorS = []
+                for i in that.constructVars.inputVariables
+                    constructorS.push i.varValue
+
+                console.log constructorS
+
                 # create contract
-                web3.eth.contract(that.abi).new { data: that.code, from: web3.eth.defaultAccount, gas: 1000000 }, (err, contract) ->
+                web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: 1000000 }, (err, contract) ->
                     if err
                         console.error err
                         that.showErrorMessage 129, err
@@ -164,10 +176,33 @@ module.exports = AtomSolidity =
                         console.log 'address: ' + myContract.address
                         document.getElementById(that.contractName + '_address').innerText = myContract.address
                         document.getElementById(that.contractName + '_stat').innerText = 'Mined!'
+                        callButton = React.createClass(
+                            displayName: 'callButton'
+                            _handleSubmit: ->
+                                console.log 'Handling call submit'
+                                # Call contract calling function
+                                that.call(myContract)
+                            render: ->
+                                React.createElement('form', { onSubmit: this._handleSubmit },
+                                React.createElement('input', {type: 'submit', value: 'Call', ref: that.contractName}, null, null))
+                            )
+                        ReactDOM.render React.createElement(callButton, null), document.getElementById(that.contractName + '_call')
                     else if !contract.address
                         document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
                         console.log "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
-                    return
+
+    showOutput: (address, output) ->
+        messages = new MessagePanelView(title: 'Solidity compiler output')
+        messages.attach()
+        address = 'Contract address: ' + address
+        output = 'Contract output: ' + output
+        messages.add new PlainMessageView(message: address, className: 'green-message')
+        messages.add new PlainMessageView(message: output, className: 'green-message')
+
+    call: (@myContract) ->
+        console.log 'Calling contract...'
+        result = @myContract.greet()
+        @showOutput @myContract.address, result
 
     toggle: ->
         console.log 'Atom Solidity View was toggled!'
