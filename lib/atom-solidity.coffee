@@ -176,17 +176,20 @@ module.exports = AtomSolidity =
                         console.log 'address: ' + myContract.address
                         document.getElementById(that.contractName + '_address').innerText = myContract.address
                         document.getElementById(that.contractName + '_stat').innerText = 'Mined!'
-                        callButton = React.createClass(
-                            displayName: 'callButton'
-                            _handleSubmit: ->
-                                console.log 'Handling call submit'
-                                # Call contract calling function
-                                that.call(myContract)
-                            render: ->
-                                React.createElement('form', { onSubmit: this._handleSubmit },
-                                React.createElement('input', {type: 'submit', value: 'Call', ref: that.contractName}, null, null))
-                            )
-                        ReactDOM.render React.createElement(callButton, null), document.getElementById(that.contractName + '_call')
+                        # Create call button for every function
+                        for contractFunction in that.abi
+                            if contractFunction.type == 'function'
+                                callButton = React.createClass(
+                                    displayName: 'callButton'
+                                    _handleSubmit: ->
+                                        console.log 'Handling call submit'
+                                        # Call contract calling function
+                                        that.call(myContract, this.refs)
+                                    render: ->
+                                        React.createElement('form', { onSubmit: this._handleSubmit },
+                                        React.createElement('input', {type: 'submit', value: contractFunction.name, ref: contractFunction.name}, null, null))
+                                    )
+                                ReactDOM.render React.createElement(callButton, null), document.getElementById(that.contractName + '_call')
                     else if !contract.address
                         document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
                         console.log "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
@@ -199,9 +202,9 @@ module.exports = AtomSolidity =
         messages.add new PlainMessageView(message: address, className: 'green-message')
         messages.add new PlainMessageView(message: output, className: 'green-message')
 
-    call: (@myContract) ->
+    call: (@myContract, @functionName) ->
         console.log 'Calling contract...'
-        result = @myContract.greet()
+        result = @myContract[Object.keys(@functionName)[0]]()
         @showOutput @myContract.address, result
 
     toggle: ->
