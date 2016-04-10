@@ -11,10 +11,12 @@ This atom package is not yet available via atom package manager. To install it f
 Clone git repository
 
     git clone https://github.com/gmtcreators/atom-solidity
+    cd atom-solidity
+    git branch dev
 
 Point it to Ethereum node
 
-    vi atom-solidity/lib/atom-solidity.coffee
+    vi lib/atom-solidity.coffee
 
 Change localhost to point your Ethereum node
 
@@ -22,7 +24,7 @@ Change localhost to point your Ethereum node
 
 Install as atom package
 
-    cd atom-solidity
+    apm link .
     apm install
 
 #Usage
