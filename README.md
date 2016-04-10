@@ -24,3 +24,17 @@ Install as atom package
 
     cd atom-solidity
     apm install
+
+#Usage
+
+Compile solidity code `ctrl+alt+c`
+
+Deploy code with variables `ctrl+alt+s`
+
+After deploying your code hit **Create** button to create and mine it
+
+Once contract is mined you will see buttons with function names to call those functions
+
+#Expectations
+
+This is aimed to provide a front-end for Ethereum node. This interacts with Ethereum node via web3js. In future this project expects to support and provide all web3js commands required specifically for compiling solidity codes and execute them.
