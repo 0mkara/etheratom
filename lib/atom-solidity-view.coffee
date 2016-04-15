@@ -39,8 +39,8 @@ class AtomSolidityView
         if preCompiledNode
             preCompiledNode.removeChild(preCompiledNode.firstChild) while preCompiledNode.firstChild
 
-    setMessage: (@name, @bytecode, @abiDef, @inputs) ->
-
+    setContractView: (@name, @bytecode, @abiDef, @inputs) ->
+        console.log "Setting contract view..."
         contractName = @name
         bytecode = JSON.stringify @bytecode
         contractABI = JSON.stringify @abiDef
@@ -95,10 +95,10 @@ class AtomSolidityView
             inputText.setAttribute('type', 'text')
             inputText.setAttribute('value', @inputs[input].type)
             inputsNode.appendChild(inputText)
-            # Appent to inputs
-            cNode.appendChild(inputsNode)
 
-
+        # Appent to inputs
+        cNode.appendChild(inputsNode)
+        
         # Create button
         createButton = document.createElement('div')
         att = document.createAttribute('id')

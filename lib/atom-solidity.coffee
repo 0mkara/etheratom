@@ -76,6 +76,7 @@ module.exports = AtomSolidity =
                 console.log that.compiled
                 # Clean View before creating
                 that.atomSolidityView.destroyCompiled()
+                # Create inpus for every contract
                 for contractName of that.compiled
                     # contractName is the name of contract in JSON object
                     bytecode = that.compiled[contractName].code
@@ -88,7 +89,7 @@ module.exports = AtomSolidity =
                             inputs = ContractABI[abiObj].inputs
 
                     # Create View
-                    that.atomSolidityView.setMessage(contractName, bytecode, ContractABI, inputs)
+                    that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs)
 
                 # Show contract code
                 if not that.modalPanel.isVisible()
@@ -127,6 +128,7 @@ module.exports = AtomSolidity =
                         'inputVariables': variables
                     }
                     console.log constructVars
+                console.log "Creating button"
                 createButton = React.createClass(
                     displayName: 'createButton'
                     _handleSubmit: ->
