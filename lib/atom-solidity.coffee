@@ -58,7 +58,6 @@ module.exports = AtomSolidity =
         messages.add new LineMessageView(line: line, message: message, className: 'red-message')
 
     compile: ->
-        console.log 'Compilation started....'
         that = this
         editor = atom.workspace.getActiveTextEditor()
         source = editor.getText()
@@ -73,7 +72,6 @@ module.exports = AtomSolidity =
                 # TODO: Handle Compilation asynchronously and handle errors
                 ###
                 that.compiled = web3.eth.compile.solidity(source);
-                console.log that.compiled
                 # Clean View before creating
                 that.atomSolidityView.destroyCompiled()
                 # Create inpus for every contract
@@ -97,7 +95,6 @@ module.exports = AtomSolidity =
         return
 
     build: ->
-        console.log 'Sending compiled code to ethereum node...'
         that = this
         constructVars = []
         i = 0
@@ -127,16 +124,14 @@ module.exports = AtomSolidity =
                         'contractName': contractName,
                         'inputVariables': variables
                     }
-                    console.log constructVars
-                console.log "Creating button"
+
                 createButton = React.createClass(
                     displayName: 'createButton'
                     _handleSubmit: ->
-                        console.log 'Handling submit'
                         that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0])
                     render: ->
                         React.createElement('form', { onSubmit: this._handleSubmit },
-                        React.createElement('input', {type: 'submit', value: 'Create', ref: contractName}, null, null))
+                        React.createElement('input', {type: 'submit', value: 'Create', ref: contractName}, null))
                     )
                 ReactDOM.render React.createElement(createButton, null), document.getElementById(contractName + '_create')
 
@@ -149,8 +144,50 @@ module.exports = AtomSolidity =
             e = new Error('Could not parse input')
             callback(e, null)
 
+    # our asyncLoop
+    # may be we will need it sometime
+    asyncLoop: (iterations, func, callback) ->
+        index = 0
+        done = false
+        cycle =
+            next: ->
+                if done
+                    return
+                if index < iterations
+                    index++
+                    func cycle
+                else
+                    done = true
+                    callback()
+            iteration: ->
+                index - 1
+            break: ->
+                done = true
+                callback()
+        cycle.next()
+        cycle
+
+    # Construct function buttons from abi
+    constructFunctions: (@contractABI, callback) ->
+        for contractFunction in contractABI
+            if contractFunction.type = 'function'
+                @createChilds contractFunction, (error, childInputs) ->
+                    if !error
+                        callback(null, [contractFunction.name, childInputs])
+                    else
+                        callback(null, [null, null])
+
+    createChilds: (contractFunction, callback) ->
+        reactElements = []
+        i = 0
+        if contractFunction.inputs.length > 0
+            while i < contractFunction.inputs.length
+                reactElements[i] = [contractFunction.inputs[i].type, contractFunction.inputs[i].name]
+                i++
+        callback(null, reactElements)
+
+    # Construct react child inputs
     create: (@abi, @code, @constructVars, @contractName) ->
-        console.log 'Creating contract...'
         that = this
         # hide create button
         @prepareEnv @contractName, (err, callback) ->
@@ -164,8 +201,6 @@ module.exports = AtomSolidity =
                 for i in that.constructVars.inputVariables
                     constructorS.push i.varValue
 
-                console.log constructorS
-
                 # create contract
                 web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: 1000000 }, (err, contract) ->
                     if err
@@ -178,20 +213,40 @@ module.exports = AtomSolidity =
                         console.log 'address: ' + myContract.address
                         document.getElementById(that.contractName + '_address').innerText = myContract.address
                         document.getElementById(that.contractName + '_stat').innerText = 'Mined!'
-                        # Create call button for every function
-                        for contractFunction in that.abi
-                            if contractFunction.type == 'function'
-                                callButton = React.createClass(
-                                    displayName: 'callButton'
-                                    _handleSubmit: ->
-                                        console.log 'Handling call submit'
-                                        # Call contract calling function
-                                        that.call(myContract, this.refs)
-                                    render: ->
-                                        React.createElement('form', { onSubmit: this._handleSubmit },
-                                        React.createElement('input', {type: 'submit', value: contractFunction.name, ref: contractFunction.name}, null, null))
-                                    )
-                                ReactDOM.render React.createElement(callButton, null), document.getElementById(that.contractName + '_call')
+
+                        # Check every key, if it is a function create call buttons,
+                        # for every function there could be many call methods,
+                        # for every method there cpould be many inputs
+                        # Innermost callback will have inputs for all abi objects
+                        # Lets think the Innermost function
+
+                        # Construct view for function call view
+                        functionABI = React.createClass(
+                            displayName: 'callFunctions'
+                            getInitialState: ->
+                                { childFunctions: [] }
+                            componentDidMount: ->
+                                self = this
+                                that.constructFunctions that.abi, (error, childFunctions) ->
+                                    if !error
+                                        self.state.childFunctions.push(childFunctions)
+                                        self.forceUpdate()
+                            _handleChange: (event) ->
+                                this.setState { value: event.target.value }
+                            _handleSubmit: ->
+                                console.log 'To be Handled call submit'
+                            render: ->
+                                self = this
+                                React.createElement 'div', { htmlFor: 'test' }, this.state.childFunctions.map((childFunction, i) ->
+                                    React.createElement 'form', { onSubmit: this._handleSubmit, key: i },
+                                        React.createElement 'input', { type: 'button', readOnly: 'true', value: childFunction[0], ref: childFunction[0] }, childFunction[1].map((childInput, j) ->
+                                            React.createElement 'input', { tye: 'text', value: childInput[0] + ' ' + childInput[1] }
+                                        )
+                                )
+                        )
+
+                        ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
+
                     else if !contract.address
                         document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
                         console.log "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
@@ -205,13 +260,10 @@ module.exports = AtomSolidity =
         messages.add new PlainMessageView(message: output, className: 'green-message')
 
     call: (@myContract, @functionName) ->
-        console.log 'Calling contract...'
         result = @myContract[Object.keys(@functionName)[0]]()
         @showOutput @myContract.address, result
 
     toggle: ->
-        console.log 'Atom Solidity View was toggled!'
-
         if @modalPanel.isVisible()
             @modalPanel.hide()
         else
