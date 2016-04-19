@@ -145,7 +145,6 @@ module.exports = AtomSolidity =
             callback(e, null)
 
     # our asyncLoop
-    # may be we will need it sometime
     asyncLoop: (iterations, func, callback) ->
         index = 0
         done = false
@@ -231,17 +230,25 @@ module.exports = AtomSolidity =
                                     if !error
                                         self.state.childFunctions.push(childFunctions)
                                         self.forceUpdate()
-                            _handleChange: (event) ->
+                            _handleChange: (childFunction, event) ->
+                                console.log event.target.value
                                 this.setState { value: event.target.value }
-                            _handleSubmit: ->
+                            _handleSubmit: (childFunction, event) ->
                                 console.log 'To be Handled call submit'
+                                console.log event
+                                console.log childFunction
+                                console.log this.refs
+                                that.call(myContract, childFunction, this.refs)
                             render: ->
                                 self = this
                                 React.createElement 'div', { htmlFor: 'test' }, this.state.childFunctions.map((childFunction, i) ->
-                                    React.createElement 'form', { onSubmit: this._handleSubmit, key: i },
-                                        React.createElement 'input', { type: 'button', readOnly: 'true', value: childFunction[0], ref: childFunction[0] }, childFunction[1].map((childInput, j) ->
-                                            React.createElement 'input', { tye: 'text', value: childInput[0] + ' ' + childInput[1] }
+                                    React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i },
+                                        React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0] }
+                                        childFunction[1].map((childInput, j) ->
+                                            React.createElement 'input', { tye: 'text', handleChange: self._handleChange, placeholder: childInput[0] + ' ' + childInput[1], ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
                                         )
+
+
                                 )
                         )
 
@@ -259,9 +266,30 @@ module.exports = AtomSolidity =
         messages.add new PlainMessageView(message: address, className: 'green-message')
         messages.add new PlainMessageView(message: output, className: 'green-message')
 
-    call: (@myContract, @functionName) ->
-        result = @myContract[Object.keys(@functionName)[0]]()
-        @showOutput @myContract.address, result
+    valuesToArray: (@arguments, callback) ->
+        that = this
+        keys = Object.keys(@arguments)
+        args = new Array()
+        @asyncLoop keys.length, ((cycle) ->
+            args.push(that.arguments[keys[cycle.iteration()]].value)
+            cycle.next()
+        ), ->
+            console.log args
+            callback(null, args)
+
+
+    call: (@myContract, @functionName, @arguments) ->
+        that = this
+        console.log @myContract
+        console.log @functionName
+        console.log @arguments
+        @valuesToArray @arguments, (error, args) ->
+            if !error
+                if args[0].length > 0
+                    result = that.myContract[that.functionName].apply(this, args)
+                else
+                    result = that.myContract[that.functionName]()
+                that.showOutput that.myContract.address, result
 
     toggle: ->
         if @modalPanel.isVisible()
