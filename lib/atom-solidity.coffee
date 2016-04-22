@@ -234,18 +234,17 @@ module.exports = AtomSolidity =
                                 console.log event.target.value
                                 this.setState { value: event.target.value }
                             _handleSubmit: (childFunction, event) ->
-                                console.log 'To be Handled call submit'
-                                console.log event
-                                console.log childFunction
-                                console.log this.refs
-                                that.call(myContract, childFunction, this.refs)
+                                # Get arguments ready here
+                                that.argsToArray this.refs, childFunction, (error, argArray) ->
+                                    if !error
+                                        that.call(myContract, childFunction, argArray)
                             render: ->
                                 self = this
                                 React.createElement 'div', { htmlFor: 'test' }, this.state.childFunctions.map((childFunction, i) ->
-                                    React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i },
+                                    React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
                                         React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0] }
                                         childFunction[1].map((childInput, j) ->
-                                            React.createElement 'input', { tye: 'text', handleChange: self._handleChange, placeholder: childInput[0] + ' ' + childInput[1], ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
+                                            React.createElement 'input', { tye: 'text', handleChange: self._handleChange, placeholder: childInput[0] + ' ' + childInput[1] }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
                                         )
 
 
@@ -266,29 +265,36 @@ module.exports = AtomSolidity =
         messages.add new PlainMessageView(message: address, className: 'green-message')
         messages.add new PlainMessageView(message: output, className: 'green-message')
 
-    valuesToArray: (@arguments, callback) ->
+    argsToArray: (@reactElements, @childFunction, callback) ->
         that = this
-        keys = Object.keys(@arguments)
+        # For every childNodes of childFunction
+        # Get value of childFunction
+        # Trim value having name of the function
         args = new Array()
-        @asyncLoop keys.length, ((cycle) ->
-            args.push(that.arguments[keys[cycle.iteration()]].value)
+        @asyncLoop @reactElements[@childFunction].childNodes.length, ((cycle) ->
+            if that.reactElements[that.childFunction][cycle.iteration()].type != 'submit'
+                args.push(that.reactElements[that.childFunction][cycle.iteration()].value)
             cycle.next()
         ), ->
-            console.log args
             callback(null, args)
 
+    checkArray: (@arguments, callback) ->
+        # TODO: Check for empty elements and remove them
+        # TODO: remove any unwanted element that has no text in it
+        callback(null, @arguments)
 
     call: (@myContract, @functionName, @arguments) ->
         that = this
         console.log @myContract
         console.log @functionName
         console.log @arguments
-        @valuesToArray @arguments, (error, args) ->
+        @checkArray @arguments, (error, args) ->
             if !error
-                if args[0].length > 0
+                if args.length > 0
                     result = that.myContract[that.functionName].apply(this, args)
                 else
                     result = that.myContract[that.functionName]()
+                console.log result
                 that.showOutput that.myContract.address, result
 
     toggle: ->
