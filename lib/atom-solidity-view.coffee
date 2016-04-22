@@ -4,6 +4,7 @@ class AtomSolidityView
         # Create root element
         @element = document.createElement('div')
         @element.classList.add('atom-solidity')
+        @element.classList.add('native-key-bindings')
 
         # Create message element
         message = document.createElement('div')
@@ -98,7 +99,7 @@ class AtomSolidityView
 
         # Appent to inputs
         cNode.appendChild(inputsNode)
-        
+
         # Create button
         createButton = document.createElement('div')
         att = document.createAttribute('id')
