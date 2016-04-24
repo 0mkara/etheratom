@@ -169,7 +169,7 @@ module.exports = AtomSolidity =
     # Construct function buttons from abi
     constructFunctions: (@contractABI, callback) ->
         for contractFunction in contractABI
-            if contractFunction.type = 'function'
+            if contractFunction.type = 'function' and contractFunction.name != null and contractFunction.name != undefined
                 @createChilds contractFunction, (error, childInputs) ->
                     if !error
                         callback(null, [contractFunction.name, childInputs])
@@ -240,7 +240,7 @@ module.exports = AtomSolidity =
                                         that.call(myContract, childFunction, argArray)
                             render: ->
                                 self = this
-                                React.createElement 'div', { htmlFor: 'test' }, this.state.childFunctions.map((childFunction, i) ->
+                                React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
                                     React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
                                         React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0] }
                                         childFunction[1].map((childInput, j) ->
@@ -254,7 +254,16 @@ module.exports = AtomSolidity =
                         ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
 
                     else if !contract.address
-                        document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
+                        contractStat = React.createClass(
+                            render: ->
+                                React.createElement 'div', { htmlFor: 'contractStat' },
+                                    React.createElement 'span', { className: 'stat-sent' }, 'Contract transaction sent.'
+                                    React.createElement 'span', { className: 'stat-thash' }, 'TransactionHash: ' + contract.transactionHash
+                                    React.createElement 'span', { className: 'stat-mining' }, 'waiting to be mined...'
+
+                        )
+                        ReactDOM.render React.createElement(contractStat), document.getElementById(that.contractName + '_stat')
+                        # document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
                         console.log "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
 
     showOutput: (address, output) ->
