@@ -1,5 +1,5 @@
 {
-  "name": "atom-ethereum-interface",
+  "name": "atom-solodity",
   "main": "./lib/ethereum-interface",
   "version": "0.1.0",
   "description": "Solidity compiler for hackable atom editor.",
