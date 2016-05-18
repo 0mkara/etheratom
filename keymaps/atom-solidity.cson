@@ -8,6 +8,6 @@
 # For more detailed documentation see
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
 'atom-workspace':
-    'ctrl-alt-c': 'atom-solidity:compile'
-    'ctrl-alt-s': 'atom-solidity:build'
-    'ctrl-alt-v': 'atom-solidity:toggle'
+    'ctrl-alt-c': 'eth-interface:compile'
+    'ctrl-alt-s': 'eth-interface:build'
+    'ctrl-alt-v': 'eth-interface:toggle'

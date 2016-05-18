@@ -1,14 +1,20 @@
 {
-    "name": "atom-solidity",
-    "main": "./lib/atom-solidity",
+    "name": "atom-ethereum-interface",
+    "main": "./lib/ethereum-interface",
     "version": "0.0.0",
     "description": "Solidity compiler for hackable atom editor.",
     "keywords": [
     ],
     "activationCommands": {
-        "atom-workspace": "atom-solidity:compile"
+        "atom-workspace": "eth-interface:compile"
     },
-    "repository": "https://github.com/gmtcreators/atom-solidity.git",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gmtcreators/atom-ethereum-interface.git"
+    },
+    "bugs": {
+        "url": "https://github.com/gmtcreators/atom-ethereum-interface/issues"
+    },
     "license": "MIT",
     "engines": {
         "atom": ">=1.0.0 <2.0.0"
