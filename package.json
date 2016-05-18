@@ -1,28 +1,27 @@
 {
-    "name": "atom-ethereum-interface",
-    "main": "./lib/ethereum-interface",
-    "version": "0.0.0",
-    "description": "Solidity compiler for hackable atom editor.",
-    "keywords": [
-    ],
-    "activationCommands": {
-        "atom-workspace": "eth-interface:compile"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/gmtcreators/atom-ethereum-interface.git"
-    },
-    "bugs": {
-        "url": "https://github.com/gmtcreators/atom-ethereum-interface/issues"
-    },
-    "license": "MIT",
-    "engines": {
-        "atom": ">=1.0.0 <2.0.0"
-    },
-    "dependencies": {
-        "web3": "~0.15.3",
-        "atom-message-panel": "~1.2.4",
-        "react": "~0.14.8",
-        "react-dom": "~0.14.8"
-    }
+  "name": "atom-ethereum-interface",
+  "main": "./lib/ethereum-interface",
+  "version": "0.1.0",
+  "description": "Solidity compiler for hackable atom editor.",
+  "keywords": [],
+  "activationCommands": {
+    "atom-workspace": "eth-interface:compile"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gmtcreators/atom-ethereum-interface.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gmtcreators/atom-ethereum-interface/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "dependencies": {
+    "web3": "~0.15.3",
+    "atom-message-panel": "~1.2.4",
+    "react": "~0.14.8",
+    "react-dom": "~0.14.8"
+  }
 }
