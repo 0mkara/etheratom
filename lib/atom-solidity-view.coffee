@@ -5,6 +5,7 @@ class AtomSolidityView
         @element = document.createElement('div')
         @element.classList.add('atom-solidity')
         @element.classList.add('native-key-bindings')
+        @element.setAttribute('tabindex', '-1')
 
         # Create message element
         message = document.createElement('div')
@@ -35,7 +36,6 @@ class AtomSolidityView
         textNode = document.createElement('pre')
         textNode.textContent = @text
         textNode.classList.add('large-code')
-        # textNode.setAttribute('readonly', 'readonly')
         return textNode
 
     destroyCompiled: ->
@@ -44,7 +44,6 @@ class AtomSolidityView
             preCompiledNode.removeChild(preCompiledNode.firstChild) while preCompiledNode.firstChild
 
     setContractView: (@name, @bytecode, @abiDef, @inputs) ->
-        console.log "Setting contract view..."
         contractName = @name
         bytecode = JSON.stringify @bytecode
         contractABI = JSON.stringify @abiDef
@@ -53,6 +52,7 @@ class AtomSolidityView
         cNode = document.createElement('div')
         att = document.createAttribute('id')
         att.value = contractName
+        cNode.classList.add('contract-display')
         cNode.setAttributeNode(att)
 
         # Create contract name display
@@ -119,6 +119,7 @@ class AtomSolidityView
 
         # Status
         createStat = document.createElement('div')
+        # Add id contractName_stat
         att = document.createAttribute('id')
         att.value = contractName + '_stat'
         createStat.setAttributeNode(att)
@@ -129,7 +130,7 @@ class AtomSolidityView
         att = document.createAttribute('id')
         att.value = contractName + '_address'
         createAddr.setAttributeNode(att)
-        att = document.createAttribute('span')
+        att = document.createAttribute('class')
         att.value = contractName
         createAddr.setAttributeNode(att)
         cNode.appendChild(createAddr)

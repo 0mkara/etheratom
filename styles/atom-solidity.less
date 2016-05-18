@@ -6,6 +6,7 @@
 
 .atom-solidity {
     padding: 10px;
+    overflow: scroll;
 }
 .red-message {
     color: @text-color-error;
@@ -14,6 +15,8 @@
     color: @text-color-success;
 }
 .compiler-info {
+    font-family: 'Hack', Serif;
+    font-weight: bold;
     display: block;
     text-align: center;
     margin: 5px 0;
@@ -31,6 +34,11 @@
     font-weight: lighter;
     font-size: initial;
 }
+.contract-display {
+    border-bottom: solid 2px @base-border-color;
+    margin-bottom: 8px;
+    padding: 5px;
+}
 .contract-name {
     margin: 2px 0;
     pading: 2px 0;
@@ -39,6 +47,9 @@
     max-width: 500px;
     max-height: 150px;
     margin: 10px 5px;
+}
+::selection {
+    background-color: @background-color-selected;
 }
 .call-button {
     background-color: @pane-item-background-color;
@@ -60,5 +71,8 @@
     display: block;
 }
 .stat-mining {
-    display: block;
+    display: inline;
+}
+.stat-mining-align {
+    vertical-align: middle;
 }

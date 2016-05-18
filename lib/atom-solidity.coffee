@@ -210,8 +210,10 @@ module.exports = AtomSolidity =
                     else if contract.address
                         myContract = contract
                         console.log 'address: ' + myContract.address
-                        document.getElementById(that.contractName + '_address').innerText = myContract.address
                         document.getElementById(that.contractName + '_stat').innerText = 'Mined!'
+                        document.getElementById(that.contractName + '_stat').setAttribute('class', 'icon icon-zap') # Add icon class
+                        document.getElementById(that.contractName + '_address').innerText = myContract.address
+                        document.getElementById(that.contractName + '_address').setAttribute('class', 'icon icon-key') # Add icon class
 
                         # Check every key, if it is a function create call buttons,
                         # for every function there could be many call methods,
@@ -259,7 +261,8 @@ module.exports = AtomSolidity =
                                 React.createElement 'div', { htmlFor: 'contractStat' },
                                     React.createElement 'span', { className: 'stat-sent' }, 'Contract transaction sent.'
                                     React.createElement 'span', { className: 'stat-thash' }, 'TransactionHash: ' + contract.transactionHash
-                                    React.createElement 'span', { className: 'stat-mining' }, 'waiting to be mined...'
+                                    React.createElement 'span', { className: 'stat-mining stat-mining-align' }, 'waiting to be mined...'
+                                    React.createElement 'span', { className: 'loading loading-spinner-tiny inline-block stat-mining-align' }
 
                         )
                         ReactDOM.render React.createElement(contractStat), document.getElementById(that.contractName + '_stat')
