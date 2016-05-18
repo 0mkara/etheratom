@@ -8,8 +8,10 @@ class AtomSolidityView
 
         # Create message element
         message = document.createElement('div')
-        message.textContent = "The Atom Solidity Compiler"
-        message.classList.add('message')
+        message.textContent = "Atom Ethereum Interface"
+        message.classList.add('compiler-info')
+        message.classList.add('inline-block')
+        message.classList.add('highlight-info')
         @element.appendChild(message)
 
         # Create compiled code view
@@ -30,9 +32,10 @@ class AtomSolidityView
         @element
 
     createTextareaR: (@text) ->
-        textNode = document.createElement('textarea')
+        textNode = document.createElement('pre')
         textNode.textContent = @text
-        textNode.setAttribute('readonly', 'readonly')
+        textNode.classList.add('large-code')
+        # textNode.setAttribute('readonly', 'readonly')
         return textNode
 
     destroyCompiled: ->
@@ -55,6 +58,8 @@ class AtomSolidityView
         # Create contract name display
         cnameNode = document.createElement('span')
         cnameNode.classList.add('contract-name')
+        cnameNode.classList.add('inline-block')
+        cnameNode.classList.add('highlight-success')
         title = document.createTextNode(contractName)
         cnameNode.appendChild(title) # Append contract Name to span
         cNode.appendChild(cnameNode)
@@ -78,12 +83,12 @@ class AtomSolidityView
         att = document.createAttribute('id')
         att.value = contractName + '_inputs'
         inputsNode.setAttributeNode(att)
-        inputsNode.classList.add('inputs')
 
         for input of @inputs
             # Show var name
             buttonText = document.createElement('button')
             buttonText.classList.add('input')
+            buttonText.classList.add('text-subtle')
             varName = document.createTextNode(@inputs[input].name)
             buttonText.appendChild(varName)
             inputsNode.appendChild(buttonText)
@@ -94,8 +99,13 @@ class AtomSolidityView
             att.value = @inputs[input].name
             inputText.setAttributeNode(att)
             inputText.setAttribute('type', 'text')
+            inputText.classList.add('inputs')
             inputText.setAttribute('value', @inputs[input].type)
             inputsNode.appendChild(inputText)
+
+            # Add line break
+            lineBr = document.createElement('br')
+            inputsNode.appendChild(lineBr)
 
         # Appent to inputs
         cNode.appendChild(inputsNode)

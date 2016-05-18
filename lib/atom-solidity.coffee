@@ -131,7 +131,7 @@ module.exports = AtomSolidity =
                         that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0])
                     render: ->
                         React.createElement('form', { onSubmit: this._handleSubmit },
-                        React.createElement('input', {type: 'submit', value: 'Create', ref: contractName}, null))
+                        React.createElement('input', {type: 'submit', value: 'Create', ref: contractName, className: 'btn btn-primary inline-block-tight'}, null))
                     )
                 ReactDOM.render React.createElement(createButton, null), document.getElementById(contractName + '_create')
 
@@ -242,9 +242,9 @@ module.exports = AtomSolidity =
                                 self = this
                                 React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
                                     React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
-                                        React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0] }
+                                        React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0], className: 'text-subtle call-button' }
                                         childFunction[1].map((childInput, j) ->
-                                            React.createElement 'input', { tye: 'text', handleChange: self._handleChange, placeholder: childInput[0] + ' ' + childInput[1] }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
+                                            React.createElement 'input', { tye: 'text', handleChange: self._handleChange, placeholder: childInput[0] + ' ' + childInput[1], className: 'call-button-values' }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
                                         )
 
 

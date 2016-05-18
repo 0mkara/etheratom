@@ -5,12 +5,53 @@
 @import "ui-variables";
 
 .atom-solidity {
+    padding: 10px;
 }
 .red-message {
     color: @text-color-error;
 }
 .green-message {
     color: @text-color-success;
+}
+.compiler-info {
+    display: block;
+    text-align: center;
+    margin: 5px 0;
+    padding: 5px 0;
+}
+.input {
+    background-color: @pane-item-background-color;
+    border: solid 1px @pane-item-border-color;
+    font-size: initial;
+    margin: 2px;
+}
+.inputs {
+    background-color: @input-background-color;
+    border: solid 1px @input-border-color;
+    font-weight: lighter;
+    font-size: initial;
+}
+.contract-name {
+    margin: 2px 0;
+    pading: 2px 0;
+}
+.large-code {
+    max-width: 500px;
+    max-height: 150px;
+    margin: 10px 5px;
+}
+.call-button {
+    background-color: @pane-item-background-color;
+    border: solid 1px @pane-item-border-color;
+    font-size: initial;
+    margin: 2px;
+}
+.call-button-values {
+    background-color: @input-background-color;
+    border: solid 1px @input-border-color;
+    font-weight: lighter;
+    font-size: initial;
+    margin: 2px 2px 2px 0;
 }
 .stat-sent {
     display: block;
