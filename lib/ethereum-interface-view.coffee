@@ -15,6 +15,15 @@ class AtomSolidityView
         message.classList.add('highlight-info')
         @element.appendChild(message)
 
+        # Create account list div
+        accountsNode = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'accounts-list'
+        accountsNode.setAttributeNode(att)
+        accountsNode.classList.add('icon')
+        accountsNode.classList.add('icon-link')
+        @element.appendChild(accountsNode)
+
         # Create compiled code view
         @compiledNode = document.createElement('div')
         att = document.createAttribute('id')

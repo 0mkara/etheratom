@@ -5,6 +5,7 @@ web3 = new Web3()
 React = require 'react'
 ReactDOM = require 'react-dom'
 {MessagePanelView, PlainMessageView, LineMessageView} = require 'atom-message-panel'
+Coinbase = ''
 
 module.exports = AtomSolidity =
     atomSolidityView: null
@@ -41,9 +42,18 @@ module.exports = AtomSolidity =
         atomSolidityViewState: @atomSolidityView.serialize()
 
     checkConnection: (callback)->
+        that = this
         if !web3.isConnected()
             callback('Error could not connect to local geth instance!', null)
         else
+            # Set coinbase
+            # List all accounts and set selected as coinbase
+            accounts = web3.eth.accounts
+            that.getBaseAccount accounts, (err, callback) ->
+                if err
+                    console.log err
+                else
+                    Coinbase = callback
             callback(null, true)
 
     toggleView: ->
@@ -57,6 +67,25 @@ module.exports = AtomSolidity =
         messages.attach()
         messages.add new LineMessageView(line: line, message: message, className: 'red-message')
 
+    getBaseAccount: (accounts, callback) ->
+        that = this
+        createAddressList = React.createClass(
+            displayName: 'addressList'
+            getInitialState: ->
+                { value: 'select'}
+            _handleChange: (event) ->
+                # return selected account
+                this.setState { value: event.target.value }
+                callback(null, event.target.value)
+            render: ->
+                # create dropdown list for accounts
+                React.createElement 'select', { onChange: this._handleChange, value: this.state.value },
+                accounts.map (account, i) ->
+                    React.createElement 'option', { value: account }, account #options are address
+        )
+        ReactDOM.render React.createElement(createAddressList), document.getElementById('accounts-list')
+        callback(null, accounts[0])
+
     compile: ->
         that = this
         editor = atom.workspace.getActiveTextEditor()
@@ -66,8 +95,8 @@ module.exports = AtomSolidity =
                 console.error error
                 that.showErrorMessage 0, 'Error could not connect to local geth instance!'
             else
-                # Set coinbase
-                web3.eth.defaultAccount = web3.eth.coinbase;
+                web3.eth.defaultAccount = Coinbase
+                console.log "Using coinbase: " + web3.eth.defaultAccount
                 ###
                 # TODO: Handle Compilation asynchronously and handle errors
                 ###
@@ -193,8 +222,9 @@ module.exports = AtomSolidity =
             if err
                 console.error err
             else
-                # let's assume that coinbase is our account
-                web3.eth.defaultAccount = web3.eth.coinbase
+                # Use coinbase
+                web3.eth.defaultAccount = Coinbase
+                console.log "Using coinbase: " + web3.eth.defaultAccount
                 # set variables and render display
                 constructorS = []
                 for i in that.constructVars.inputVariables

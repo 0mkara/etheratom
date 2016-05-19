@@ -4,6 +4,10 @@
 // for a full listing of what's available.
 @import "ui-variables";
 
+select {
+    border-color: #181a1f;
+}
+
 .atom-solidity {
     padding: 10px;
     overflow: scroll;
@@ -22,6 +26,37 @@
     margin: 5px 0;
     padding: 5px 0;
 }
+// Color variables (appears count calculates by raw css)
+@color-bg: #2c313a;
+@color-br: #181a1f;
+@color-bg-child: #3a3f4b;
+// Height variables (appears count calculates by raw css)
+@height-max: 312px;
+#accounts-list {
+	text-align: center;
+	display: block;
+	select {
+        font-size: large;
+		background-color: @color-bg;
+		border: 1px solid @color-br;
+		margin: 10px 0 0 0;
+		max-height: @height-max;
+		overflow-y: auto;
+		padding: 0;
+		position: relative;
+		option {
+			background-color: @color-bg-child;
+			border: 1px solid @color-br;
+			margin: 10px 0 0 0;
+			max-height: @height-max;
+			overflow-y: auto;
+			padding: 0;
+			position: relative;
+            line-height: 2em;
+		}
+	}
+}
+
 .input {
     background-color: @pane-item-background-color;
     border: solid 1px @pane-item-border-color;
