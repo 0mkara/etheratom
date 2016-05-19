@@ -55,6 +55,17 @@ select {
             line-height: 2em;
 		}
 	}
+    form {
+        input {
+            background-color: #2c313a;
+            border: solid 1px #181a1f;
+            line-height: 24px;
+        }
+        input:first-of-type {
+            width: calc(~'100% - (66px + 50px)');
+            background-color: @color-bg;
+        }
+    }
 }
 
 .input {
@@ -102,11 +113,9 @@ select {
 .stat-sent {
     display: block;
 }
-.stat-thash {
-    display: block;
-}
 .stat-mining {
     display: inline;
+    color: #6494ed;
 }
 .stat-mining-align {
     vertical-align: middle;

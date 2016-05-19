@@ -20,8 +20,6 @@ class AtomSolidityView
         att = document.createAttribute('id')
         att.value = 'accounts-list'
         accountsNode.setAttributeNode(att)
-        accountsNode.classList.add('icon')
-        accountsNode.classList.add('icon-link')
         @element.appendChild(accountsNode)
 
         # Create compiled code view

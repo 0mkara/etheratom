@@ -6,6 +6,7 @@ React = require 'react'
 ReactDOM = require 'react-dom'
 {MessagePanelView, PlainMessageView, LineMessageView} = require 'atom-message-panel'
 Coinbase = ''
+Password = ''
 
 module.exports = AtomSolidity =
     atomSolidityView: null
@@ -46,15 +47,26 @@ module.exports = AtomSolidity =
         if !web3.isConnected()
             callback('Error could not connect to local geth instance!', null)
         else
-            # Set coinbase
-            # List all accounts and set selected as coinbase
-            accounts = web3.eth.accounts
-            that.getBaseAccount accounts, (err, callback) ->
-                if err
-                    console.log err
-                else
-                    Coinbase = callback
+            # If passphrase is not already set
+            if Password == ''
+                # Set coinbase
+                # List all accounts and set selected as coinbase
+                accounts = web3.eth.accounts
+                that.getBaseAccount accounts, (err, callback) ->
+                    if err
+                        console.log err
+                    else
+                        console.log callback
+                        Coinbase = callback.account
+                        Password = callback.password
+                        # Check if account is locked ? then prompt for password
+                        that.checkUnlock (err, callback) ->
+                            callback(null, true)
             callback(null, true)
+
+    checkUnlock: (Coinbase, callback) ->
+        # web3.personal.unlockAccount("Coinbase", password)
+        console.log "In checkUnlock"
 
     toggleView: ->
         if @modalPanel.isVisible()
@@ -68,23 +80,33 @@ module.exports = AtomSolidity =
         messages.add new LineMessageView(line: line, message: message, className: 'red-message')
 
     getBaseAccount: (accounts, callback) ->
+        # Here we will select baseAccount for rest of the operations
+        # we will also get password for that account
         that = this
         createAddressList = React.createClass(
             displayName: 'addressList'
             getInitialState: ->
-                { value: 'select'}
+                { account: accounts[0], password: Password }
             _handleChange: (event) ->
-                # return selected account
-                this.setState { value: event.target.value }
-                callback(null, event.target.value)
+                this.setState { account: event.target.value }
+            _handlePasswordChange: (event) ->
+                this.setState { password: event.target.value }
+            _handlePassword: (event) ->
+                event.preventDefault()
+                # Return account and password
+                callback(null, this.state)
             render: ->
                 # create dropdown list for accounts
-                React.createElement 'select', { onChange: this._handleChange, value: this.state.value },
-                accounts.map (account, i) ->
-                    React.createElement 'option', { value: account }, account #options are address
+                React.createElement 'div', { htmlFor: 'acc-n-pass', className: 'icon icon-link' },
+                    React.createElement 'select', { onChange: this._handleChange, value: this.state.account }, accounts.map (account, i) ->
+                        React.createElement 'option', { value: account }, account #options are address
+                    React.createElement 'form', { onSubmit: this._handlePassword, className: 'icon icon-lock' },
+                        React.createElement 'input', { type: 'password', uniqueName: "password", placeholder: "Password", value: this.state.password, onChange: this._handlePasswordChange }
+                        React.createElement 'input', { type: 'submit', value: 'Unlock' }
+
         )
         ReactDOM.render React.createElement(createAddressList), document.getElementById('accounts-list')
-        callback(null, accounts[0])
+        callback(null, { account: accounts[0], password: '' })
 
     compile: ->
         that = this
@@ -231,6 +253,7 @@ module.exports = AtomSolidity =
                     constructorS.push i.varValue
 
                 # create contract
+                web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
                 web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: 1000000 }, (err, contract) ->
                     if err
                         console.error err
@@ -289,9 +312,9 @@ module.exports = AtomSolidity =
                         contractStat = React.createClass(
                             render: ->
                                 React.createElement 'div', { htmlFor: 'contractStat' },
-                                    React.createElement 'span', { className: 'stat-sent' }, 'Contract transaction sent.'
-                                    React.createElement 'span', { className: 'stat-thash' }, 'TransactionHash: ' + contract.transactionHash
-                                    React.createElement 'span', { className: 'stat-mining stat-mining-align' }, 'waiting to be mined...'
+                                    React.createElement 'span', { className: 'inline-block highlight' }, 'TransactionHash: '
+                                    React.createElement 'pre', { className: 'large-code' }, contract.transactionHash
+                                    React.createElement 'span', { className: 'stat-mining stat-mining-align' }, 'waiting to be mined '
                                     React.createElement 'span', { className: 'loading loading-spinner-tiny inline-block stat-mining-align' }
 
                         )
@@ -333,8 +356,10 @@ module.exports = AtomSolidity =
         @checkArray @arguments, (error, args) ->
             if !error
                 if args.length > 0
+                    web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
                     result = that.myContract[that.functionName].apply(this, args)
                 else
+                    web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
                     result = that.myContract[that.functionName]()
                 console.log result
                 that.showOutput that.myContract.address, result
