@@ -2,10 +2,11 @@
 
 Atom Solidity Compiler is a package for hackable Atom editor. Is uses web3js to interact with an Ethereum node.
 
-![A screenshot of atom-ethereum-interface package](https://github.com/gmtcreators/atom-solidity/raw/dev/atom-solidity.gif)
-![Another screenshot of atom-ethereum-interface package](https://github.com/gmtcreators/atom-solidity/raw/dev/images/atom-ethereum-interface.png)
+![A screenshot of atom-ethereum-interface package](https://github.com/gmtcreators/atom-ethereum-interface/raw/dev/atom-ethereum-interface.gif)
 
 #Installation
+
+##Install from source
 
 This atom package is not yet available via atom package manager. To install it follow instructions bellow -
 
@@ -27,6 +28,12 @@ Install as atom package
 
     apm link .
     apm install
+
+##Install using atom-package-manager
+
+You need to install
+
+* [Atom Ethereum Interface](https://atom.io/packages/atom-ethereum-interface) (`atom-ethereum-interface` from apm)
 
 #Usage
 
