@@ -2,27 +2,27 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Toggle atom-solidity'
-      'command': 'atom-solidity:toggle'
+      'label': 'Toggle atom-ethereum-interface'
+      'command': 'eth-interface:toggle'
     }
   ]
 'menu': [
   {
     'label': 'Packages'
     'submenu': [
-      'label': 'Atom Solidity Compiler'
+      'label': 'Atom Ethereum Interface'
       'submenu': [
         {
-          'label': 'Compile'
-          'command': 'atom-solidity:compile'
+          'label': 'Compile code'
+          'command': 'eth-interface:compile'
         }
         {
-          'label': 'Deploy'
-          'command': 'atom-solidity:deploy'
+          'label': 'Build compiled'
+          'command': 'eth-interface:build'
         }
         {
-          'label': 'Create'
-          'command': 'atom-solidity:create'
+          'label': 'Togggle view'
+          'command': 'eth-interface:toggle'
         }
         {
           'label': 'Create'
