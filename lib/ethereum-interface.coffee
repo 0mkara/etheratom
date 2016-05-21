@@ -18,7 +18,7 @@ module.exports = AtomSolidity =
     subscriptions: null
 
     activate: (state) ->
-        web3.setProvider new web3.providers.HttpProvider('http://192.168.122.2:8545'), (error, callback) ->
+        web3.setProvider new web3.providers.HttpProvider('http://localhost:8545'), (error, callback) ->
             if error
                 console.log error
             else
