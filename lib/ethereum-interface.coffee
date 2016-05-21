@@ -1,12 +1,16 @@
 AtomSolidityView = require './ethereum-interface-view'
 {CompositeDisposable} = require 'atom'
 Web3 = require 'web3'
-web3 = new Web3()
 React = require 'react'
 ReactDOM = require 'react-dom'
 {MessagePanelView, PlainMessageView, LineMessageView} = require 'atom-message-panel'
 Coinbase = ''
 Password = ''
+
+if typeof web3 != 'undefined'
+    web3 = new Web3(web3.currentProvider)
+else
+    web3 = new Web3(new (Web3.providers.HttpProvider)('http://localhost:8545'))
 
 module.exports = AtomSolidity =
     atomSolidityView: null
@@ -56,7 +60,6 @@ module.exports = AtomSolidity =
                     if err
                         console.log err
                     else
-                        console.log callback
                         Coinbase = callback.account
                         Password = callback.password
                         # Check if account is locked ? then prompt for password
@@ -122,11 +125,19 @@ module.exports = AtomSolidity =
                 ###
                 # TODO: Handle Compilation asynchronously and handle errors
                 ###
-                that.compiled = web3.eth.compile.solidity(source);
+                that.compiled = web3.eth.compile.solidity(source)
                 # Clean View before creating
                 that.atomSolidityView.destroyCompiled()
                 # Create inpus for every contract
                 for contractName of that.compiled
+                    # Get estimated gas
+                    estimatedGas = 0
+                    web3.eth.estimateGas { to: web3.eth.defaultAccount, data: that.compiled[contractName].code }, (error, callback) ->
+                        if !error
+                            console.log callback
+                            estimatedGas = callback
+                        else
+                            console.log error
                     # contractName is the name of contract in JSON object
                     bytecode = that.compiled[contractName].code
                     # Get contract  abi
@@ -138,7 +149,7 @@ module.exports = AtomSolidity =
                             inputs = ContractABI[abiObj].inputs
 
                     # Create View
-                    that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs)
+                    that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
 
                 # Show contract code
                 if not that.modalPanel.isVisible()
@@ -153,6 +164,7 @@ module.exports = AtomSolidity =
         console.log @compiled
         for contractName of @compiled
             variables = []
+            estimatedGas = 0
             if document.getElementById(contractName + '_create')
                 # contractName is the name of contract in JSON object
                 bytecode = @compiled[contractName].code
@@ -162,24 +174,32 @@ module.exports = AtomSolidity =
                 inputVars = if document.getElementById(contractName + '_inputs') then document.getElementById(contractName + '_inputs').getElementsByTagName('input')
                 if inputVars
                     while i < inputVars.length
+                        if inputVars.item(i).getAttribute('id') == contractName + '_gas'
+                            estimatedGas = inputVars.item(i).value
+                            inputVars.item(i).readOnly = true
+                            break
                         inputObj = {
                             "varName": inputVars.item(i).getAttribute('id'),
                             "varValue": inputVars.item(i).value
                         }
                         variables[i] = inputObj
+                        inputVars.item(i).readOnly = true
                         if inputVars.item(i).nextSibling.getAttribute('id') == contractName + '_create'
                             break
                         else
                             i++
                     constructVars[contractName] = {
                         'contractName': contractName,
-                        'inputVariables': variables
+                        'inputVariables': variables,
+                        'estimatedGas': estimatedGas
                     }
+                    console.log constructVars
 
                 createButton = React.createClass(
                     displayName: 'createButton'
                     _handleSubmit: ->
-                        that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0])
+                        console.log constructVars
+                        that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0], constructVars[Object.keys(this.refs)[0]].estimatedGas)
                     render: ->
                         React.createElement('form', { onSubmit: this._handleSubmit },
                         React.createElement('input', {type: 'submit', value: 'Create', ref: contractName, className: 'btn btn-primary inline-block-tight'}, null))
@@ -237,8 +257,9 @@ module.exports = AtomSolidity =
         callback(null, reactElements)
 
     # Construct react child inputs
-    create: (@abi, @code, @constructVars, @contractName) ->
+    create: (@abi, @code, @constructVars, @contractName, @estimatedGas) ->
         that = this
+        @estimatedGas = if @estimatedGas > 0 then @estimatedGas else 1000000
         # hide create button
         @prepareEnv @contractName, (err, callback) ->
             if err
@@ -254,7 +275,7 @@ module.exports = AtomSolidity =
 
                 # create contract
                 web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
-                web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: 1000000 }, (err, contract) ->
+                web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: @estimatedGas }, (err, contract) ->
                     if err
                         console.error err
                         that.showErrorMessage 129, err

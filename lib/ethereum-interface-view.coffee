@@ -50,7 +50,7 @@ class AtomSolidityView
         if preCompiledNode
             preCompiledNode.removeChild(preCompiledNode.firstChild) while preCompiledNode.firstChild
 
-    setContractView: (@name, @bytecode, @abiDef, @inputs) ->
+    setContractView: (@name, @bytecode, @abiDef, @inputs, @estimatedGas) ->
         contractName = @name
         bytecode = JSON.stringify @bytecode
         contractABI = JSON.stringify @abiDef
@@ -116,6 +116,24 @@ class AtomSolidityView
 
         # Appent to inputs
         cNode.appendChild(inputsNode)
+
+        # Estimated gas price view
+        # Show var Estimated gas button
+        buttonText = document.createElement('button')
+        buttonText.classList.add('input')
+        buttonText.classList.add('text-subtle')
+        varName = document.createTextNode("Estimated Gas")
+        buttonText.appendChild(varName)
+        inputsNode.appendChild(buttonText)
+        # Estimated gas input as estimated gas
+        estimatedGasInput = document.createElement('input')
+        att = document.createAttribute('id')
+        att.value = contractName + '_gas'
+        estimatedGasInput.setAttributeNode(att)
+        estimatedGasInput.setAttribute('type', 'number')
+        estimatedGasInput.classList.add('inputs')
+        estimatedGasInput.setAttribute('value', @estimatedGas)
+        inputsNode.appendChild(estimatedGasInput)
 
         # Create button
         createButton = document.createElement('div')

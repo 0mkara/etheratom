@@ -93,9 +93,9 @@ select {
     max-width: 500px;
     max-height: 150px;
     margin: 10px 5px;
-}
-::selection {
-    background-color: @background-color-selected;
+    &::selection {
+        background-color: @background-color-selected;
+    }
 }
 .call-button {
     background-color: @pane-item-background-color;
