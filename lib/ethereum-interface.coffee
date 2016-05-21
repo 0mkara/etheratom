@@ -193,8 +193,7 @@ module.exports = AtomSolidity =
                         'inputVariables': variables,
                         'estimatedGas': estimatedGas
                     }
-                    console.log constructVars
-
+                # Create React element for create button
                 createButton = React.createClass(
                     displayName: 'createButton'
                     _handleSubmit: ->
@@ -275,7 +274,7 @@ module.exports = AtomSolidity =
 
                 # create contract
                 web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
-                web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: @estimatedGas }, (err, contract) ->
+                web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: that.estimatedGas }, (err, contract) ->
                     if err
                         console.error err
                         that.showErrorMessage 129, err
