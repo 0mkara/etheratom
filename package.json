@@ -23,5 +23,14 @@
     "atom-message-panel": "~1.2.4",
     "react": "~0.14.8",
     "react-dom": "~0.14.8"
+},
+  "configSchema": {
+      "rpcAddress": {
+          "title": "Ethereum instance",
+          "description": "Point to local ethereum instance",
+          "type": "string",
+          "default": "http://localhost:8545/",
+          "order": 1
+      }
   }
 }
