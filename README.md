@@ -56,7 +56,9 @@ You need to install
 Assuming you have a local geth client running and rpc api listening on http://localhost:8545/
 
 1. Go to package settings and set rpc address.
-    - ![atom-ethereum-interface package config](https://cloud.githubusercontent.com/assets/13261372/15468216/9989115e-2100-11e6-8dd5-e02fb9459ab6.gif)
+
+    ![atom-ethereum-interface package config](https://cloud.githubusercontent.com/assets/13261372/15468216/9989115e-2100-11e6-8dd5-e02fb9459ab6.gif)
+
 2. Restart atom
 
 # Usage
