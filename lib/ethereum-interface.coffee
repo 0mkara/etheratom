@@ -129,10 +129,19 @@ module.exports = AtomSolidity =
                 that.compiled = web3.eth.compile.solidity(source)
                 # Clean View before creating
                 that.atomSolidityView.destroyCompiled()
+                console.log that.compiled
+
                 # Create inpus for every contract
                 for contractName of that.compiled
                     # Get estimated gas
-                    estimatedGas = 0
+                    estimatedGas = web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }
+                    ###
+                    # TODO: Use asynchronous call
+                    web3.eth.estimateGas({from: '0xmyaccout...', data: "0xc6888fa1fffffffffff…..", gas: 500000 }, function(err, result){
+                      if(!err && result !=== 500000) { …  }
+                     });
+                    ###
+
                     # contractName is the name of contract in JSON object
                     bytecode = that.compiled[contractName].code
                     # Get contract  abi
@@ -142,17 +151,9 @@ module.exports = AtomSolidity =
                     for abiObj of ContractABI
                         if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
                             inputs = ContractABI[abiObj].inputs
+                    # Create view
+                    that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
 
-                    # Finally check gas estimate and set view
-                    web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }, (error, callback) ->
-                        if !error and callback != 1000000
-                            console.log callback
-                            estimatedGas = callback
-                        else
-                            console.log error
-                            estimatedGas = 1000000
-                        # Create View
-                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
 
                 # Show contract code
                 if not that.modalPanel.isVisible()
