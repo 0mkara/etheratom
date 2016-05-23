@@ -263,6 +263,11 @@ module.exports = AtomSolidity =
     create: (@abi, @code, @constructVars, @contractName, @estimatedGas) ->
         that = this
         @estimatedGas = if @estimatedGas > 0 then @estimatedGas else 1000000
+        if Password == ''
+            e = new Error('Empty password')
+            console.error ("Empty password")
+            @showErrorMessage 0, "No password provided"
+            return
         # hide create button
         @prepareEnv @contractName, (err, callback) ->
             if err
@@ -276,7 +281,6 @@ module.exports = AtomSolidity =
                 for i in that.constructVars.inputVariables
                     constructorS.push i.varValue
 
-                # create contract
                 web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
                 web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: that.estimatedGas }, (err, contract) ->
                     if err
