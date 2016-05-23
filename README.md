@@ -12,11 +12,21 @@ To run and compile using atom-ethereum-interface it is required to have a local 
 
 [Ethereum client installation instruction](https://www.ethereum.org/cli)
 
-### Example client start command
-
 Start geth node using following command
 
     geth --rpc --rpcapi="db,eth,net,web3,personal" --rpcport "8545" --rpcaddr "127.0.0.1" --rpccorsdomain "localhost" console
+
+Check if solidity compiler is installed
+
+    eth.getCompilers()
+
+If solidity compiler is installed output will be similar
+
+    I0523 16:34:48.950510 common/compiler/solidity.go:114] solc, the solidity compiler commandline interface
+    Version: 0.3.0-0/Release-Linux/g++/Interpreter linked to libethereum-1.2.2-0/Release-Linux/g++/Interpreter
+
+    path: /usr/bin/solc
+    []
 
 # Installation
 
@@ -39,7 +49,7 @@ Install as atom package
 
 You need to install
 
-* [Atom Ethereum Interface](https://atom.io/packages/atom-ethereum-interface) (`atom-ethereum-interface` from apm)
+* [Atom Ethereum Interface](https://atom.io/packages/atom-ethereum-interface) (`apm install atom-ethereum-interface`)
 
 # Configuration
 
