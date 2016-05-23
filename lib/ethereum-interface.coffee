@@ -133,12 +133,6 @@ module.exports = AtomSolidity =
                 for contractName of that.compiled
                     # Get estimated gas
                     estimatedGas = 0
-                    web3.eth.estimateGas { to: web3.eth.defaultAccount, data: that.compiled[contractName].code }, (error, callback) ->
-                        if !error
-                            console.log callback
-                            estimatedGas = callback
-                        else
-                            console.log error
                     # contractName is the name of contract in JSON object
                     bytecode = that.compiled[contractName].code
                     # Get contract  abi
@@ -149,8 +143,16 @@ module.exports = AtomSolidity =
                         if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
                             inputs = ContractABI[abiObj].inputs
 
-                    # Create View
-                    that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+                    # Finally check gas estimate and set view
+                    web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }, (error, callback) ->
+                        if !error and callback != 1000000
+                            console.log callback
+                            estimatedGas = callback
+                        else
+                            console.log error
+                            estimatedGas = 1000000
+                        # Create View
+                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
 
                 # Show contract code
                 if not that.modalPanel.isVisible()
