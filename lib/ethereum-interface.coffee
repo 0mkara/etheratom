@@ -1,4 +1,6 @@
 AtomSolidityView = require './ethereum-interface-view'
+path = require 'path'
+fs = require 'fs'
 {CompositeDisposable} = require 'atom'
 Web3 = require 'web3'
 React = require 'react'
@@ -112,10 +114,34 @@ module.exports = AtomSolidity =
         ReactDOM.render React.createElement(createAddressList), document.getElementById('accounts-list')
         callback(null, { account: accounts[0], password: '' })
 
+    combineSource: (dir, source, imports) ->
+        that = this
+        o = { encoding: 'UTF-8' }
+
+        ir = /import\ [\'\"](.+)[\'\"]\;/g
+        match = null
+        while (match = ir.exec(source))
+          iline = match[0]
+          fn = match[1]
+          # empty out already imported
+          if imports[fn]
+            source = source.replace(iline, '')
+            continue
+
+          imports[fn] = 1
+          subSource = fs.readFileSync("#{dir}/#{fn}", o)
+          match.source = that.combineSource(dir, subSource, imports)
+          source = source.replace(iline, match.source)
+
+        return source
+
     compile: ->
         that = this
         editor = atom.workspace.getActiveTextEditor()
-        source = editor.getText()
+        filePath = editor.getPath()
+        dir = path.dirname(filePath)
+
+        source = that.combineSource(dir, editor.getText(), {})
         @checkConnection (error, callback) ->
             if error
                 console.error error
