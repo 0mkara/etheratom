@@ -21,7 +21,7 @@
           'command': 'eth-interface:build'
         }
         {
-          'label': 'Togggle view'
+          'label': 'Toggle view'
           'command': 'eth-interface:toggle'
         }
         {
