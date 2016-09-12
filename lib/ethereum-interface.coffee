@@ -3,15 +3,20 @@ AtomSolidityView = require './ethereum-interface-view'
 Web3 = require 'web3'
 React = require 'react'
 ReactDOM = require 'react-dom'
+TestRPC = require 'ethereumjs-testrpc'
 {MessagePanelView, PlainMessageView, LineMessageView} = require 'atom-message-panel'
 Coinbase = ''
 Password = ''
 rpcAddress = atom.config.get('atom-ethereum-interface.rpcAddress')
+useTestRpc = atom.config.get('atom-ethereum-interface.useTestRpc')
 
 if typeof web3 != 'undefined'
     web3 = new Web3(web3.currentProvider)
 else
-    web3 = new Web3(new (Web3.providers.HttpProvider)(rpcAddress))
+    if useTestRpc == true
+        web3 = new Web3(TestRPC.provider())
+    else
+        web3 = new Web3(new (Web3.providers.HttpProvider)(rpcAddress))
 
 module.exports = AtomSolidity =
     atomSolidityView: null
@@ -19,11 +24,14 @@ module.exports = AtomSolidity =
     subscriptions: null
 
     activate: (state) ->
-        web3.setProvider new web3.providers.HttpProvider(rpcAddress), (error, callback) ->
-            if error
-                console.log error
-            else
-                console.log callback
+        if useTestRpc == true
+            web3.setProvider TestRPC.provider()
+        else
+            web3.setProvider new web3.providers.HttpProvider(rpcAddress), (error, callback) ->
+                if error
+                    console.log error
+                else
+                    console.log callback
         @atomSolidityView = new AtomSolidityView(state.atomSolidityViewState)
         @modalPanel = atom.workspace.addRightPanel(item: @atomSolidityView.getElement(), visible: false)
 
@@ -49,7 +57,12 @@ module.exports = AtomSolidity =
 
     checkConnection: (callback)->
         that = this
-        if !web3.isConnected()
+        haveConn = {}
+        if useTestRpc == true
+            haveConn = true
+        else
+            haveConn = web3.isConnected()
+        if !haveConn
             callback('Error could not connect to local geth instance!', null)
         else
             # If passphrase is not already set
