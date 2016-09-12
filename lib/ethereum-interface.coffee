@@ -6,11 +6,12 @@ ReactDOM = require 'react-dom'
 {MessagePanelView, PlainMessageView, LineMessageView} = require 'atom-message-panel'
 Coinbase = ''
 Password = ''
+rpcAddress = atom.config.get('atom-ethereum-interface.rpcAddress')
 
 if typeof web3 != 'undefined'
     web3 = new Web3(web3.currentProvider)
 else
-    web3 = new Web3(new (Web3.providers.HttpProvider)('http://localhost:8545'))
+    web3 = new Web3(new (Web3.providers.HttpProvider)(rpcAddress))
 
 module.exports = AtomSolidity =
     atomSolidityView: null
@@ -18,7 +19,7 @@ module.exports = AtomSolidity =
     subscriptions: null
 
     activate: (state) ->
-        web3.setProvider new web3.providers.HttpProvider('http://192.168.122.2:8545'), (error, callback) ->
+        web3.setProvider new web3.providers.HttpProvider(rpcAddress), (error, callback) ->
             if error
                 console.log error
             else
