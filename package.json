@@ -39,9 +39,9 @@
       "type": "boolean",
       "default": false,
       "order": 2
-    },
+    }
   },
   "scripts": {
-    "postinstall": "node formatSolc.js"
+    "postinstall": "node ./formatSolc.js"
   }
 }
