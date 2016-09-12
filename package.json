@@ -22,6 +22,26 @@
     "web3": "~0.15.3",
     "atom-message-panel": "~1.2.4",
     "react": "~0.14.8",
-    "react-dom": "~0.14.8"
+    "react-dom": "~0.14.8",
+    "ethereumjs-testrpc": "~2.2.7"
+  },
+  "configSchema": {
+    "rpcAddress": {
+      "title": "Ethereum instance",
+      "description": "Point to local ethereum instance",
+      "type": "string",
+      "default": "http://localhost:8545",
+      "order": 1
+    },
+    "useTestRpc": {
+      "title": "TestRPC emulator",
+      "description": "Check tis to use emulated blockchain",
+      "type": "boolean",
+      "default": false,
+      "order": 2
+    },
+    "scripts": {
+      "postinstall": "node formatSolc.js"
+    }
   }
 }
