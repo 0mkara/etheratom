@@ -170,38 +170,39 @@ module.exports = AtomSolidity =
                         # TODO: Add linter support
                         console.log err
                         return
-                    that.compiled = callback
-                    # Clean View before creating
-                    that.atomSolidityView.destroyCompiled()
-                    console.log that.compiled
+                    else
+                        that.compiled = callback
+                        # Clean View before creating
+                        that.atomSolidityView.destroyCompiled()
+                        console.log that.compiled
 
-                    # Create inpus for every contract
-                    for contractName of that.compiled
-                        # Get estimated gas
-                        estimatedGas = web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }
-                        ###
-                        # TODO: Use asynchronous call
-                        web3.eth.estimateGas({from: '0xmyaccout...', data: "0xc6888fa1fffffffffff…..", gas: 500000 }, function(err, result){
-                          if(!err && result !=== 500000) { …  }
-                         });
-                        ###
+                        # Create inpus for every contract
+                        for contractName of that.compiled
+                            # Get estimated gas
+                            estimatedGas = web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }
+                            ###
+                            # TODO: Use asynchronous call
+                            web3.eth.estimateGas({from: '0xmyaccout...', data: "0xc6888fa1fffffffffff…..", gas: 500000 }, function(err, result){
+                              if(!err && result !=== 500000) { …  }
+                             });
+                            ###
 
-                        # contractName is the name of contract in JSON object
-                        bytecode = that.compiled[contractName].code
-                        # Get contract  abi
-                        ContractABI = that.compiled[contractName].info.abiDefinition
-                        # get constructors for rendering display
-                        inputs = []
-                        for abiObj of ContractABI
-                            if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
-                                inputs = ContractABI[abiObj].inputs
-                        # Create view
-                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+                            # contractName is the name of contract in JSON object
+                            bytecode = that.compiled[contractName].code
+                            # Get contract  abi
+                            ContractABI = that.compiled[contractName].info.abiDefinition
+                            # get constructors for rendering display
+                            inputs = []
+                            for abiObj of ContractABI
+                                if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
+                                    inputs = ContractABI[abiObj].inputs
+                            # Create view
+                            that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
 
 
-                    # Show contract code
-                    if not that.modalPanel.isVisible()
-                        that.modalPanel.show()
+                        # Show contract code
+                        if not that.modalPanel.isVisible()
+                            that.modalPanel.show()
         return
 
     build: ->
