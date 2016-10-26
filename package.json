@@ -19,11 +19,12 @@
     "atom": ">=1.0.0 <2.0.0"
   },
   "dependencies": {
-    "web3": "~0.16.0",
     "atom-message-panel": "~1.2.4",
+    "ethereumjs-testrpc": "~2.2.7",
     "react": "~0.14.8",
     "react-dom": "~0.14.8",
-    "ethereumjs-testrpc": "~2.2.7"
+    "solc": "^0.4.3",
+    "web3": "~0.16.0"
   },
   "configSchema": {
     "rpcAddress": {
