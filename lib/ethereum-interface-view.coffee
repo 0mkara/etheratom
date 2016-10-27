@@ -20,9 +20,10 @@ class AtomSolidityView
         # Create compiler selector div
         compilerNode = document.createElement('div')
         att = document.createAttribute('id')
-        att.value = 'compiler-list'
+        att.value = 'compiler-options'
         compilerNode.setAttributeNode(att)
         @element.appendChild(compilerNode)
+
         # Create account list div
         accountsNode = document.createElement('div')
         att = document.createAttribute('id')
@@ -53,6 +54,10 @@ class AtomSolidityView
         textNode.classList.add('large-code')
         return textNode
 
+    destroyAddrPass: ->
+        addressNode = document.getElementById("accounts-list")
+        if addressNode
+            addressNode.removeChild(addressNode.firstChild) while addressNode.firstChild
     destroyCompiled: ->
         preCompiledNode = document.getElementById("compiled-code")
         if preCompiledNode

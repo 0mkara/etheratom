@@ -10,6 +10,7 @@ TestRPC = require 'ethereumjs-testrpc'
 {MessagePanelView, PlainMessageView, LineMessageView} = require 'atom-message-panel'
 Coinbase = ''
 Password = ''
+Compiler = 'solcjs' # set default compiler
 rpcAddress = atom.config.get('atom-ethereum-interface.rpcAddress')
 useTestRpc = atom.config.get('atom-ethereum-interface.useTestRpc')
 
@@ -71,24 +72,15 @@ module.exports = AtomSolidity =
         if !haveConn
             callback('Error could not connect to local geth instance!', null)
         else
-            # If passphrase is not already set
-            if Password == ''
-                # Set coinbase
-                # List all accounts and set selected as coinbase
-                web3.eth.getAccounts (err, accounts) ->
-                    if err
-                        console.log err
-                    else
-                        that.getBaseAccount accounts, (err, callback) ->
-                            if err
-                                console.log err
-                            else
-                                Coinbase = callback.account
-                                Password = callback.password
-                                # Check if account is locked ? then prompt for password
-                                that.checkUnlock (err, callback) ->
-                                    callback(null, true)
             callback(null, true)
+
+    getAddresses: (callback) ->
+        # List all accounts and set selected as coinbase
+        web3.eth.getAccounts (err, accounts) ->
+            if err
+                callback('Error no base account!', null)
+            else
+                callback(null, accounts)
 
     checkUnlock: (Coinbase, callback) ->
         # web3.personal.unlockAccount("Coinbase", password)
@@ -134,6 +126,27 @@ module.exports = AtomSolidity =
         ReactDOM.render React.createElement(createAddressList), document.getElementById('accounts-list')
         callback(null, { account: accounts[0], password: '' })
 
+    chooseCompiler: (defaultCompiler, callback) ->
+        that = this
+        compilers = [{ compiler: 'solcjs', desc: 'Javascript VM' }, { compiler: 'Web3', desc: 'Backend ethereum node' }]
+        createCompilerEnvList = React.createClass(
+            displayName: 'envList'
+            getInitialState: ->
+                { compilerValue: if compilers[0].compiler == defaultCompiler then compilers[0].compiler else compilers[1].compiler }
+            _handleChange: (event) ->
+                this.setState { compilerValue: event.target.value }
+                callback(null, { compilerValue: event.target.value })
+            render: ->
+                self = this
+                # create dropdown list for accounts
+                React.createElement 'div', { htmlFor: 'compiler-select' },
+                    React.createElement 'form', { className: 'icon icon-plug' }, compilers.map (compiler, i) ->
+                        React.createElement 'label', { className: 'input-label inline-block highlight' },
+                            React.createElement 'input', { type: 'radio', uniqueName: "compilerOpt", className: 'input-radio', value: compiler.compiler, onChange: self._handleChange, checked: self.state.compilerValue == compiler.compiler }, compiler.desc
+        )
+        ReactDOM.render React.createElement(createCompilerEnvList), document.getElementById('compiler-options')
+        callback(null, { compilerValue: defaultCompiler })
+
     combineSource: (dir, source, imports) ->
         that = this
         o = { encoding: 'UTF-8' }
@@ -160,92 +173,107 @@ module.exports = AtomSolidity =
         editor = atom.workspace.getActiveTextEditor()
         filePath = editor.getPath()
         dir = path.dirname(filePath)
-        compiler = null
 
         source = that.combineSource(dir, editor.getText(), {})
-        # Check selected compiler and compile using selected compiler (default solcjs)
-        ###
-        if compiler is 'solcjs'
-            that.compileVM source, (error, callback) ->
-                if error
-                    console.error error
-                    that.showErrorMessage 0, 'Error could not compile using JavascriptVM'
-                else
-                    that.compiled = callback
-                    # Clean View before creating
-                    that.atomSolidityView.destroyCompiled()
-                    console.log that.compiled
-
-                    estimatedGas = 0
-                    # Create inpus for every contract
-                    for contractName of that.compiled.contracts
-                        # contractName is the name of contract in JSON object
-                        bytecode = that.compiled.contracts[contractName].bytecode
-                        # Get contract  abi
-                        ContractABI = that.compiled.contracts[contractName].interface
-                        # get constructors for rendering display
-                        inputs = []
-                        for abiObj of ContractABI
-                            if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
-                                inputs = ContractABI[abiObj].inputs
-                        # Create view
-                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
-
-
-                    # Show contract code
-                    if not that.modalPanel.isVisible()
-                        that.modalPanel.show()
-        else
-        ###
-        @checkConnection (error, callback) ->
+        @chooseCompiler Compiler, (error, callback) ->
             if error
                 console.error error
-                that.showErrorMessage 0, 'Error could not connect to local geth instance!'
+                that.showErrorMessage 0, error
             else
-                web3.eth.defaultAccount = Coinbase
-                console.log "Using coinbase: " + web3.eth.defaultAccount
-                ###
-                # TODO: Handle Compilation asynchronously and handle errors
-                ###
-                web3.eth.compile.solidity source, (err, callback) ->
-                    if err
-                        # TODO: Add linter support
-                        console.log err
-                        return
-                    else
-                        that.compiled = callback
-                        # Clean View before creating
-                        that.atomSolidityView.destroyCompiled()
-                        console.log that.compiled
+                Compiler = callback.compilerValue
+                # Check selected compiler and compile using selected compiler (default solcjs)
+                if Compiler is 'solcjs'
+                    that.compileVM source, (error, callback) ->
+                        if error
+                            console.error error
+                            that.showErrorMessage 0, 'Error could not compile using JavascriptVM'
+                        else
+                            that.compiled = callback
+                            # Clean View before creating
+                            that.atomSolidityView.destroyAddrPass()
+                            that.atomSolidityView.destroyCompiled()
+                            console.log that.compiled
 
-                        # Create inpus for every contract
-                        for contractName of that.compiled
-                            # Get estimated gas
-                            estimatedGas = web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }
-                            ###
-                            # TODO: Use asynchronous call
-                            web3.eth.estimateGas({from: '0xmyaccout...', data: "0xc6888fa1fffffffffff…..", gas: 500000 }, function(err, result){
-                              if(!err && result !=== 500000) { …  }
-                             });
-                            ###
-
-                            # contractName is the name of contract in JSON object
-                            bytecode = that.compiled[contractName].code
-                            # Get contract  abi
-                            ContractABI = that.compiled[contractName].info.abiDefinition
-                            # get constructors for rendering display
-                            inputs = []
-                            for abiObj of ContractABI
-                                if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
-                                    inputs = ContractABI[abiObj].inputs
-                            # Create view
-                            that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+                            estimatedGas = 0
+                            # Create inpus for every contract
+                            for contractName of that.compiled.contracts
+                                # contractName is the name of contract in JSON object
+                                bytecode = that.compiled.contracts[contractName].bytecode
+                                # Get contract  abi
+                                ContractABI = that.compiled.contracts[contractName].interface
+                                # get constructors for rendering display
+                                inputs = []
+                                for abiObj of ContractABI
+                                    if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
+                                        inputs = ContractABI[abiObj].inputs
+                                # Create view
+                                that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
 
 
-                        # Show contract code
-                        if not that.modalPanel.isVisible()
-                            that.modalPanel.show()
-        return
+                            # Show contract code
+                            if not that.modalPanel.isVisible()
+                                that.modalPanel.show()
+                else
+                    that.checkConnection (error, callback) ->
+                        if error
+                            console.error error
+                            that.showErrorMessage 0, error
+                        else
+                            that.getAddresses (error, accounts) ->
+                                if error
+                                    console.error error
+                                    that.showErrorMessage 0, error
+                                else
+                                    that.getBaseAccount accounts, (err, callback) ->
+                                        if err
+                                            console.error err
+                                        else
+                                            Coinbase = callback.account
+                                            Password = callback.password
+                                            web3.eth.defaultAccount = Coinbase
+                                            console.log "Using coinbase: " + web3.eth.defaultAccount
+                                            ###
+                                            # TODO: Handle Compilation asynchronously and handle errors
+                                            ###
+                                            web3.eth.compile.solidity source, (err, callback) ->
+                                                if err
+                                                    # TODO: Add linter support
+                                                    console.log err
+                                                    return
+                                                else
+                                                    that.compiled = callback
+                                                    # Clean View before creating
+                                                    that.atomSolidityView.destroyCompiled()
+                                                    console.log that.compiled
+
+                                                    # Create inpus for every contract
+                                                    for contractName of that.compiled
+                                                        # Get estimated gas
+                                                        estimatedGas = web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }
+                                                        ###
+                                                        # TODO: Use asynchronous call
+                                                        web3.eth.estimateGas({from: '0xmyaccout...', data: "0xc6888fa1fffffffffff…..", gas: 500000 }, function(err, result){
+                                                          if(!err && result !=== 500000) { …  }
+                                                         });
+                                                        ###
+
+                                                        # contractName is the name of contract in JSON object
+                                                        bytecode = that.compiled[contractName].code
+                                                        # Get contract  abi
+                                                        ContractABI = that.compiled[contractName].info.abiDefinition
+                                                        # get constructors for rendering display
+                                                        inputs = []
+                                                        for abiObj of ContractABI
+                                                            if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
+                                                                inputs = ContractABI[abiObj].inputs
+                                                        # Create view
+                                                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+
+
+                                                    # Show contract code
+                                                    if not that.modalPanel.isVisible()
+                                                        that.modalPanel.show()
+                    return
 
     build: ->
         that = this
