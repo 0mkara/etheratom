@@ -3,6 +3,7 @@ path = require 'path'
 fs = require 'fs'
 {CompositeDisposable} = require 'atom'
 Web3 = require 'web3'
+Solc = require 'solc'
 React = require 'react'
 ReactDOM = require 'react-dom'
 TestRPC = require 'ethereumjs-testrpc'
@@ -54,7 +55,13 @@ module.exports = AtomSolidity =
     serialize: ->
         atomSolidityViewState: @atomSolidityView.serialize()
 
-    checkConnection: (callback)->
+    # if callback and @, use arrow the fat
+    compileVM: (source, callback) ->
+        that = this
+        output = Solc.compile(source, 1)
+        callback(null, output)
+
+    checkConnection: (callback) ->
         that = this
         haveConn = {}
         if useTestRpc == true
@@ -153,8 +160,43 @@ module.exports = AtomSolidity =
         editor = atom.workspace.getActiveTextEditor()
         filePath = editor.getPath()
         dir = path.dirname(filePath)
+        compiler = null
 
         source = that.combineSource(dir, editor.getText(), {})
+        # Check selected compiler and compile using selected compiler (default solcjs)
+        ###
+        if compiler is 'solcjs'
+            that.compileVM source, (error, callback) ->
+                if error
+                    console.error error
+                    that.showErrorMessage 0, 'Error could not compile using JavascriptVM'
+                else
+                    that.compiled = callback
+                    # Clean View before creating
+                    that.atomSolidityView.destroyCompiled()
+                    console.log that.compiled
+
+                    estimatedGas = 0
+                    # Create inpus for every contract
+                    for contractName of that.compiled.contracts
+                        # contractName is the name of contract in JSON object
+                        bytecode = that.compiled.contracts[contractName].bytecode
+                        # Get contract  abi
+                        ContractABI = that.compiled.contracts[contractName].interface
+                        # get constructors for rendering display
+                        inputs = []
+                        for abiObj of ContractABI
+                            if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
+                                inputs = ContractABI[abiObj].inputs
+                        # Create view
+                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+
+
+                    # Show contract code
+                    if not that.modalPanel.isVisible()
+                        that.modalPanel.show()
+        else
+        ###
         @checkConnection (error, callback) ->
             if error
                 console.error error

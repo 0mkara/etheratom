@@ -1,6 +1,8 @@
 module.exports =
 class AtomSolidityView
     constructor: (serializedState) ->
+        # Create resizer
+        @element = document.createElement
         # Create root element
         @element = document.createElement('div')
         @element.classList.add('atom-solidity')
@@ -15,6 +17,12 @@ class AtomSolidityView
         message.classList.add('highlight-info')
         @element.appendChild(message)
 
+        # Create compiler selector div
+        compilerNode = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'compiler-list'
+        compilerNode.setAttributeNode(att)
+        @element.appendChild(compilerNode)
         # Create account list div
         accountsNode = document.createElement('div')
         att = document.createAttribute('id')
@@ -29,10 +37,10 @@ class AtomSolidityView
         @compiledNode.setAttributeNode(att)
         @compiledNode.classList.add('compiled-code')
 
-        # Returns an object that can be retrieved when package is activated
+    # Returns an object that can be retrieved when package is activated
     serialize: ->
 
-        # Tear down any state and detach
+    # Tear down any state and detach
     destroy: ->
         @element.remove()
 

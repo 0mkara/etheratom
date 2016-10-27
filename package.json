@@ -23,7 +23,7 @@
     "ethereumjs-testrpc": "~2.2.7",
     "react": "~0.14.8",
     "react-dom": "~0.14.8",
-    "solc": "^0.4.3",
+    "solc": "^0.4.1",
     "web3": "~0.16.0"
   },
   "configSchema": {
