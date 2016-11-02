@@ -54,10 +54,12 @@ class AtomSolidityView
         textNode.classList.add('large-code')
         return textNode
 
-    destroyAddrPass: ->
+    destroyPass: ->
         addressNode = document.getElementById("accounts-list")
-        if addressNode
-            addressNode.removeChild(addressNode.firstChild) while addressNode.firstChild
+        passNode = addressNode.childNodes[0].childNodes[1]
+        if passNode
+            passNode.parentNode.removeChild(passNode)
+
     destroyCompiled: ->
         preCompiledNode = document.getElementById("compiled-code")
         if preCompiledNode
@@ -138,6 +140,7 @@ class AtomSolidityView
         varName = document.createTextNode("Estimated Gas")
         buttonText.appendChild(varName)
         inputsNode.appendChild(buttonText)
+
         # Estimated gas input as estimated gas
         estimatedGasInput = document.createElement('input')
         att = document.createAttribute('id')
