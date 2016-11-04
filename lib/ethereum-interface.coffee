@@ -14,14 +14,15 @@ EthJSTX = require 'ethereumjs-tx'
 EthJSBlock = require 'ethereumjs-block'
 EthJSVM = require 'ethereumjs-vm'
 ethJSABI = require 'ethereumjs-abi'
-BN = ethJSUtil.BN
-VM = {}
 # Env Vars
 Coinbase = ''
 Password = ''
 Compiler = 'solcjs' # set default compiler
 vmAccounts = []
 vmBlockNumber = 1150000
+BN = ethJSUtil.BN
+VM = new EthJSVM(null, null, { activatePrecompiles: true, enableHomestead: true })
+# RPC config
 rpcAddress = atom.config.get('atom-ethereum-interface.rpcAddress')
 useTestRpc = atom.config.get('atom-ethereum-interface.useTestRpc')
 
@@ -95,12 +96,11 @@ module.exports = AtomSolidity =
 
     addAccounts: (keyArr) ->
         accounts = []
-        @VM = new EthJSVM(null, null, { activatePrecompiles: true, enableHomestead: true })
         # prepare accounts from key and return accounts array
         for key of keyArr
             privateKey = new Buffer(keyArr[key], 'hex')
             address = ethJSUtil.privateToAddress(privateKey)
-            @VM.stateManager.putAccountBalance address, 'f00000000000000001', (error, callback) ->
+            VM.stateManager.putAccountBalance address, 'f00000000000000001', (error, callback) ->
             vmAccounts['0x' + address.toString('hex')] = { privateKey: privateKey, nonce: 0 }
             accounts.push('0x' + address.toString('hex'))
         accounts
@@ -478,7 +478,7 @@ module.exports = AtomSolidity =
             tx = new EthJSTX({
                     nonce: new BN(vmAccounts[Coinbase].nonce++),
                     gasPrice: new BN(1),
-                    gasLimit: new BN(1000, 10),
+                    gasLimit: new BN(3000000, 10),
                     value: new BN(0, 10),
                     data: that.code
                 })
@@ -486,7 +486,7 @@ module.exports = AtomSolidity =
             block = new EthJSBlock({
                     header: {
                         timestamp: new Date().getTime() / 1000 | 0,
-                        number: @vmBlockNumber
+                        number: that.vmBlockNumber
                     },
                     transactions: [],
                     uncleHeaders: []
@@ -500,8 +500,7 @@ module.exports = AtomSolidity =
                     constructorS = []
                     for i in that.constructVars.inputVariables
                         constructorS.push i.varValue
-
-                    that.VM.runTx { block: block, tx: tx, skipBalance: true, skipNonce: true }, (error, result) ->
+                    that.exeVM block, tx, (error, result) ->
                         if error
                             console.error error
                             that.showErrorMessage 508, error
@@ -539,11 +538,7 @@ module.exports = AtomSolidity =
                                         if !error
                                             that.argsToArray self.refs, childFunction, (error, argArray) ->
                                                 if !error
-                                                    console.log "Will call"
-                                                    # Buffer.concat([ ethJSABI.methodID(Method Name, input variable types), ethJSABI.rawEncode(input variable types, input variables) ]).toString('hex')
-                                                    buffer = Buffer.concat([ ethJSABI.methodID(childFunction, typArray), ethJSABI.rawEncode(typArray, argArray) ]).toString('hex')
-                                                    console.log buffer
-                                                    #that.call(myContract, childFunction, argArray)
+                                                    that.callVM(myContract, childFunction, typArray, argArray)
                                 render: ->
                                     self = this
                                     React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
@@ -556,15 +551,6 @@ module.exports = AtomSolidity =
                             )
 
                             ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
-            ###
-            console.log that.code
-            vm.runCode { code: new Buffer(that.code, 'hex'), gasLimit: new Buffer('ffffffff', 'hex') }, (error, callback) ->
-                if error
-                    console.error error
-                else
-                    console.log callback.gasUsed.toString()
-            ###
-
         else
             # Execute code using web3
             @estimatedGas = if @estimatedGas > 0 then @estimatedGas else 1000000
@@ -704,8 +690,45 @@ module.exports = AtomSolidity =
                 else
                     web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
                     result = that.myContract[that.functionName]()
-                console.log result
                 that.showOutput that.myContract.address, result
+
+    callVM: (@myContract, @functionName, @argTypes, @arguments) ->
+        that = this
+        to = that.myContract.createdAddress.toString('hex')
+        # Buffer.concat([ ethJSABI.methodID(Method Name, input variable types), ethJSABI.rawEncode(input variable types, input variables) ]).toString('hex')
+        buffer = Buffer.concat([ ethJSABI.methodID(that.functionName, that.argTypes), ethJSABI.rawEncode(that.argTypes, that.arguments) ]).toString('hex')
+        tx = new EthJSTX({
+                nonce: new BN(vmAccounts[Coinbase].nonce++),
+                gasPrice: new BN(1),
+                gasLimit: new BN(3000000, 10),
+                to: new Buffer(to, 'hex'),
+                value: new BN(0, 10),
+                data: new Buffer(buffer, 'hex')
+            })
+        tx.sign(vmAccounts[Coinbase].privateKey)
+        block = new EthJSBlock({
+                header: {
+                    timestamp: new Date().getTime() / 1000 | 0,
+                    number: vmBlockNumber
+                },
+                transactions: [],
+                uncleHeaders: []
+            })
+        @exeVM block, tx, (error, result) ->
+            if error
+                console.error error
+                that.showErrorMessage 508, error
+            else
+                console.log result
+                that.showOutput 'Method call is yet to be implemented', 'See github issue https://github.com/gmtDevs/atom-ethereum-interface/issues/23'
+
+    exeVM: (@block, @tx, callback) ->
+        that = this
+        console.log that.block
+        console.log that.tx
+        VM.runTx { block: that.block, tx: that.tx, skipBalance: true, skipNonce: true }, (error, result) ->
+            if !error
+                callback(null, result)
 
     toggle: ->
         if @modalPanel.isVisible()
