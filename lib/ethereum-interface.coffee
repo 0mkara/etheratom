@@ -8,7 +8,7 @@ ReactDOM = require 'react-dom'
 # Ethereum requires
 Web3 = require 'web3'
 Solc = require 'solc'
-TestRPC = require 'ethereumjs-testrpc'
+#TestRPC = require 'ethereumjs-testrpc'
 ethJSUtil = require 'ethereumjs-util'
 EthJSTX = require 'ethereumjs-tx'
 EthJSBlock = require 'ethereumjs-block'
@@ -31,7 +31,8 @@ if typeof web3 != 'undefined'
     web3 = new Web3(web3.currentProvider)
 else
     if useTestRpc
-        web3 = new Web3(TestRPC.provider())
+        #web3 = new Web3(TestRPC.provider())
+        console.log "Having issues here"
     else
         web3 = new Web3(new (Web3.providers.HttpProvider)(rpcAddress))
 
