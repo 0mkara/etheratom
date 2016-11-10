@@ -540,11 +540,11 @@ module.exports = AtomSolidity =
                                             _handleSubmit: (childFunction, event) ->
                                                 self = this
                                                 # Get arguments ready here
-                                                that.typesToArray this.refs, childFunction, (error, typArray) ->
+                                                that.typesToArray this.refs, childFunction, (error, argTypArray) ->
                                                     if !error
                                                         that.argsToArray self.refs, childFunction, (error, argArray) ->
                                                             if !error
-                                                                that.callVM(myContract, childFunction, typArray, argArray)
+                                                                that.callVM(myContract, that.abi, childFunction, argTypArray, argArray)
                                                                 ++vmBlockNumber
                                             render: ->
                                                 self = this
@@ -697,36 +697,63 @@ module.exports = AtomSolidity =
                     result = that.myContract[that.functionName]()
                 that.showOutput that.myContract.address, result
 
-    callVM: (@myContract, @functionName, @argTypes, @arguments) ->
+    callVM: (@myContract, @abi, @functionName, @argTypes, @arguments) ->
         that = this
+        # @myContract refers to previously created object
         to = that.myContract.createdAddress.toString('hex')
-        # Buffer.concat([ ethJSABI.methodID(Method Name, input variable types), ethJSABI.rawEncode(input variable types, input variables) ]).toString('hex')
-        buffer = Buffer.concat([ ethJSABI.methodID(that.functionName, that.argTypes), ethJSABI.rawEncode(that.argTypes, that.arguments) ]).toString('hex')
-        rawTx = {
-            nonce: '0x' + vmAccounts['0x' + Coinbase].nonce++,
-            gasPrice: 0x09184e72a000,
-            gasLimit: 0x300000,
-            to: '0x' + to,
-            data: '0x' + buffer
-        }
-        tx = new EthJSTX(rawTx)
-        block = new EthJSBlock({
-                header: {
-                    timestamp: new Date().getTime() / 1000 | 0,
-                    number: vmBlockNumber
-                },
-                transactions: [],
-                uncleHeaders: []
-            })
-        @exeVM block, tx, (error, result) ->
-            if error
-                console.error error
-                that.showErrorMessage 508, error
-            else
-                console.log result
-                outputBuffer = ethJSABI.rawDecode(that.argTypes, result.vm.return)
-                console.log outputBuffer
-                that.showOutput 'Method call is yet to be implemented', 'See github issue https://github.com/gmtDevs/atom-ethereum-interface/issues/23'
+        # Only proceed if the to account exists
+        @checkVMAccExists to, (error, status) ->
+            if status == true
+                # Buffer.concat([ ethJSABI.methodID(Method Name, input variable types), ethJSABI.rawEncode(input variable types, input variables) ]).toString('hex')
+                buffer = Buffer.concat([ ethJSABI.methodID(that.functionName, that.argTypes), ethJSABI.rawEncode(that.argTypes, that.arguments) ]).toString('hex')
+                rawTx = {
+                    nonce: '0x' + vmAccounts['0x' + Coinbase].nonce++,
+                    gasPrice: 0x09184e72a000,
+                    gasLimit: 0x300000,
+                    to: '0x' + to,
+                    data: '0x' + buffer
+                }
+                tx = new EthJSTX(rawTx)
+                block = new EthJSBlock({
+                        header: {
+                            timestamp: new Date().getTime() / 1000 | 0,
+                            number: vmBlockNumber
+                        },
+                        transactions: [],
+                        uncleHeaders: []
+                    })
+                that.exeVM block, tx, (error, result) ->
+                    if error
+                        console.error error
+                        that.showErrorMessage 508, error
+                    else
+                        that.getOutputTypes that.abi, that.functionName, (error, outputTypes) ->
+                            outputBuffer = ethJSABI.rawDecode(outputTypes, result.vm.return)
+                            outputBuffer = ethJSABI.stringify(outputTypes, outputBuffer)
+                            that.showOutput '0x' + that.myContract.createdAddress.toString('hex'), outputBuffer
+
+    checkVMAccExists: (@address, callback) ->
+        that = this
+        VM.stateManager.getAccount '0x' + @address, (error, account) ->
+            callback(null, account.exists)
+
+    getOutputTypes: (@abi, @functionName, callback) ->
+        that = this
+        @asyncLoop @abi.length, ((cycle) ->
+            if that.abi[cycle.iteration()].name == that.functionName
+                that.outputTypestoArray that.abi[cycle.iteration()], (error, outputTypes) ->
+                    callback(null, outputTypes)
+            cycle.next()
+        ), ->
+
+    outputTypestoArray: (@funcAbi, callback) ->
+        that = this
+        types = new Array()
+        @asyncLoop @funcAbi.outputs.length, ((cycle) ->
+            types.push(that.funcAbi.outputs[cycle.iteration()].type)
+            cycle.next()
+        ), ->
+            callback(null, types)
 
     exeVM: (@block, @tx, callback) ->
         that = this
