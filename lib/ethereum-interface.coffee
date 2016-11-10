@@ -13,6 +13,7 @@ ethJSUtil = require 'ethereumjs-util'
 EthJSTX = require 'ethereumjs-tx'
 EthJSBlock = require 'ethereumjs-block'
 EthJSVM = require 'ethereumjs-vm'
+Account = require 'ethereumjs-account'
 ethJSABI = require 'ethereumjs-abi'
 # Env Vars
 Coinbase = ''
@@ -21,7 +22,8 @@ Compiler = 'solcjs' # set default compiler
 vmAccounts = []
 vmBlockNumber = 1150000
 BN = ethJSUtil.BN
-VM = new EthJSVM(null, null, { activatePrecompiles: true, enableHomestead: true })
+VM = new EthJSVM({ activatePrecompiles: true, enableHomestead: true })
+VM.stateManager.checkpoint()
 # RPC config
 rpcAddress = atom.config.get('atom-ethereum-interface.rpcAddress')
 useTestRpc = atom.config.get('atom-ethereum-interface.useTestRpc')
@@ -95,14 +97,15 @@ module.exports = AtomSolidity =
                 callback(null, accounts)
 
     addAccounts: (keyArr) ->
+        that = this
         accounts = []
         # prepare accounts from key and return accounts array
         for key of keyArr
             privateKey = new Buffer(keyArr[key], 'hex')
-            address = ethJSUtil.privateToAddress(privateKey)
-            VM.stateManager.putAccountBalance address, 'f00000000000000001', (error, callback) ->
-            vmAccounts['0x' + address.toString('hex')] = { privateKey: privateKey, nonce: 0 }
-            accounts.push('0x' + address.toString('hex'))
+            address = ethJSUtil.privateToAddress(privateKey).toString('hex')
+            VM.stateManager.putAccountBalance address, '999999999999999000000000000000000', (error, result) ->
+            vmAccounts['0x' + address] = { privateKey: privateKey, nonce: 0 }
+            accounts.push(address)
         accounts
 
     checkUnlock: (Coinbase, callback) ->
@@ -228,7 +231,7 @@ module.exports = AtomSolidity =
                                     that.showErrorMessage 0, 'Error could not compile using JavascriptVM'
                                 else
                                     that.compiled = callback
-                                    estimatedGas = 0
+                                    estimatedGas = 300000
                                     # Clean View before creating
                                     that.atomSolidityView.destroyPass()
                                     that.atomSolidityView.destroyCompiled()
@@ -474,15 +477,14 @@ module.exports = AtomSolidity =
         if Compiler is 'solcjs'
             # Execute code using ethereumjsVM
             # Construct transaction
-
-            tx = new EthJSTX({
-                    nonce: new BN(vmAccounts[Coinbase].nonce++),
-                    gasPrice: new BN(1),
-                    gasLimit: new BN(3000000, 10),
-                    value: new BN(0, 10),
-                    data: that.code
-                })
-            tx.sign(vmAccounts[Coinbase].privateKey)
+            rawTx = {
+                nonce: '0x' + vmAccounts['0x' + Coinbase].nonce,
+                gasPrice: 0x09184e72a000,
+                gasLimit: 0x300000,
+                data: '0x' + that.code
+            }
+            tx = new EthJSTX(rawTx)
+            tx.sign(vmAccounts['0x' + Coinbase].privateKey)
             block = new EthJSBlock({
                     header: {
                         timestamp: new Date().getTime() / 1000 | 0,
@@ -500,57 +502,62 @@ module.exports = AtomSolidity =
                     constructorS = []
                     for i in that.constructVars.inputVariables
                         constructorS.push i.varValue
-                    that.exeVM block, tx, (error, result) ->
-                        if error
-                            console.error error
-                            that.showErrorMessage 508, error
-                            return
-                        else if result.createdAddress
-                            myContract = result
-                            console.log 'address: ' + result.createdAddress.toString('hex')
-                            document.getElementById(that.contractName + '_stat').innerText = 'JavascriptVM code executed!'
-                            document.getElementById(that.contractName + '_stat').setAttribute('class', 'icon icon-zap') # Add icon class
-                            document.getElementById(that.contractName + '_address').innerText = '0x' + myContract.createdAddress.toString('hex')
-                            document.getElementById(that.contractName + '_address').setAttribute('class', 'icon icon-key') # Add icon class
+                    VM.stateManager.getAccount Coinbase, (error, account) ->
+                        if account.exists == true
+                            userAccount = new Account(account)
+                            balance = userAccount.balance.toString()
+                            if balance > tx.getUpfrontCost().toString()
+                                that.exeVM block, tx, (error, result) ->
+                                    if error
+                                        console.error error
+                                        that.showErrorMessage 508, error
+                                        return
+                                    else if result.createdAddress
+                                        myContract = result
+                                        document.getElementById(that.contractName + '_stat').innerText = 'JavascriptVM code executed!'
+                                        document.getElementById(that.contractName + '_stat').setAttribute('class', 'icon icon-zap') # Add icon class
+                                        document.getElementById(that.contractName + '_address').innerText = '0x' + myContract.createdAddress.toString('hex')
+                                        document.getElementById(that.contractName + '_address').setAttribute('class', 'icon icon-key') # Add icon class
 
-                            # Check every key, if it is a function create call buttons,
-                            # for every function there could be many call methods,
-                            # for every method there cpould be many inputs
-                            # Innermost callback will have inputs for all abi objects
+                                        # Check every key, if it is a function create call buttons,
+                                        # for every function there could be many call methods,
+                                        # for every method there cpould be many inputs
+                                        # Innermost callback will have inputs for all abi objects
 
-                            # Construct view for function call view
-                            functionABI = React.createClass(
-                                displayName: 'callFunctions'
-                                getInitialState: ->
-                                    { childFunctions: [] }
-                                componentDidMount: ->
-                                    self = this
-                                    that.constructFunctions that.abi, (error, childFunctions) ->
-                                        if !error
-                                            self.state.childFunctions.push(childFunctions)
-                                            self.forceUpdate()
-                                _handleChange: (childFunction, event) ->
-                                    this.setState { value: event.target.value }
-                                _handleSubmit: (childFunction, event) ->
-                                    self = this
-                                    # Get arguments ready here
-                                    that.typesToArray this.refs, childFunction, (error, typArray) ->
-                                        if !error
-                                            that.argsToArray self.refs, childFunction, (error, argArray) ->
-                                                if !error
-                                                    that.callVM(myContract, childFunction, typArray, argArray)
-                                render: ->
-                                    self = this
-                                    React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
-                                        React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
-                                            React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0], className: 'text-subtle call-button' }
-                                            childFunction[1].map((childInput, j) ->
-                                                React.createElement 'input', { tye: 'text', handleChange: self._handleChange, name: childInput[0], placeholder: childInput[0] + ' ' + childInput[1], className: 'call-button-values' }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
-                                            )
-                                    )
-                            )
+                                        # Construct view for function call view
+                                        functionABI = React.createClass(
+                                            displayName: 'callFunctions'
+                                            getInitialState: ->
+                                                { childFunctions: [] }
+                                            componentDidMount: ->
+                                                self = this
+                                                that.constructFunctions that.abi, (error, childFunctions) ->
+                                                    if !error
+                                                        self.state.childFunctions.push(childFunctions)
+                                                        self.forceUpdate()
+                                            _handleChange: (childFunction, event) ->
+                                                this.setState { value: event.target.value }
+                                            _handleSubmit: (childFunction, event) ->
+                                                self = this
+                                                # Get arguments ready here
+                                                that.typesToArray this.refs, childFunction, (error, typArray) ->
+                                                    if !error
+                                                        that.argsToArray self.refs, childFunction, (error, argArray) ->
+                                                            if !error
+                                                                that.callVM(myContract, childFunction, typArray, argArray)
+                                                                ++vmBlockNumber
+                                            render: ->
+                                                self = this
+                                                React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
+                                                    React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
+                                                        React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0], className: 'text-subtle call-button' }
+                                                        childFunction[1].map((childInput, j) ->
+                                                            React.createElement 'input', { tye: 'text', handleChange: self._handleChange, name: childInput[0], placeholder: childInput[0] + ' ' + childInput[1], className: 'call-button-values' }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
+                                                        )
+                                                )
+                                        )
 
-                            ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
+                                        ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
         else
             # Execute code using web3
             @estimatedGas = if @estimatedGas > 0 then @estimatedGas else 1000000
@@ -602,11 +609,9 @@ module.exports = AtomSolidity =
                                     self = this
                                     that.constructFunctions that.abi, (error, childFunctions) ->
                                         if !error
-                                            console.log childFunctions
                                             self.state.childFunctions.push(childFunctions)
                                             self.forceUpdate()
                                 _handleChange: (childFunction, event) ->
-                                    console.log event.target.value
                                     this.setState { value: event.target.value }
                                 _handleSubmit: (childFunction, event) ->
                                     # Get arguments ready here
@@ -697,15 +702,14 @@ module.exports = AtomSolidity =
         to = that.myContract.createdAddress.toString('hex')
         # Buffer.concat([ ethJSABI.methodID(Method Name, input variable types), ethJSABI.rawEncode(input variable types, input variables) ]).toString('hex')
         buffer = Buffer.concat([ ethJSABI.methodID(that.functionName, that.argTypes), ethJSABI.rawEncode(that.argTypes, that.arguments) ]).toString('hex')
-        tx = new EthJSTX({
-                nonce: new BN(vmAccounts[Coinbase].nonce++),
-                gasPrice: new BN(1),
-                gasLimit: new BN(3000000, 10),
-                to: new Buffer(to, 'hex'),
-                value: new BN(0, 10),
-                data: new Buffer(buffer, 'hex')
-            })
-        tx.sign(vmAccounts[Coinbase].privateKey)
+        rawTx = {
+            nonce: '0x' + vmAccounts['0x' + Coinbase].nonce++,
+            gasPrice: 0x09184e72a000,
+            gasLimit: 0x300000,
+            to: '0x' + to,
+            data: '0x' + buffer
+        }
+        tx = new EthJSTX(rawTx)
         block = new EthJSBlock({
                 header: {
                     timestamp: new Date().getTime() / 1000 | 0,
@@ -720,12 +724,14 @@ module.exports = AtomSolidity =
                 that.showErrorMessage 508, error
             else
                 console.log result
+                outputBuffer = ethJSABI.rawDecode(that.argTypes, result.vm.return)
+                console.log outputBuffer
                 that.showOutput 'Method call is yet to be implemented', 'See github issue https://github.com/gmtDevs/atom-ethereum-interface/issues/23'
 
     exeVM: (@block, @tx, callback) ->
         that = this
-        console.log that.block
-        console.log that.tx
+        that.tx.sign(vmAccounts['0x' + Coinbase].privateKey)
+        # Run actual transaction
         VM.runTx { block: that.block, tx: that.tx, skipBalance: true, skipNonce: true }, (error, result) ->
             if !error
                 callback(null, result)
