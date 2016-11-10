@@ -38,6 +38,31 @@ class AtomSolidityView
         @compiledNode.setAttributeNode(att)
         @compiledNode.classList.add('compiled-code')
 
+        # common button div
+        buttonNode = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'common-buttons'
+        buttonNode.setAttributeNode(att)
+        buttonNode.classList.add('block')
+
+        # Compile button
+        compileButton = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'compile_btn'
+        compileButton.setAttributeNode(att)
+        compileButton.classList.add('inline-block')
+
+        # Make button
+        makeButton = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'make_btn'
+        makeButton.setAttributeNode(att)
+        makeButton.classList.add('inline-block')
+
+        buttonNode.appendChild(compileButton)
+        buttonNode.appendChild(makeButton)
+        @element.appendChild(buttonNode)
+
     # Returns an object that can be retrieved when package is activated
     serialize: ->
 
