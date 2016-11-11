@@ -1,16 +1,40 @@
 AtomSolidityView = require './ethereum-interface-view'
+path = require 'path'
+fs = require 'fs'
 {CompositeDisposable} = require 'atom'
-Web3 = require 'web3'
 React = require 'react'
 ReactDOM = require 'react-dom'
 {MessagePanelView, PlainMessageView, LineMessageView} = require 'atom-message-panel'
+# Ethereum requires
+Web3 = require 'web3'
+Solc = require 'solc'
+#TestRPC = require 'ethereumjs-testrpc'
+ethJSUtil = require 'ethereumjs-util'
+EthJSTX = require 'ethereumjs-tx'
+EthJSBlock = require 'ethereumjs-block'
+EthJSVM = require 'ethereumjs-vm'
+Account = require 'ethereumjs-account'
+ethJSABI = require 'ethereumjs-abi'
+# Env Vars
 Coinbase = ''
 Password = ''
+Compiler = 'solcjs' # set default compiler
+vmAccounts = []
+vmBlockNumber = 1150000
+BN = ethJSUtil.BN
+VM = new EthJSVM({ activatePrecompiles: true, enableHomestead: true })
+# RPC config
+rpcAddress = atom.config.get('atom-ethereum-interface.rpcAddress')
+useTestRpc = atom.config.get('atom-ethereum-interface.useTestRpc')
 
 if typeof web3 != 'undefined'
     web3 = new Web3(web3.currentProvider)
 else
-    web3 = new Web3(new (Web3.providers.HttpProvider)('http://localhost:8545'))
+    if useTestRpc
+        #web3 = new Web3(TestRPC.provider())
+        console.log "Having issues here"
+    else
+        web3 = new Web3(new (Web3.providers.HttpProvider)(rpcAddress))
 
 module.exports = AtomSolidity =
     atomSolidityView: null
@@ -18,13 +42,13 @@ module.exports = AtomSolidity =
     subscriptions: null
 
     activate: (state) ->
-        web3.setProvider new web3.providers.HttpProvider('http://192.168.122.2:8545'), (error, callback) ->
-            if error
-                console.log error
-            else
-                console.log callback
         @atomSolidityView = new AtomSolidityView(state.atomSolidityViewState)
         @modalPanel = atom.workspace.addRightPanel(item: @atomSolidityView.getElement(), visible: false)
+        atom.config.observe 'atom-ethereum-interface.rpcAddress', (newValue) ->
+            # TODO: add url validation
+            urlPattern = new RegExp('(http)://?')
+            if urlPattern.test(newValue)
+                rpcAddress = newValue
 
         # Empty global variable compiled
         @compiled = {}
@@ -46,26 +70,43 @@ module.exports = AtomSolidity =
     serialize: ->
         atomSolidityViewState: @atomSolidityView.serialize()
 
-    checkConnection: (callback)->
+    # if callback and @, use arrow the fat
+    compileVM: (source, callback) ->
         that = this
-        if !web3.isConnected()
+        output = Solc.compile(source, 1)
+        callback(null, output)
+
+    checkConnection: (callback) ->
+        that = this
+        haveConn = {}
+        if useTestRpc == true
+            haveConn = true
+        else
+            haveConn = web3.isConnected()
+        if !haveConn
             callback('Error could not connect to local geth instance!', null)
         else
-            # If passphrase is not already set
-            if Password == ''
-                # Set coinbase
-                # List all accounts and set selected as coinbase
-                accounts = web3.eth.accounts
-                that.getBaseAccount accounts, (err, callback) ->
-                    if err
-                        console.log err
-                    else
-                        Coinbase = callback.account
-                        Password = callback.password
-                        # Check if account is locked ? then prompt for password
-                        that.checkUnlock (err, callback) ->
-                            callback(null, true)
             callback(null, true)
+
+    getAddresses: (callback) ->
+        # List all accounts and set selected as coinbase
+        web3.eth.getAccounts (err, accounts) ->
+            if err
+                callback('Error no base account!', null)
+            else
+                callback(null, accounts)
+
+    addAccounts: (keyArr) ->
+        that = this
+        accounts = []
+        # prepare accounts from key and return accounts array
+        for key of keyArr
+            privateKey = new Buffer(keyArr[key], 'hex')
+            address = ethJSUtil.privateToAddress(privateKey).toString('hex')
+            VM.stateManager.putAccountBalance address, '999999999999999000000000000000000', (error, result) ->
+            vmAccounts['0x' + address] = { privateKey: privateKey, nonce: 0 }
+            accounts.push(address)
+        accounts
 
     checkUnlock: (Coinbase, callback) ->
         # web3.personal.unlockAccount("Coinbase", password)
@@ -109,110 +150,295 @@ module.exports = AtomSolidity =
 
         )
         ReactDOM.render React.createElement(createAddressList), document.getElementById('accounts-list')
-        callback(null, { account: accounts[0], password: '' })
+        callback(null, { account: accounts[0], password: Password })
+
+    chooseCompiler: (defaultCompiler, callback) ->
+        that = this
+        compilers = [{ compiler: 'solcjs', desc: 'Javascript VM' }, { compiler: 'Web3', desc: 'Backend ethereum node' }]
+        createCompilerEnvList = React.createClass(
+            displayName: 'envList'
+            getInitialState: ->
+                { compilerValue: if compilers[0].compiler == defaultCompiler then compilers[0].compiler else compilers[1].compiler }
+            _handleChange: (event) ->
+                this.setState { compilerValue: event.target.value }
+                callback(null, { compilerValue: event.target.value })
+            render: ->
+                self = this
+                # create dropdown list for accounts
+                React.createElement 'div', { htmlFor: 'compiler-select' },
+                    React.createElement 'form', { className: 'icon icon-plug' }, compilers.map (compiler, i) ->
+                        React.createElement 'label', { className: 'input-label inline-block highlight' },
+                            React.createElement 'input', { type: 'radio', uniqueName: "compilerOpt", className: 'input-radio', value: compiler.compiler, onChange: self._handleChange, checked: self.state.compilerValue == compiler.compiler }, compiler.desc
+        )
+        ReactDOM.render React.createElement(createCompilerEnvList), document.getElementById('compiler-options')
+        callback(null, { compilerValue: defaultCompiler })
+
+    combineSource: (dir, source, imports) ->
+        that = this
+        o = { encoding: 'UTF-8' }
+
+        ir = /import\ [\'\"](.+)[\'\"]\;/g
+        match = null
+        while (match = ir.exec(source))
+          iline = match[0]
+          fn = match[1]
+          # empty out already imported
+          if imports[fn]
+            source = source.replace(iline, '')
+            continue
+
+          imports[fn] = 1
+          subSource = fs.readFileSync("#{dir}/#{fn}", o)
+          match.source = that.combineSource(dir, subSource, imports)
+          source = source.replace(iline, match.source)
+
+        return source
 
     compile: ->
         that = this
         editor = atom.workspace.getActiveTextEditor()
-        source = editor.getText()
-        @checkConnection (error, callback) ->
+        filePath = editor.getPath()
+        dir = path.dirname(filePath)
+
+        source = that.combineSource(dir, editor.getText(), {})
+        # Show contract code
+        if not that.modalPanel.isVisible()
+            that.modalPanel.show()
+            # Show buttons
+            # Create React element for compile button
+            compileButton = React.createClass(
+                displayName: 'compileButton'
+                _handleSubmit: ->
+                    # Call compile() with source
+                    that.compile()
+                render: ->
+                    React.createElement('form', { onSubmit: this._handleSubmit },
+                    React.createElement('input', {type: 'submit', value: 'Compile', className: 'btn btn-success'}, null))
+                )
+            # Create React element for compile button
+            makeButton = React.createClass(
+                displayName: 'makeButton'
+                _handleSubmit: ->
+                    # Call compile() with source
+                    that.build()
+                render: ->
+                    React.createElement('form', { onSubmit: this._handleSubmit },
+                    React.createElement('input', {type: 'submit', value: 'Make', className: 'btn btn-warning'}, null))
+                )
+            ReactDOM.render React.createElement(compileButton, null), document.getElementById('compile_btn')
+            ReactDOM.render React.createElement(makeButton, null), document.getElementById('make_btn')
+        @chooseCompiler Compiler, (error, callback) ->
             if error
                 console.error error
-                that.showErrorMessage 0, 'Error could not connect to local geth instance!'
+                that.showErrorMessage 0, error
             else
-                web3.eth.defaultAccount = Coinbase
-                console.log "Using coinbase: " + web3.eth.defaultAccount
-                ###
-                # TODO: Handle Compilation asynchronously and handle errors
-                ###
-                that.compiled = web3.eth.compile.solidity(source)
-                # Clean View before creating
-                that.atomSolidityView.destroyCompiled()
-                # Create inpus for every contract
-                for contractName of that.compiled
-                    # Get estimated gas
-                    estimatedGas = 0
-                    web3.eth.estimateGas { to: web3.eth.defaultAccount, data: that.compiled[contractName].code }, (error, callback) ->
-                        if !error
-                            console.log callback
-                            estimatedGas = callback
+                Compiler = callback.compilerValue
+                # Check selected compiler and compile using selected compiler (default solcjs)
+                if Compiler is 'solcjs'
+                    # prepare ethereumjsVM util variables
+                    that.vmAccounts = []
+                    keyArr = []
+                    keyArr.push('3cd7232cd6f3fc66a57a6bedc1a8ed6c228fff0a327e169c2bcc5e869ed49511')
+                    keyArr.push('2ac6c190b09897cd8987869cc7b918cfea07ee82038d492abce033c75c1b1d0c')
+                    keyArr.push('dae9801649ba2d95a21e688b56f77905e5667c44ce868ec83f82e838712a2c7a')
+                    keyArr.push('d74aa6d18aa79a05f3473dd030a97d3305737cbc8337d940344345c1f6b72eea')
+                    keyArr.push('71975fbf7fe448e004ac7ae54cad0a383c3906055a65468714156a07385e96ce')
+                    accounts = that.addAccounts(keyArr)
+
+                    that.getBaseAccount accounts, (error, callback) ->
+                        if error
+                            console.error error
                         else
-                            console.log error
-                    # contractName is the name of contract in JSON object
-                    bytecode = that.compiled[contractName].code
-                    # Get contract  abi
-                    ContractABI = that.compiled[contractName].info.abiDefinition
-                    # get constructors for rendering display
-                    inputs = []
-                    for abiObj of ContractABI
-                        if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
-                            inputs = ContractABI[abiObj].inputs
+                            Coinbase = callback.account
+                            that.compileVM source, (error, callback) ->
+                                if error
+                                    console.error error
+                                    that.showErrorMessage 0, 'Error could not compile using JavascriptVM'
+                                else
+                                    that.compiled = callback
+                                    estimatedGas = 300000
+                                    # Clean View before creating
+                                    that.atomSolidityView.destroyPass()
+                                    that.atomSolidityView.destroyCompiled()
 
-                    # Create View
-                    that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+                                    # Create inpus for every contract
+                                    for contractName of that.compiled.contracts
+                                        # contractName is the name of contract in JSON object
+                                        bytecode = that.compiled.contracts[contractName].bytecode
+                                        # Get contract  abi
+                                        ContractABI = JSON.parse(that.compiled.contracts[contractName].interface)
+                                        # get constructors for rendering display
+                                        inputs = []
+                                        for abiObj of ContractABI
+                                            if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
+                                                inputs = ContractABI[abiObj].inputs
+                                        # Create view
+                                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+                # if compiler is not solcjs it should be web3 for now
+                else
+                    that.checkConnection (error, callback) ->
+                        if error
+                            console.error error
+                            that.showErrorMessage 0, error
+                        else
+                            that.getAddresses (error, accounts) ->
+                                if error
+                                    console.error error
+                                    that.showErrorMessage 0, error
+                                else
+                                    that.getBaseAccount accounts, (err, callback) ->
+                                        if err
+                                            console.error err
+                                        else
+                                            Coinbase = callback.account
+                                            Password = callback.password
+                                            web3.eth.defaultAccount = Coinbase
+                                            console.log "Using coinbase: " + web3.eth.defaultAccount
+                                            ###
+                                            # TODO: Handle Compilation asynchronously and handle errors
+                                            ###
+                                            web3.eth.compile.solidity source, (err, callback) ->
+                                                if err
+                                                    # TODO: Add linter support
+                                                    console.log err
+                                                    return
+                                                else
+                                                    that.compiled = callback
+                                                    # Clean View before creating
+                                                    that.atomSolidityView.destroyCompiled()
+                                                    console.log that.compiled
 
-                # Show contract code
-                if not that.modalPanel.isVisible()
-                    that.modalPanel.show()
-        return
+                                                    # Create inpus for every contract
+                                                    for contractName of that.compiled
+                                                        # Get estimated gas
+                                                        estimatedGas = web3.eth.estimateGas { from: web3.eth.defaultAccount, data: that.compiled[contractName].code, gas: 1000000 }
+                                                        ###
+                                                        # TODO: Use asynchronous call
+                                                        web3.eth.estimateGas({from: '0xmyaccout...', data: "0xc6888fa1fffffffffff…..", gas: 500000 }, function(err, result){
+                                                          if(!err && result !=== 500000) { …  }
+                                                         });
+                                                        ###
+
+                                                        # contractName is the name of contract in JSON object
+                                                        bytecode = that.compiled[contractName].code
+                                                        # Get contract  abi
+                                                        ContractABI = that.compiled[contractName].info.abiDefinition
+                                                        # get constructors for rendering display
+                                                        inputs = []
+                                                        for abiObj of ContractABI
+                                                            if ContractABI[abiObj].type is "constructor" && ContractABI[abiObj].inputs.length > 0
+                                                                inputs = ContractABI[abiObj].inputs
+                                                        # Create view
+                                                        that.atomSolidityView.setContractView(contractName, bytecode, ContractABI, inputs, estimatedGas)
+
+
+                                                    # Show contract code
+                                                    if not that.modalPanel.isVisible()
+                                                        that.modalPanel.show()
+                    return
 
     build: ->
         that = this
         constructVars = []
         i = 0
 
-        console.log @compiled
-        for contractName of @compiled
-            variables = []
-            estimatedGas = 0
-            if document.getElementById(contractName + '_create')
-                # contractName is the name of contract in JSON object
-                bytecode = @compiled[contractName].code
-                # Get contract  abi
-                ContractABI = @compiled[contractName].info.abiDefinition
-                # Collect variable inputs
-                inputVars = if document.getElementById(contractName + '_inputs') then document.getElementById(contractName + '_inputs').getElementsByTagName('input')
-                if inputVars
-                    while i < inputVars.length
-                        if inputVars.item(i).getAttribute('id') == contractName + '_gas'
-                            estimatedGas = inputVars.item(i).value
+        if Compiler is 'solcjs'
+            # do things for ethereumjsVM
+            for contractName of @compiled.contracts
+                variables = []
+                estimatedGas = 0
+                if document.getElementById(contractName + '_create')
+                    # Collect variable inputs
+                    inputVars = if document.getElementById(contractName + '_inputs') then document.getElementById(contractName + '_inputs').getElementsByTagName('input')
+                    if inputVars
+                        while i < inputVars.length
+                            if inputVars.item(i).getAttribute('id') == contractName + '_gas'
+                                estimatedGas = inputVars.item(i).value
+                                inputVars.item(i).readOnly = true
+                                break
+                            inputObj = {
+                                "varName": inputVars.item(i).getAttribute('id'),
+                                "varValue": inputVars.item(i).value
+                            }
+                            variables[i] = inputObj
                             inputVars.item(i).readOnly = true
-                            break
-                        inputObj = {
-                            "varName": inputVars.item(i).getAttribute('id'),
-                            "varValue": inputVars.item(i).value
+                            if inputVars.item(i).nextSibling.getAttribute('id') == contractName + '_create'
+                                break
+                            else
+                                i++
+                        constructVars[contractName] = {
+                            'contractName': contractName,
+                            'inputVariables': variables,
+                            'estimatedGas': estimatedGas
                         }
-                        variables[i] = inputObj
-                        inputVars.item(i).readOnly = true
-                        if inputVars.item(i).nextSibling.getAttribute('id') == contractName + '_create'
-                            break
-                        else
-                            i++
-                    constructVars[contractName] = {
-                        'contractName': contractName,
-                        'inputVariables': variables,
-                        'estimatedGas': estimatedGas
-                    }
-                # Create React element for create button
-                createButton = React.createClass(
-                    displayName: 'createButton'
-                    _handleSubmit: ->
-                        console.log constructVars
-                        that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0], constructVars[Object.keys(this.refs)[0]].estimatedGas)
-                    render: ->
-                        React.createElement('form', { onSubmit: this._handleSubmit },
-                        React.createElement('input', {type: 'submit', value: 'Create', ref: contractName, className: 'btn btn-primary inline-block-tight'}, null))
-                    )
-                ReactDOM.render React.createElement(createButton, null), document.getElementById(contractName + '_create')
+                    # Create React element for create button
+                    createButton = React.createClass(
+                        displayName: 'createButton'
+                        _handleSubmit: ->
+                            # contractName is the name of contract in JSON object
+                            bytecode = that.compiled.contracts[Object.keys(this.refs)[0]].bytecode
+                            # Get contract  abi
+                            ContractABI = JSON.parse that.compiled.contracts[Object.keys(this.refs)[0]].interface
+                            that.create(ContractABI, bytecode, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0], constructVars[Object.keys(this.refs)[0]].estimatedGas)
+                        render: ->
+                            React.createElement('form', { onSubmit: this._handleSubmit },
+                            React.createElement('input', {type: 'submit', value: 'Create', ref: contractName, className: 'btn btn-primary inline-block-tight'}, null))
+                        )
+                    ReactDOM.render React.createElement(createButton, null), document.getElementById(contractName + '_create')
+        else
+            # do things for web3
+            for contractName of @compiled
+                variables = []
+                estimatedGas = 0
+                if document.getElementById(contractName + '_create')
+                    # contractName is the name of contract in JSON object
+                    bytecode = @compiled[contractName].code
+                    # Get contract  abi
+                    ContractABI = @compiled[contractName].info.abiDefinition
+                    # Collect variable inputs
+                    inputVars = if document.getElementById(contractName + '_inputs') then document.getElementById(contractName + '_inputs').getElementsByTagName('input')
+                    if inputVars
+                        while i < inputVars.length
+                            if inputVars.item(i).getAttribute('id') == contractName + '_gas'
+                                estimatedGas = inputVars.item(i).value
+                                inputVars.item(i).readOnly = true
+                                break
+                            inputObj = {
+                                "varName": inputVars.item(i).getAttribute('id'),
+                                "varValue": inputVars.item(i).value
+                            }
+                            variables[i] = inputObj
+                            inputVars.item(i).readOnly = true
+                            if inputVars.item(i).nextSibling.getAttribute('id') == contractName + '_create'
+                                break
+                            else
+                                i++
+                        constructVars[contractName] = {
+                            'contractName': contractName,
+                            'inputVariables': variables,
+                            'estimatedGas': estimatedGas
+                        }
+                    # Create React element for create button
+                    createButton = React.createClass(
+                        displayName: 'createButton'
+                        _handleSubmit: ->
+                            that.create(that.compiled[Object.keys(this.refs)[0]].info.abiDefinition, that.compiled[Object.keys(this.refs)[0]].code, constructVars[Object.keys(this.refs)[0]], Object.keys(this.refs)[0], constructVars[Object.keys(this.refs)[0]].estimatedGas)
+                        render: ->
+                            React.createElement('form', { onSubmit: this._handleSubmit },
+                            React.createElement('input', {type: 'submit', value: 'Create', ref: contractName, className: 'btn btn-primary inline-block-tight'}, null))
+                        )
+                    ReactDOM.render React.createElement(createButton, null), document.getElementById(contractName + '_create')
 
     prepareEnv: (contractName, callback) ->
         if document.getElementById(@contractName + '_create')
             document.getElementById(@contractName + '_create').style.visibility = 'hidden'
-            document.getElementById(@contractName + '_stat').innerText = 'transaction sent, waiting for confirmation...'
+            if Compiler != 'solcjs'
+                document.getElementById(@contractName + '_stat').innerText = 'transaction sent, waiting for confirmation...'
             callback(null, true)
         else
             e = new Error('Could not parse input')
             callback(e, null)
+
 
     # our asyncLoop
     asyncLoop: (iterations, func, callback) ->
@@ -246,6 +472,16 @@ module.exports = AtomSolidity =
                     else
                         callback(null, [null, null])
 
+    # Construct function buttons from abi
+    decodeABI: (@contractABI, callback) ->
+        for contractFunction in contractABI
+            if contractFunction.type = 'function' and contractFunction.name != null and contractFunction.name != undefined
+                @createChilds contractFunction, (error, childInputs) ->
+                    if !error
+                        callback(null, [contractFunction.name, childInputs])
+                    else
+                        callback(null, [null, null])
+
     createChilds: (contractFunction, callback) ->
         reactElements = []
         i = 0
@@ -255,92 +491,204 @@ module.exports = AtomSolidity =
                 i++
         callback(null, reactElements)
 
+    constructorsArray: (@abi, @constructVars, callback) ->
+        that = this
+        @asyncLoop @abi.length, ((cycle) ->
+            if that.abi[cycle.iteration()].type == "constructor"
+                that.getConstructorIntoArray that.abi[cycle.iteration()], that.constructVars, (error, typeArray) ->
+                    callback(null, typeArray)
+            cycle.next()
+        ), ->
+
+    getConstructorIntoArray: (@constructorAbi, @constructVars, callback) ->
+        that = this
+        typesArr = new Array()
+        inputsArr = new Array()
+        @asyncLoop @constructorAbi.inputs.length, ((cycle) ->
+            typesArr.push(that.constructorAbi.inputs[cycle.iteration()].type)
+            inputsArr.push(that.constructVars.inputVariables[cycle.iteration()].varValue)
+            cycle.next()
+        ), ->
+            callback(null, { types: typesArr, inputs: inputsArr })
     # Construct react child inputs
     create: (@abi, @code, @constructVars, @contractName, @estimatedGas) ->
         that = this
-        @estimatedGas = if @estimatedGas > 0 then @estimatedGas else 1000000
-        # hide create button
-        @prepareEnv @contractName, (err, callback) ->
-            if err
-                console.error err
-            else
-                # Use coinbase
-                web3.eth.defaultAccount = Coinbase
-                console.log "Using coinbase: " + web3.eth.defaultAccount
-                # set variables and render display
-                constructorS = []
-                for i in that.constructVars.inputVariables
-                    constructorS.push i.varValue
-
-                # create contract
-                web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
-                web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: that.estimatedGas }, (err, contract) ->
+        if Compiler is 'solcjs'
+            # Execute code using ethereumjsVM
+            @constructorsArray @abi, @constructVars, (error, typeArr) ->
+                # returns { types: typesArr, inputs: inputsArr }
+                buffer = ethJSABI.rawEncode(typeArr.types, typeArr.inputs)
+                that.code = that.code + buffer.toString('hex')
+                # Construct transaction
+                rawTx = {
+                    nonce: '0x' + vmAccounts['0x' + Coinbase].nonce,
+                    gasPrice: 0x09184e72a000,
+                    gasLimit: '0x' + estimatedGas,
+                    data: '0x' + that.code
+                }
+                tx = new EthJSTX(rawTx)
+                tx.sign(vmAccounts['0x' + Coinbase].privateKey)
+                block = new EthJSBlock({
+                        header: {
+                            timestamp: new Date().getTime() / 1000 | 0,
+                            number: that.vmBlockNumber
+                        },
+                        transactions: [],
+                        uncleHeaders: []
+                    })
+                # Prepare for ethereumjsVM execution code view
+                that.prepareEnv @contractName, (err, callback) ->
                     if err
                         console.error err
-                        that.showErrorMessage 129, err
-                        return
-                    # callback fires twice, we only want the second call when the contract is deployed
-                    else if contract.address
-                        myContract = contract
-                        console.log 'address: ' + myContract.address
-                        document.getElementById(that.contractName + '_stat').innerText = 'Mined!'
-                        document.getElementById(that.contractName + '_stat').setAttribute('class', 'icon icon-zap') # Add icon class
-                        document.getElementById(that.contractName + '_address').innerText = myContract.address
-                        document.getElementById(that.contractName + '_address').setAttribute('class', 'icon icon-key') # Add icon class
+                    else
+                        # set variables and render display
+                        constructorS = []
+                        for i in that.constructVars.inputVariables
+                            constructorS.push i.varValue
+                        VM.stateManager.getAccount Coinbase, (error, account) ->
+                            if account.exists == true
+                                userAccount = new Account(account)
+                                balance = userAccount.balance.toString()
+                                if balance > tx.getUpfrontCost().toString()
+                                    that.exeVM block, tx, (error, result) ->
+                                        if error
+                                            console.error error
+                                            that.showErrorMessage 508, error
+                                            return
+                                        else if result.createdAddress
+                                            myContract = result
+                                            document.getElementById(that.contractName + '_stat').innerText = 'JavascriptVM code executed!'
+                                            document.getElementById(that.contractName + '_stat').setAttribute('class', 'icon icon-zap') # Add icon class
+                                            document.getElementById(that.contractName + '_address').innerText = '0x' + myContract.createdAddress.toString('hex')
+                                            document.getElementById(that.contractName + '_address').setAttribute('class', 'icon icon-key') # Add icon class
 
-                        # Check every key, if it is a function create call buttons,
-                        # for every function there could be many call methods,
-                        # for every method there cpould be many inputs
-                        # Innermost callback will have inputs for all abi objects
-                        # Lets think the Innermost function
+                                            # Check every key, if it is a function create call buttons,
+                                            # for every function there could be many call methods,
+                                            # for every method there cpould be many inputs
+                                            # Innermost callback will have inputs for all abi objects
 
-                        # Construct view for function call view
-                        functionABI = React.createClass(
-                            displayName: 'callFunctions'
-                            getInitialState: ->
-                                { childFunctions: [] }
-                            componentDidMount: ->
-                                self = this
-                                that.constructFunctions that.abi, (error, childFunctions) ->
-                                    if !error
-                                        self.state.childFunctions.push(childFunctions)
-                                        self.forceUpdate()
-                            _handleChange: (childFunction, event) ->
-                                console.log event.target.value
-                                this.setState { value: event.target.value }
-                            _handleSubmit: (childFunction, event) ->
-                                # Get arguments ready here
-                                that.argsToArray this.refs, childFunction, (error, argArray) ->
-                                    if !error
-                                        that.call(myContract, childFunction, argArray)
-                            render: ->
-                                self = this
-                                React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
-                                    React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
-                                        React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0], className: 'text-subtle call-button' }
-                                        childFunction[1].map((childInput, j) ->
-                                            React.createElement 'input', { tye: 'text', handleChange: self._handleChange, placeholder: childInput[0] + ' ' + childInput[1], className: 'call-button-values' }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
-                                        )
+                                            # Construct view for function call view
+                                            functionABI = React.createClass(
+                                                displayName: 'callFunctions'
+                                                getInitialState: ->
+                                                    { childFunctions: [] }
+                                                componentDidMount: ->
+                                                    self = this
+                                                    that.constructFunctions that.abi, (error, childFunctions) ->
+                                                        if !error
+                                                            self.state.childFunctions.push(childFunctions)
+                                                            self.forceUpdate()
+                                                _handleChange: (childFunction, event) ->
+                                                    this.setState { value: event.target.value }
+                                                _handleSubmit: (childFunction, event) ->
+                                                    self = this
+                                                    # Get arguments ready here
+                                                    that.typesToArray this.refs, childFunction, (error, argTypArray) ->
+                                                        if !error
+                                                            that.argsToArray self.refs, childFunction, (error, argArray) ->
+                                                                if !error
+                                                                    that.callVM(myContract, that.abi, childFunction, argTypArray, argArray)
+                                                                    ++vmBlockNumber
+                                                render: ->
+                                                    self = this
+                                                    React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
+                                                        React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
+                                                            React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0], className: 'text-subtle call-button' }
+                                                            childFunction[1].map((childInput, j) ->
+                                                                React.createElement 'input', { tye: 'text', handleChange: self._handleChange, name: childInput[0], placeholder: childInput[0] + ' ' + childInput[1], className: 'call-button-values' }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
+                                                            )
+                                                    )
+                                            )
+
+                                            ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
+        else
+            # Execute code using web3
+            @estimatedGas = if @estimatedGas > 0 then @estimatedGas else 1000000
+            if Password == ''
+                e = new Error('Empty password')
+                console.error ("Empty password")
+                @showErrorMessage 0, "No password provided"
+                return
+            # hide create button
+            @prepareEnv @contractName, (err, callback) ->
+                if err
+                    console.error err
+                else
+                    # Use coinbase
+                    web3.eth.defaultAccount = Coinbase
+                    console.log "Using coinbase: " + web3.eth.defaultAccount
+                    # set variables and render display
+                    constructorS = []
+                    for i in that.constructVars.inputVariables
+                        constructorS.push i.varValue
+
+                    web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
+                    web3.eth.contract(that.abi).new constructorS.toString(), { data: that.code, from: web3.eth.defaultAccount, gas: that.estimatedGas }, (err, contract) ->
+                        if err
+                            console.error err
+                            that.showErrorMessage 129, err
+                            return
+                        # callback fires twice, we only want the second call when the contract is deployed
+                        else if contract.address
+                            myContract = contract
+                            console.log 'address: ' + myContract.address
+                            document.getElementById(that.contractName + '_stat').innerText = 'Mined!'
+                            document.getElementById(that.contractName + '_stat').setAttribute('class', 'icon icon-zap') # Add icon class
+                            document.getElementById(that.contractName + '_address').innerText = myContract.address
+                            document.getElementById(that.contractName + '_address').setAttribute('class', 'icon icon-key') # Add icon class
+
+                            # Check every key, if it is a function create call buttons,
+                            # for every function there could be many call methods,
+                            # for every method there cpould be many inputs
+                            # Innermost callback will have inputs for all abi objects
+                            # Lets think the Innermost function
+
+                            # Construct view for function call view
+                            functionABI = React.createClass(
+                                displayName: 'callFunctions'
+                                getInitialState: ->
+                                    { childFunctions: [] }
+                                componentDidMount: ->
+                                    self = this
+                                    that.constructFunctions that.abi, (error, childFunctions) ->
+                                        if !error
+                                            self.state.childFunctions.push(childFunctions)
+                                            self.forceUpdate()
+                                _handleChange: (childFunction, event) ->
+                                    this.setState { value: event.target.value }
+                                _handleSubmit: (childFunction, event) ->
+                                    # Get arguments ready here
+                                    that.argsToArray this.refs, childFunction, (error, argArray) ->
+                                        if !error
+                                            that.call(myContract, childFunction, argArray)
+                                render: ->
+                                    self = this
+                                    React.createElement 'div', { htmlFor: 'contractFunctions' }, this.state.childFunctions.map((childFunction, i) ->
+                                        React.createElement 'form', { onSubmit: self._handleSubmit.bind(this, childFunction[0]), key: i, ref: childFunction[0] },
+                                            React.createElement 'input', { type: 'submit', readOnly: 'true', value: childFunction[0], className: 'text-subtle call-button' }
+                                            childFunction[1].map((childInput, j) ->
+                                                React.createElement 'input', { tye: 'text', handleChange: self._handleChange, placeholder: childInput[0] + ' ' + childInput[1], className: 'call-button-values' }#, ref: if childFunction[0] then childFunction[0][j] else "Constructor" }
+                                            )
 
 
-                                )
-                        )
+                                    )
+                            )
 
-                        ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
+                            ReactDOM.render React.createElement(functionABI), document.getElementById(that.contractName + '_call')
 
-                    else if !contract.address
-                        contractStat = React.createClass(
-                            render: ->
-                                React.createElement 'div', { htmlFor: 'contractStat' },
-                                    React.createElement 'span', { className: 'inline-block highlight' }, 'TransactionHash: '
-                                    React.createElement 'pre', { className: 'large-code' }, contract.transactionHash
-                                    React.createElement 'span', { className: 'stat-mining stat-mining-align' }, 'waiting to be mined '
-                                    React.createElement 'span', { className: 'loading loading-spinner-tiny inline-block stat-mining-align' }
+                        else if !contract.address
+                            contractStat = React.createClass(
+                                render: ->
+                                    React.createElement 'div', { htmlFor: 'contractStat' },
+                                        React.createElement 'span', { className: 'inline-block highlight' }, 'TransactionHash: '
+                                        React.createElement 'pre', { className: 'large-code' }, contract.transactionHash
+                                        React.createElement 'span', { className: 'stat-mining stat-mining-align' }, 'waiting to be mined '
+                                        React.createElement 'span', { className: 'loading loading-spinner-tiny inline-block stat-mining-align' }
 
-                        )
-                        ReactDOM.render React.createElement(contractStat), document.getElementById(that.contractName + '_stat')
-                        # document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
-                        console.log "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
+                            )
+                            ReactDOM.render React.createElement(contractStat), document.getElementById(that.contractName + '_stat')
+                            # document.getElementById(that.contractName + '_stat').innerText = "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
+                            console.log "Contract transaction send: TransactionHash: " + contract.transactionHash + " waiting to be mined..."
 
     showOutput: (address, output) ->
         messages = new MessagePanelView(title: 'Solidity compiler output')
@@ -349,6 +697,18 @@ module.exports = AtomSolidity =
         output = 'Contract output: ' + output
         messages.add new PlainMessageView(message: address, className: 'green-message')
         messages.add new PlainMessageView(message: output, className: 'green-message')
+
+    typesToArray: (@reactElements, @childFunction, callback) ->
+        that = this
+        # For every childNodes of childFunction
+        # Get type of child inputs
+        types = new Array()
+        @asyncLoop @reactElements[@childFunction].childNodes.length, ((cycle) ->
+            if that.reactElements[that.childFunction][cycle.iteration()].type != 'submit'
+                types.push(that.reactElements[that.childFunction][cycle.iteration()].name)
+            cycle.next()
+        ), ->
+            callback(null, types)
 
     argsToArray: (@reactElements, @childFunction, callback) ->
         that = this
@@ -370,9 +730,6 @@ module.exports = AtomSolidity =
 
     call: (@myContract, @functionName, @arguments) ->
         that = this
-        console.log @myContract
-        console.log @functionName
-        console.log @arguments
         @checkArray @arguments, (error, args) ->
             if !error
                 if args.length > 0
@@ -381,8 +738,73 @@ module.exports = AtomSolidity =
                 else
                     web3.personal.unlockAccount(web3.eth.defaultAccount, Password)
                     result = that.myContract[that.functionName]()
-                console.log result
                 that.showOutput that.myContract.address, result
+
+    callVM: (@myContract, @abi, @functionName, @argTypes, @arguments) ->
+        that = this
+        # @myContract refers to previously created object
+        to = that.myContract.createdAddress.toString('hex')
+        # Only proceed if the to account exists
+        @checkVMAccExists to, (error, status) ->
+            if status == true
+                # `Buffer.concat`([ ethJSABI.methodID(Method Name, input variable types), ethJSABI.rawEncode(input variable types, input variables) ]).toString('hex')
+                buffer = Buffer.concat([ ethJSABI.methodID(that.functionName, that.argTypes), ethJSABI.rawEncode(that.argTypes, that.arguments) ]).toString('hex')
+                rawTx = {
+                    nonce: '0x' + vmAccounts['0x' + Coinbase].nonce++,
+                    gasPrice: 0x09184e72a000,
+                    gasLimit: 0x300000,
+                    to: '0x' + to,
+                    data: '0x' + buffer
+                }
+                tx = new EthJSTX(rawTx)
+                block = new EthJSBlock({
+                        header: {
+                            timestamp: new Date().getTime() / 1000 | 0,
+                            number: vmBlockNumber
+                        },
+                        transactions: [],
+                        uncleHeaders: []
+                    })
+                that.exeVM block, tx, (error, result) ->
+                    if error
+                        console.error error
+                        that.showErrorMessage 508, error
+                    else
+                        that.getOutputTypes that.abi, that.functionName, (error, outputTypes) ->
+                            outputBuffer = ethJSABI.rawDecode(outputTypes, result.vm.return)
+                            outputBuffer = ethJSABI.stringify(outputTypes, outputBuffer)
+                            that.showOutput '0x' + that.myContract.createdAddress.toString('hex'), outputBuffer
+
+    checkVMAccExists: (@address, callback) ->
+        that = this
+        VM.stateManager.getAccount '0x' + @address, (error, account) ->
+            callback(null, account.exists)
+
+    getOutputTypes: (@abi, @functionName, callback) ->
+        that = this
+        @asyncLoop @abi.length, ((cycle) ->
+            if that.abi[cycle.iteration()].name == that.functionName
+                that.outputTypestoArray that.abi[cycle.iteration()], (error, outputTypes) ->
+                    callback(null, outputTypes)
+            cycle.next()
+        ), ->
+
+    outputTypestoArray: (@funcAbi, callback) ->
+        that = this
+        types = new Array()
+        @asyncLoop @funcAbi.outputs.length, ((cycle) ->
+            types.push(that.funcAbi.outputs[cycle.iteration()].type)
+            cycle.next()
+        ), ->
+            callback(null, types)
+
+    exeVM: (@block, @tx, callback) ->
+        that = this
+        that.tx.sign(vmAccounts['0x' + Coinbase].privateKey)
+        # Run actual transaction
+        VM.runTx { block: that.block, tx: that.tx, skipBalance: true, skipNonce: true }, (error, result) ->
+            if !error
+                callback(null, result)
 
     toggle: ->
         if @modalPanel.isVisible()

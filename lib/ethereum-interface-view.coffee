@@ -1,6 +1,8 @@
 module.exports =
 class AtomSolidityView
     constructor: (serializedState) ->
+        # Create resizer
+        @element = document.createElement
         # Create root element
         @element = document.createElement('div')
         @element.classList.add('atom-solidity')
@@ -14,6 +16,13 @@ class AtomSolidityView
         message.classList.add('inline-block')
         message.classList.add('highlight-info')
         @element.appendChild(message)
+
+        # Create compiler selector div
+        compilerNode = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'compiler-options'
+        compilerNode.setAttributeNode(att)
+        @element.appendChild(compilerNode)
 
         # Create account list div
         accountsNode = document.createElement('div')
@@ -29,10 +38,35 @@ class AtomSolidityView
         @compiledNode.setAttributeNode(att)
         @compiledNode.classList.add('compiled-code')
 
-        # Returns an object that can be retrieved when package is activated
+        # common button div
+        buttonNode = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'common-buttons'
+        buttonNode.setAttributeNode(att)
+        buttonNode.classList.add('block')
+
+        # Compile button
+        compileButton = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'compile_btn'
+        compileButton.setAttributeNode(att)
+        compileButton.classList.add('inline-block')
+
+        # Make button
+        makeButton = document.createElement('div')
+        att = document.createAttribute('id')
+        att.value = 'make_btn'
+        makeButton.setAttributeNode(att)
+        makeButton.classList.add('inline-block')
+
+        buttonNode.appendChild(compileButton)
+        buttonNode.appendChild(makeButton)
+        @element.appendChild(buttonNode)
+
+    # Returns an object that can be retrieved when package is activated
     serialize: ->
 
-        # Tear down any state and detach
+    # Tear down any state and detach
     destroy: ->
         @element.remove()
 
@@ -44,6 +78,12 @@ class AtomSolidityView
         textNode.textContent = @text
         textNode.classList.add('large-code')
         return textNode
+
+    destroyPass: ->
+        addressNode = document.getElementById("accounts-list")
+        passNode = addressNode.childNodes[0].childNodes[1]
+        if passNode
+            passNode.parentNode.removeChild(passNode)
 
     destroyCompiled: ->
         preCompiledNode = document.getElementById("compiled-code")
@@ -125,6 +165,7 @@ class AtomSolidityView
         varName = document.createTextNode("Estimated Gas")
         buttonText.appendChild(varName)
         inputsNode.appendChild(buttonText)
+
         # Estimated gas input as estimated gas
         estimatedGasInput = document.createElement('input')
         att = document.createAttribute('id')

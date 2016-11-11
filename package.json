@@ -1,7 +1,7 @@
 {
   "name": "atom-ethereum-interface",
   "main": "./lib/ethereum-interface",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Solidity compiler for hackable atom editor.",
   "keywords": [],
   "activationCommands": {
@@ -9,19 +9,46 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gmtcreators/atom-ethereum-interface.git"
+    "url": "https://github.com/gmtDevs/atom-ethereum-interface.git"
   },
   "bugs": {
-    "url": "https://github.com/gmtcreators/atom-ethereum-interface/issues"
+    "url": "https://github.com/gmtDevs/atom-ethereum-interface/issues"
   },
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
   "dependencies": {
-    "web3": "~0.15.3",
-    "atom-message-panel": "~1.2.4",
+    "atom-message-panel": "^1.2.7",
+    "ethereumjs-abi": "^0.6.4",
+    "ethereumjs-account": "^2.0.4",
+    "ethereumjs-block": "^1.3.1",
+    "ethereumjs-testrpc": "^3.0.0",
+    "ethereumjs-tx": "^1.1.3",
+    "ethereumjs-util": "^5.0.1",
+    "ethereumjs-vm": "^2.0.1",
     "react": "~0.14.8",
-    "react-dom": "~0.14.8"
+    "react-dom": "~0.14.8",
+    "solc": "^0.4.3",
+    "web3": "^0.17.0-beta"
+  },
+  "configSchema": {
+    "rpcAddress": {
+      "title": "Ethereum instance",
+      "description": "Point to local ethereum instance",
+      "type": "string",
+      "default": "http://localhost:8545/",
+      "order": 1
+    },
+    "useTestRpc": {
+      "title": "TestRPC emulator",
+      "description": "Check tis to use emulated endpoint",
+      "type": "boolean",
+      "default": false,
+      "order": 2
+    }
+  },
+  "scripts": {
+    "postinstall": "node ./formatSolc.js"
   }
 }
