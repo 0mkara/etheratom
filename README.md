@@ -1,19 +1,12 @@
-<<<<<<< HEAD
-# Repository moved
+# Etheratom - compile and deploy solidity code from atom editor
 
-Please refer to [Etheratom](https://gitlab.com/0mkara/etheratom.git) repository for further updates.
-
-=======
->>>>>>> 27fbc42a2ef3dfaf36c467c839b51823b48144fb
-# atom-ethereum-interface package
-
-Atom Solidity Compiler is a package for hackable Atom editor. Is uses web3js to interact with an Ethereum node.
+Etheratom is a package for hackable Atom editor. Is uses web3js to interact with an Ethereum node.
 
 ![A screenshot of atom-ethereum-interface package](https://cloud.githubusercontent.com/assets/13261372/20199663/2d000048-a7d2-11e6-9eb6-222200442f5c.png)
 
 # Requirements
 
-To run and compile using atom-ethereum-interface, now it is not required to have a local ethereum node running and compilers installed. New version adds support to solc and ethereumjs to compile and run solidity codes without running a local node.
+To run and compile using Etheratom, now it is not required to have a local ethereum node running and compilers installed. New version adds support to solc and ethereumjs to compile and run solidity codes without running a local node.
 
 *Note: Currently only solidity compiler is supported.*
 
@@ -43,8 +36,8 @@ This atom package is not yet available via atom package manager. To install it f
 
 Clone git repository
 
-    git clone https://github.com/gmtcreators/atom-ethereum-interface
-    cd atom-ethereum-interface
+    git clone https://gitlab.com/0mkara/etheratom.git
+    cd etheratom
 
 Install as atom package
 
@@ -55,7 +48,7 @@ Install as atom package
 
 You need to install
 
-* [Atom Ethereum Interface](https://atom.io/packages/atom-ethereum-interface) (`apm install atom-ethereum-interface`)
+* [Etheratom](https://atom.io/packages/etheratom) (`apm install etheratom`)
 
 # Configuration
 
@@ -63,7 +56,7 @@ Assuming you have a local geth client running and rpc api listening on http://12
 
 1. Go to package settings and set rpc address.
 
-    ![atom-ethereum-interface package config](https://cloud.githubusercontent.com/assets/13261372/15468216/9989115e-2100-11e6-8dd5-e02fb9459ab6.gif)
+    ![etheratom package config](https://cloud.githubusercontent.com/assets/13261372/15468216/9989115e-2100-11e6-8dd5-e02fb9459ab6.gif)
 
 2. Restart atom
 
