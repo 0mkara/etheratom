@@ -1,5 +1,5 @@
 {
-  "name": "atom-ethereum-interface",
+  "name": "etheratom",
   "main": "./lib/ethereum-interface",
   "version": "2.0.1",
   "description": "Solidity compiler for hackable atom editor.",
@@ -9,10 +9,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gmtDevs/atom-ethereum-interface.git"
+    "url": "https://gitlab.com/0mkara/etheratom.git"
   },
   "bugs": {
-    "url": "https://github.com/gmtDevs/atom-ethereum-interface/issues"
+    "url": "https://gitlab.com/0mkara/etheratom/issues"
   },
   "license": "MIT",
   "engines": {
