@@ -9,6 +9,8 @@ select {
 }
 
 .atom-solidity {
+    display: flex;
+    flex-direction: column;
     padding: 10px;
     overflow: scroll;
 }
@@ -126,4 +128,18 @@ select {
 }
 .stat-mining-align {
     vertical-align: middle;
+}
+
+// Panel
+.etheratom-panel {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    &-resize-handle {
+        width: 4px;
+        height: initial;
+        right: auto;
+        bottom: 0;
+        cursor: col-resize;
+    }
 }
