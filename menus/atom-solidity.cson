@@ -1,0 +1,34 @@
+# See https://atom.io/docs/latest/hacking-atom-package-word-count#menus for more details
+'context-menu':
+  'atom-text-editor': [
+    {
+      'label': 'Toggle atom-ethereum-interface'
+      'command': 'eth-interface:toggle'
+    }
+  ]
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'Atom Ethereum Interface'
+      'submenu': [
+        {
+          'label': 'Compile code'
+          'command': 'eth-interface:compile'
+        }
+        {
+          'label': 'Build compiled'
+          'command': 'eth-interface:build'
+        }
+        {
+          'label': 'Toggle view'
+          'command': 'eth-interface:toggle'
+        }
+        {
+          'label': 'Create'
+          'command': 'atom-solidity:toggle'
+        }
+      ]
+    ]
+  }
+]
