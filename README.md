@@ -1,3 +1,7 @@
+# Repository moved
+
+Please refer to [Etheratom](https://gitlab.com/0mkara/etheratom.git) repository for further updates.
+
 # atom-ethereum-interface package
 
 Atom Solidity Compiler is a package for hackable Atom editor. Is uses web3js to interact with an Ethereum node.
