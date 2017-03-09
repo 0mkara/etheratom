@@ -2,7 +2,7 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Toggle atom-ethereum-interface'
+      'label': 'Toggle Etheratom'
       'command': 'eth-interface:toggle'
     }
   ]
@@ -26,7 +26,7 @@
         }
         {
           'label': 'Create'
-          'command': 'atom-solidity:toggle'
+          'command': 'eth-interface:create'
         }
       ]
     ]

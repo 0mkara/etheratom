@@ -5,7 +5,13 @@
   "description": "Solidity compiler for hackable atom editor.",
   "keywords": [],
   "activationCommands": {
-    "atom-workspace": "eth-interface:compile"
+    "atom-workspace": [
+        "eth-interface:toggle",
+        "eth-interface:compile"
+    ],
+    "atom-text-editor[data-grammar~=\"sol\"]:not([mini])": [
+      "eth-interface:compile"
+    ]
   },
   "repository": {
     "type": "git",
@@ -44,10 +50,17 @@
     },
     "useTestRpc": {
       "title": "TestRPC emulator",
-      "description": "Check tis to use emulated endpoint",
+      "description": "Check this to use emulated endpoint",
       "type": "boolean",
       "default": false,
       "order": 2
+    },
+    "compileOnSave": {
+        "title": "Compile Solidity on Save",
+        "description": "Compile solidity code each time a file is saved",
+        "type": "boolean",
+        "default": true,
+        "order": 3
     }
   },
   "scripts": {
