@@ -61,6 +61,17 @@
         "type": "boolean",
         "default": true,
         "order": 3
+    },
+    "executionEnv": {
+        "title": "Environment selection",
+        "description": "Choose between VM and Web3 endpoint",
+        "type": "string",
+        "default": "solcjs",
+        "enum": [
+            "solcjs",
+            "Web3"
+        ],
+        "order": 4
     }
   },
   "scripts": {
