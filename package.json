@@ -48,19 +48,12 @@
       "default": "http://localhost:8545/",
       "order": 1
     },
-    "useTestRpc": {
-      "title": "TestRPC emulator",
-      "description": "Check this to use emulated endpoint",
-      "type": "boolean",
-      "default": false,
-      "order": 2
-    },
     "compileOnSave": {
         "title": "Compile Solidity on Save",
         "description": "Compile solidity code each time a file is saved",
         "type": "boolean",
         "default": true,
-        "order": 3
+        "order": 2
     },
     "executionEnv": {
         "title": "Environment selection",
@@ -71,7 +64,7 @@
             "solcjs",
             "web3"
         ],
-        "order": 4
+        "order": 3
     }
   },
   "scripts": {

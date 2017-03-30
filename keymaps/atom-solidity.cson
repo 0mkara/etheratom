@@ -9,5 +9,5 @@
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
 'atom-workspace':
     'ctrl-alt-c': 'eth-interface:compile'
-    'ctrl-alt-s': 'eth-interface:build'
+    'ctrl-alt-s': 'eth-interface:make'
     'ctrl-alt-v': 'eth-interface:toggle'
