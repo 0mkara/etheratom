@@ -6,8 +6,8 @@
   "keywords": [],
   "activationCommands": {
     "atom-workspace": [
-        "eth-interface:toggle",
-        "eth-interface:compile"
+      "eth-interface:toggle",
+      "eth-interface:compile"
     ],
     "atom-text-editor[data-grammar~=\"sol\"]:not([mini])": [
       "eth-interface:compile"
@@ -35,8 +35,9 @@
     "ethereumjs-tx": "^1.2.5",
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-vm": "^2.0.2",
-    "react": "~0.14.8",
-    "react-dom": "~0.14.8",
+    "react": "^15.4.2",
+    "react-addons-update": "^15.4.2",
+    "react-dom": "^15.4.2",
     "solc": "^0.4.9",
     "web3": "^0.18.2"
   },
@@ -49,22 +50,22 @@
       "order": 1
     },
     "compileOnSave": {
-        "title": "Compile Solidity on Save",
-        "description": "Compile solidity code each time a file is saved",
-        "type": "boolean",
-        "default": true,
-        "order": 2
+      "title": "Compile Solidity on Save",
+      "description": "Compile solidity code each time a file is saved",
+      "type": "boolean",
+      "default": true,
+      "order": 2
     },
     "executionEnv": {
-        "title": "Environment selection",
-        "description": "Choose between VM and Web3 endpoint",
-        "type": "string",
-        "default": "solcjs",
-        "enum": [
-            "solcjs",
-            "web3"
-        ],
-        "order": 3
+      "title": "Environment selection",
+      "description": "Choose between VM and Web3 endpoint",
+      "type": "string",
+      "default": "solcjs",
+      "enum": [
+        "solcjs",
+        "web3"
+      ],
+      "order": 3
     }
   },
   "scripts": {
