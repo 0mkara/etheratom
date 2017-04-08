@@ -20,10 +20,6 @@
               'label': 'Compile code'
               'command': 'eth-interface:compile'
             }
-            {
-              'label': 'Build compiled'
-              'command': 'eth-interface:make'
-            }
       ]
     ]
   }

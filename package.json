@@ -2,17 +2,24 @@
   "name": "etheratom",
   "main": "./lib/ethereum-interface",
   "version": "2.0.1",
-  "description": "Solidity compiler for hackable atom editor.",
-  "keywords": [],
+  "description": "Solidity compilation and Ethereum contract execution interface for hackable atom editor.",
+  "keywords": [
+      "ethereum",
+      "solidity",
+      "web3"
+  ],
   "activationCommands": {
     "atom-workspace": [
-      "eth-interface:toggle",
-      "eth-interface:compile"
+      "eth-interface:activate",
+      "eth-interface:toggle"
     ],
-    "atom-text-editor[data-grammar~=\"sol\"]:not([mini])": [
+    "atom-text-editor[data-grammar~=\"solidity\"]:not([mini])": [
       "eth-interface:compile"
     ]
   },
+  "activationHooks": [
+    "core:loaded-shell-environment"
+  ],
   "repository": {
     "type": "git",
     "url": "https://gitlab.com/0mkara/etheratom.git"
@@ -35,6 +42,7 @@
     "ethereumjs-tx": "^1.2.5",
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-vm": "^2.0.2",
+    "merkle-patricia-tree": "^2.1.2",
     "react": "^15.4.2",
     "react-addons-update": "^15.4.2",
     "react-dom": "^15.4.2",
