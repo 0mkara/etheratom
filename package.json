@@ -6,7 +6,8 @@
   "keywords": [
       "ethereum",
       "solidity",
-      "web3"
+      "web3",
+      "ethereumjs"
   ],
   "activationCommands": {
     "atom-workspace": [

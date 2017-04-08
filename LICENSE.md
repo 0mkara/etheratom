@@ -1,4 +1,6 @@
-Copyright (c) 2015 <Your name here>
+The MIT License (MIT)
+
+Copyright (c) 2015-2016 [0mkara](https://github.com/0mkara)
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
