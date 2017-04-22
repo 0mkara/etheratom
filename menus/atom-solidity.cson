@@ -2,8 +2,8 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Toggle Etheratom'
-      'command': 'eth-interface:toggle'
+      'label': 'Activate Etheratom'
+      'command': 'eth-interface:activate'
     }
   ]
 'menu': [
