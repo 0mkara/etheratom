@@ -1,7 +1,7 @@
 {
   "name": "etheratom",
   "main": "./lib/ethereum-interface",
-  "version": "2.0.3",
+  "version": "3.0.0",
   "description": "Solidity compilation and Ethereum contract execution interface for hackable atom editor.",
   "keywords": [
     "ethereum",
