@@ -2,7 +2,7 @@
 
 Etheratom is a package for hackable Atom editor. Is uses web3js to interact with an Ethereum node.
 
-![A screenshot of atom-ethereum-interface package](https://cloud.githubusercontent.com/assets/13261372/20199663/2d000048-a7d2-11e6-9eb6-222200442f5c.png)
+![A screenshot of Etheratom package](https://cloud.githubusercontent.com/assets/13261372/20199663/2d000048-a7d2-11e6-9eb6-222200442f5c.png)
 
 # Requirements
 
@@ -62,9 +62,9 @@ Assuming you have a local geth client running and rpc api listening on http://12
 
 # Usage
 
-Compile solidity code `ctrl+alt+c`
+Activate Etheratom package `ctrl+alt+e`
 
-Deploy code with variables `ctrl+alt+s`
+Compile solidity code `ctrl+alt+c`
 
 After deploying your code hit **Create** button to create and mine it
 
