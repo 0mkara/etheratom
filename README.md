@@ -82,4 +82,4 @@ This is aimed to provide a front-end for Ethereum node. This interacts with Ethe
 # Self promotion
 
 I have put my efforts to this project. I hope this package has helped my fellow ethereum developers.
-I am a MEAN stack developer. Also comfortable with ReactJS, meteor, golang. I am currently lookming for a decent paid job. If you are looking for a developer consider contacting me.
+I am a MEAN stack developer. Also comfortable with ReactJS, meteor, golang. I am currently looking for a decent paid job. If you are looking for a developer consider contacting me.
