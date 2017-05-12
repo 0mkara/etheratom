@@ -6,7 +6,7 @@ Etheratom is a package for hackable Atom editor. Is uses web3js to interact with
 
 # Requirements
 
-To run and compile using Etheratom, now it is not required to have a local ethereum node running and compilers installed. New version adds support to solc and ethereumjs to compile and run solidity codes without running a local node.
+To run and compile using Etheratom, it is now __not required to have a local ethereum node running and compilers installed__. New version adds support to solc and ethereumjs to compile and run solidity codes without running a local node.
 
 *Note: Currently only solidity compiler is supported.*
 
@@ -31,8 +31,6 @@ If solidity compiler is installed output will be similar
 # Installation
 
 ## Install from source
-
-This atom package is not yet available via atom package manager. To install it follow instructions bellow -
 
 Clone git repository
 
