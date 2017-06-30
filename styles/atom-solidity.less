@@ -18,6 +18,7 @@
 	flex-direction: row;
 	height: 100%;
 	max-width: 550px;
+	overflow: scroll;
 	&-resize-handle {
 		flex: 0 0 0.2em;
 		height: initial;
@@ -48,19 +49,6 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-	}
-
-	.atom-solidity {
-		display: flex;
-		flex-direction: column;
-		padding: 10px;
-		overflow: scroll;
-	}
-	.red-message {
-		color: @text-color-error;
-	}
-	.green-message {
-		color: @text-color-success;
 	}
 	.compiler-info {
 		font-family: 'Hack', Serif;
@@ -188,4 +176,10 @@
 		color: @text-color-highlight !important;
 		background-color: @button-background-color-selected !important;
 	}
+}
+.red-message {
+	color: @text-color-error;
+}
+.green-message {
+	color: @text-color-success;
 }
