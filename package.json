@@ -47,7 +47,7 @@
     "react": "^15.4.2",
     "react-addons-update": "^15.4.2",
     "react-dom": "^15.4.2",
-    "solc": "^0.4.9",
+    "solc": "^0.4.11",
     "web3": "^0.18.2"
   },
   "configSchema": {
