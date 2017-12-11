@@ -48,6 +48,21 @@ atom-message-panel@^1.2.7:
   dependencies:
     atom-space-pen-views "^2.2.0"
 
+atom-package-deps@^4.6.0:
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/atom-package-deps/-/atom-package-deps-4.6.0.tgz#bb83f0a976563b48be4eab89e7c8631c3eec848d"
+  dependencies:
+    atom-package-path "^1.1.0"
+    sb-exec "^3.0.1"
+    sb-fs "^3.0.0"
+    semver "^5.3.0"
+
+atom-package-path@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/atom-package-path/-/atom-package-path-1.1.0.tgz#b51fedbc00e7c8ce5223d0d803db7a3f4f69614f"
+  dependencies:
+    sb-callsite "^1.1.2"
+
 atom-space-pen-views@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/atom-space-pen-views/-/atom-space-pen-views-2.2.0.tgz#a65b2c920ed02f724014fa7d3e5c3d78fbf59997"
@@ -569,6 +584,12 @@ concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
 
+consistent-env@^1.2.0:
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/consistent-env/-/consistent-env-1.3.1.tgz#f68234d7c69fc6dd9656f8ae23429ce0499b65fb"
+  dependencies:
+    lodash.uniq "^4.5.0"
+
 convert-source-map@^1.5.0:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/convert-source-map/-/convert-source-map-1.5.1.tgz#b8278097b9bc229365de5c62cf5fcaed8b5599e5"
@@ -1069,7 +1090,7 @@ is-stream@^1.0.1:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/is-stream/-/is-stream-1.1.0.tgz#12d4a3dd4e68e0b79ceb8dbc84173ae80d91ca44"
 
-is-utf8@^0.2.0:
+is-utf8@^0.2.0, is-utf8@^0.2.1:
   version "0.2.1"
   resolved "https://registry.yarnpkg.com/is-utf8/-/is-utf8-0.2.1.tgz#4b0da1442104d1b336340e80797e865cf39f7d72"
 
@@ -1203,6 +1224,10 @@ load-json-file@^1.0.0:
 lodash.assign@^4.0.3, lodash.assign@^4.0.6:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/lodash.assign/-/lodash.assign-4.2.0.tgz#0d99f3ccd7a6d261d19bdaeb9245005d285808e7"
+
+lodash.uniq@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/lodash.uniq/-/lodash.uniq-4.5.0.tgz#d0225373aeb652adc1bc82e4945339a842754773"
 
 lodash@^4.14.0, lodash@^4.17.4:
   version "4.17.4"
@@ -1574,6 +1599,40 @@ safe-buffer@^5.0.1, safe-buffer@^5.1.0, safe-buffer@^5.1.1, safe-buffer@~5.1.0, 
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.1.tgz#893312af69b2123def71f57889001671eeb2c853"
 
+sb-callsite@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/sb-callsite/-/sb-callsite-1.1.2.tgz#28191fb66d64e3a3ee92084a95a90fcb5102243b"
+
+sb-exec@^3.0.1:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/sb-exec/-/sb-exec-3.1.0.tgz#34cc65088a116752eb720fddeff66d2c2e95ec51"
+  dependencies:
+    consistent-env "^1.2.0"
+    lodash.uniq "^4.5.0"
+    sb-npm-path "^2.0.0"
+
+sb-fs@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/sb-fs/-/sb-fs-3.0.0.tgz#fbdcdd3010e80a1b8e27490cef336064974203b8"
+  dependencies:
+    sb-promisify "^2.0.1"
+    strip-bom-buf "^1.0.0"
+
+sb-memoize@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/sb-memoize/-/sb-memoize-1.0.2.tgz#128375c62ddb9cc4ffa905d0c5a597c19baead8e"
+
+sb-npm-path@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/sb-npm-path/-/sb-npm-path-2.0.0.tgz#0f6cc2cf371debca7d936ed76b7d4c3cc1eb3d58"
+  dependencies:
+    sb-memoize "^1.0.2"
+    sb-promisify "^2.0.1"
+
+sb-promisify@^2.0.1:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/sb-promisify/-/sb-promisify-2.0.2.tgz#4277a54754488aa9675d886e354db894c9bdc981"
+
 secp256k1@^3.0.1:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/secp256k1/-/secp256k1-3.4.0.tgz#1c905b256fa4ae5b9cc170e672dd59b4c5de46a4"
@@ -1689,6 +1748,12 @@ strip-ansi@^3.0.0, strip-ansi@^3.0.1:
   resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-3.0.1.tgz#6a385fb8853d952d5ff05d0e8aaf94278dc63dcf"
   dependencies:
     ansi-regex "^2.0.0"
+
+strip-bom-buf@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/strip-bom-buf/-/strip-bom-buf-1.0.0.tgz#1cb45aaf57530f4caf86c7f75179d2c9a51dd572"
+  dependencies:
+    is-utf8 "^0.2.1"
 
 strip-bom@^2.0.0:
   version "2.0.0"
