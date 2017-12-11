@@ -39,7 +39,6 @@
     "ethereumjs-abi": "^0.6.4",
     "ethereumjs-account": "^2.0.4",
     "ethereumjs-block": "^1.5.0",
-    "ethereumjs-testrpc": "^3.0.3",
     "ethereumjs-tx": "^1.2.5",
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-vm": "^2.0.2",
