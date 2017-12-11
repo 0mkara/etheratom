@@ -183,3 +183,15 @@
 .green-message {
 	color: @text-color-success;
 }
+.copy-btn {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    color: @text-color-highlight;
+  }
+
+	&:focus,&:active {
+		color: @text-color-success;
+	}
+}
