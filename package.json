@@ -39,8 +39,8 @@
   "dependencies": {
     "atom-message-panel": "^1.2.7",
     "atom-package-deps": "^4.6.0",
-    "etch": "^0.8.0",
-    "etch-octicon": "^0.1.0",
+    "etch": "^0.12.7",
+    "etch-octicon": "^1.0.0",
     "ethereumjs-abi": "^0.6.4",
     "ethereumjs-account": "^2.0.4",
     "ethereumjs-block": "^1.5.0",
@@ -48,11 +48,11 @@
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-vm": "^2.0.2",
     "merkle-patricia-tree": "^2.1.2",
-    "react": "^15.4.2",
+    "react": "^16.2.0",
     "react-addons-update": "^15.4.2",
-    "react-dom": "^15.4.2",
+    "react-dom": "^16.2.0",
     "solc": "^0.4.11",
-    "web3": "^0.18.2"
+    "web3": "^0.20.2"
   },
   "configSchema": {
     "rpcAddress": {
