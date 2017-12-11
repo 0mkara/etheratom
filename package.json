@@ -32,8 +32,13 @@
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
+  "package-deps": [
+    "linter-solidity",
+    "atom-solidity-linter"
+  ],
   "dependencies": {
     "atom-message-panel": "^1.2.7",
+    "atom-package-deps": "^4.6.0",
     "etch": "^0.8.0",
     "etch-octicon": "^0.1.0",
     "ethereumjs-abi": "^0.6.4",
