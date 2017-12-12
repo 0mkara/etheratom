@@ -39,6 +39,7 @@
   "dependencies": {
     "atom-message-panel": "^1.2.7",
     "atom-package-deps": "^4.6.0",
+    "create-react-class": "^15.6.2",
     "etch": "^0.12.7",
     "etch-octicon": "^1.0.0",
     "ethereumjs-abi": "^0.6.4",
