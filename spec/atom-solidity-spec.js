@@ -6,40 +6,56 @@ import Etheratom from '../lib/ethereum-interface';
 // To run a specific `it` or `describe` block add an `f` to the front (e.g. `fit`
 // or `fdescribe`). Remove the `f` to unfocus the block.
 
-describe("Etheratom", () => {
-	let workspaceElement = null
-	let activationPromise = null
+describe("Etheratom", async function() {
+	describe("Test command eth-interface:activate", function() {
+		beforeEach(async function() {
+			const workspaceElement = atom.views.getView(atom.workspace);
+		})
+		afterEach(async () => {
+			await atom.packages.deactivatePackage('etheratom')
+			atom.packages.unloadPackage('etheratom')
+		});
 
-	beforeEach(function() {
-		workspaceElement = atom.views.getView(atom.workspace);
-		activationPromise = atom.packages.activatePackage('etheratom');
+		it("Expect package etheratom to be activated", async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+			expect(atom.packages.isPackageActive('etheratom')).toBe(true);
+		});
+		it("Expect package etheratom de-activated", async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+			await atom.packages.deactivatePackage('etheratom');
+			expect(atom.packages.isPackageActive('etheratom')).toBe(false);
+		});
+		it("Expect element with class .etheratom-panel to exist", async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+			expect(workspaceElement.getElementsByClassName('etheratom-panel')).toShow();
+		});
 	});
 
-	describe("when the eth-interface:toggle event is triggered", () => {
-		it("hides and shows the modal panel", () => {
-			runs(() => {
-				// Before the activation event the view is not on the DOM, and no panel
-				// has been created
-				expect(workspaceElement.querySelector('.etheratom-panel')).not.toExist();
-			})
+	describe("Test command eth-interface:toggle", function() {
+		afterEach(async () => {
+			await atom.packages.deactivatePackage('etheratom')
+			atom.packages.unloadPackage('etheratom')
+		});
 
-			runs(() => {
-				// This is an activation event, triggering it will cause the package to be activated.
-				expect(workspaceElement.querySelector('.etheratom-panel')).not.toExist();
-				atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
-				let atomSolidityElement = workspaceElement.querySelector('.etheratom-panel');
-				expect(atomSolidityElement).toExist();
+		it("Expect .etheratom-panel to be visiable", async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
 
-				// This is a deactivation event, triggering it will cause the package to be deactivated.
-				let atomSolidityPanel = atom.workspace.panelForItem(atomSolidityElement);
-				expect(atomSolidityPanel.isVisible()).toBe(true);
-				atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
-				expect(atomSolidityPanel.isVisible()).toBe(false);
-			});
+			// Now that we checked package activation lets do some real tests
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			expect(workspaceElement.querySelector('.etheratom-panel')).toShow();
+		});
+		it("Expect .etheratom-panel NOT to be visiable", async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
 
-			waitsForPromise(() => {
-				return activationPromise;
-			});
+			// Now that we checked package activation lets do some real tests
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			expect(workspaceElement.querySelector('.etheratom-panel')).not.toShow();
 		});
 	});
 });
