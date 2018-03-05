@@ -1,6 +1,7 @@
 # Etheratom - compile and deploy solidity code from atom editor
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
+[![Build Status](https://travis-ci.org/0mkara/etheratom.svg?branch=master)](https://travis-ci.org/0mkara/etheratom)
 
 Etheratom is a package for hackable Atom editor. Is uses web3js to interact with an Ethereum node.
 
