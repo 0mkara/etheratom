@@ -10,5 +10,3 @@ script: 'curl -s https://raw.githubusercontent.com/atom/ci/master/build-package.
 os:
   - linux
   - osx
-
-sudo: false
