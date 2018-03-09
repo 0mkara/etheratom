@@ -88,8 +88,8 @@ describe("Etheratom", async function() {
 			`
 			console.log(contract);
 			const dir = "/home/0mkar/Karma/Solidity";
-			const source = await combineSource(dir, contract, {});
-			console.log(source);
+			const source = await combineSource(dir, contract);
+			//console.log(source);
 			expect(typeof source).toBe("string");
 		});
 	});
