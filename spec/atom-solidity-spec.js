@@ -61,21 +61,6 @@ describe("Etheratom", async function() {
 	});
 
 	describe("Test compiler-imports functions", function() {
-		/*it("Expect handleIPFS to be a function", async function() {
-			console.log(await handleIPFS());
-			expect(typeof handleIPFS).toBe("function");
-		});
-		it("Expect handler() to return array", async function() {
-			const handlers = await getHandlers();
-			console.log(handlers);
-			expect(typeof handlers).toBe("object");
-		});
-		it("Expect resolveImports to resolve imports", async function() {
-			const subSource = await resolveImports('../', 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/Crowdsale.sol');
-			console.log(subSource);
-			console.log(typeof subSource);
-			expect(typeof subSource).toBe("string");
-		});*/
 		it("Expect combineSource to put all sources in one file", async function() {
 			const contract = `
 /* Hello world contract */
