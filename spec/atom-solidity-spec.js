@@ -65,7 +65,7 @@ describe("Etheratom", async function() {
 			const contract = `
 /* Hello world contract */
 pragma solidity ^0.4.18;
-import '../contracts/greeter.sol';
+import '../greeter/greeter.sol';
 import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/Crowdsale.sol';
 
 contract Greetings is Greeter {
