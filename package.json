@@ -56,6 +56,7 @@
     "react-json-view": "^1.16.1",
     "react-tabs": "^2.2.1",
     "solc": "^0.4.11",
+    "valid-url": "^1.0.9",
     "web3": "^1.0.0-beta.28"
   },
   "configSchema": {

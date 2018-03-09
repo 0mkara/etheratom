@@ -78,18 +78,17 @@ describe("Etheratom", async function() {
 		});*/
 		it("Expect combineSource to put all sources in one file", async function() {
 			const contract = `
-				/* Hello world contract */
-				pragma solidity ^0.4.18;
-				import './greeter.sol';
-				import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/Crowdsale.sol';
+/* Hello world contract */
+pragma solidity ^0.4.18;
+import '../contracts/greeter.sol';
+import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/Crowdsale.sol';
 
-				contract Greetings is Greeter {
-				}
+contract Greetings is Greeter {
+}
 			`
-			console.log(contract);
 			const dir = "/home/0mkar/Karma/Solidity";
 			const source = await combineSource(dir, contract);
-			//console.log(source);
+			console.log(source);
 			expect(typeof source).toBe("string");
 		});
 	});
