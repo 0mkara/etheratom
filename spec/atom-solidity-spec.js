@@ -9,18 +9,20 @@ import { getHandlers, handleIPFS, resolveImports, combineSource } from '../lib/h
 
 describe("Etheratom", async function() {
 	describe("Test command eth-interface:activate", function() {
-		beforeEach(async function() {
-			const workspaceElement = atom.views.getView(atom.workspace);
-		})
+		const workspaceElement = atom.views.getView(atom.workspace);
 		afterEach(async () => {
 			await atom.packages.deactivatePackage('etheratom')
 			atom.packages.unloadPackage('etheratom')
 		});
 
 		it("Expect package etheratom to be activated", async function() {
-			atom.packages.loadPackage('etheratom');
-			await atom.packages.activatePackage('etheratom');
-			expect(atom.packages.isPackageActive('etheratom')).toBe(true);
+			try {
+				await atom.packages.loadPackage('etheratom')
+				await atom.packages.activatePackage('etheratom')
+				expect(atom.packages.isPackageActive('etheratom')).toBe(true)
+			} catch (e) {
+				throw e
+			}
 		});
 		it("Expect package etheratom de-activated", async function() {
 			atom.packages.loadPackage('etheratom');
@@ -36,6 +38,7 @@ describe("Etheratom", async function() {
 	});
 
 	describe("Test command eth-interface:toggle", function() {
+		const workspaceElement = atom.views.getView(atom.workspace);
 		afterEach(async () => {
 			await atom.packages.deactivatePackage('etheratom')
 			atom.packages.unloadPackage('etheratom')
