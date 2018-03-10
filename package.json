@@ -55,6 +55,7 @@
     "react-dom": "^16.2.0",
     "react-json-view": "^1.16.1",
     "react-tabs": "^2.2.1",
+    "redux": "^3.7.2",
     "solc": "^0.4.11",
     "valid-url": "^1.0.9",
     "web3": "^1.0.0-beta.28"
@@ -88,5 +89,9 @@
   },
   "scripts": {
     "postinstall": "node ./formatSolc.js"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1"
   }
 }
