@@ -8,13 +8,15 @@ env:
 
   matrix:
     - ATOM_CHANNEL=stable
-    - ATOM_CHANNEL=beta
 
 os:
   - linux
   - osx
 
 ### Generic setup follows ###
+before_script:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
 script:
   - curl -s -O https://raw.githubusercontent.com/atom/ci/master/build-package.sh
   - chmod u+x build-package.sh
