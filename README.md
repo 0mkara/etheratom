@@ -3,9 +3,9 @@
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/0mkara/etheratom.svg?branch=master)](https://travis-ci.org/0mkara/etheratom)
 
-Etheratom is a package for hackable Atom editor. Is uses web3js to interact with an Ethereum node.
+Etheratom is a package for hackable Atom editor. It uses web3js to interact with Ethereum node.
 
-![A screenshot of Etheratom package](https://cloud.githubusercontent.com/assets/13261372/20199663/2d000048-a7d2-11e6-9eb6-222200442f5c.png)
+![A screenshot of Etheratom package](https://user-images.githubusercontent.com/13261372/37424010-5f70657e-27e5-11e8-8639-0f2f0361f03c.png)
 
 # Requirements
 
@@ -64,6 +64,12 @@ Also you can select between **Javascript VM** and an actual running **Ethereum n
 ![New panel features](https://cloud.githubusercontent.com/assets/13261372/20199656/227e5a52-a7d2-11e6-95f5-ec7fb16b4564.png)
 
 Once contract is mined you will see buttons with function names to call those functions
+
+Use **Transaction Analyzer** to get details about any transaction.
+
+![Transaction analyzer](https://user-images.githubusercontent.com/13261372/37424450-7abcea36-27e6-11e8-8b35-0e99b4d5c215.png)
+
+###
 
 # Expectations
 
