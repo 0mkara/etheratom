@@ -63,11 +63,11 @@ describe("Etheratom", async function() {
 		});
 	});
 
-	describe("Test compiler-imports functions", function() {
+	/*describe("Test compiler-imports functions", function() {
 		it("Expect combineSource to put all sources in one file", async function() {
 			const contract = `
 /* Hello world contract */
-pragma solidity ^0.4.18;
+/*pragma solidity ^0.4.18;
 //import '../greeter/greeter.sol';
 import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/Crowdsale.sol';
 
@@ -79,5 +79,5 @@ contract Greetings is Greeter {
 			console.log(source);
 			expect(typeof source).toBe("string");
 		});
-	});
+	});*/
 });
