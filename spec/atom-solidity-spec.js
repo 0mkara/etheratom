@@ -63,7 +63,7 @@ describe("Etheratom", async function() {
 		});
 	});
 
-	describe("Test compiler-imports functions", function() {
+	/*describe("Test github compiler-imports", function() {
 		it("Expect combineSource to put all sources in one file", async function() {
 			const contract = `
 pragma solidity 0.4.19;
@@ -75,12 +75,40 @@ contract GustavoCoin is MintableToken {
     string public symbol = "GUS";
     uint8 public decimals = 18;
 }
-
 			`
 			const dir = "/home/0mkar/Karma/Solidity/zeplin/Token";
-			const source = await combineSource(dir, contract);
-			console.log(source);
-			expect(typeof source).toBe("string");
+			try {
+				const source = await combineSource(dir, contract);
+				console.log(source);
+				expect(typeof source).toBe("string");
+			} catch (e) {
+				expect(e).toBeNull();
+			}
+		});
+	});*/
+
+	describe("Test local compiler-imports", function() {
+		it("Expect combineSource to put all sources in one file", async function() {
+			const contract = `
+pragma solidity 0.4.19;
+
+import '../node_modules/zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+
+contract GustavoCoin is MintableToken {
+    string public name = "GUSTAVO COIN";
+    string public symbol = "GUS";
+    uint8 public decimals = 18;
+}
+			`
+			const dir = "/home/0mkar/Karma/Solidity/zeplin/Token/";
+			try {
+				var sources = { "token.sol": { content: contract } };
+				sources = await combineSource(dir, sources);
+				console.log(sources);
+				expect(typeof sources).toBe("object");
+			} catch (e) {
+				expect(e).toBeNull();
+			}
 		});
 	});
 });
