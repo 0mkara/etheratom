@@ -68,7 +68,7 @@ describe("Etheratom", async function() {
 			const contract = `
 pragma solidity 0.4.19;
 
-import '../node_modules/zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 
 contract GustavoCoin is MintableToken {
     string public name = "GUSTAVO COIN";
