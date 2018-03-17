@@ -67,7 +67,9 @@ Once contract is mined you will see buttons with function names to call those fu
 
 Use **Transaction Analyzer** to get details about any transaction.
 
-![Transaction analyzer](https://user-images.githubusercontent.com/13261372/37424450-7abcea36-27e6-11e8-8b35-0e99b4d5c215.png)
+Transaction                |  Transaction Recipt
+:-------------------------:|:-------------------------:
+![Transaction hash](https://user-images.githubusercontent.com/13261372/37555558-260d3a92-2a0f-11e8-8c18-f1ebe9a326ef.png)  |  ![Transaction recipt](https://user-images.githubusercontent.com/13261372/37555557-25dbb30a-2a0f-11e8-88f2-8e6208e9ddd1.png)
 
 ###
 
