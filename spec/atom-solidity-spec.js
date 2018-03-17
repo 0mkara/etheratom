@@ -63,31 +63,44 @@ describe("Etheratom", async function() {
 		});
 	});
 
-	/*describe("Test github compiler-imports", function() {
+	describe("Test github compiler-imports", function() {
 		it("Expect combineSource to put all sources in one file", async function() {
 			const contract = `
-pragma solidity 0.4.19;
+pragma solidity ^0.4.19;
 
-import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/emission/MintedCrowdsale.sol';
+import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/validation/TimedCrowdsale.sol';
 
-contract GustavoCoin is MintableToken {
-    string public name = "GUSTAVO COIN";
-    string public symbol = "GUS";
-    uint8 public decimals = 18;
+
+contract GustavoCoinCrowdsale is TimedCrowdsale, MintedCrowdsale {
+    function GustavoCoinCrowdsale
+        (
+            uint256 _openingTime,
+            uint256 _closingTime,
+            uint256 _rate,
+            address _wallet,
+            MintableToken _token
+        )
+        public
+        Crowdsale(_rate, _wallet, _token)
+        TimedCrowdsale(_openingTime, _closingTime) {
+
+        }
 }
+
 			`
-			const dir = "/home/0mkar/Karma/Solidity/zeplin/Token";
+			const dir = "~/";
 			try {
-				const source = await combineSource(dir, contract);
-				console.log(source);
-				expect(typeof source).toBe("string");
+				var sources = { "GustavoCoinCrowdsale.sol": { content: contract } };
+				source = await combineSource(dir, sources);
+				expect(typeof source).toBe("object");
 			} catch (e) {
 				expect(e).toBeNull();
 			}
 		});
-	});*/
+	});
 
-	describe("Test local compiler-imports", function() {
+	/*describe("Test local compiler-imports", function() {
 		it("Expect combineSource to put all sources in one file", async function() {
 			const contract = `
 pragma solidity 0.4.19;
@@ -104,11 +117,10 @@ contract GustavoCoin is MintableToken {
 			try {
 				var sources = { "token.sol": { content: contract } };
 				sources = await combineSource(dir, sources);
-				console.log(sources);
 				expect(typeof sources).toBe("object");
 			} catch (e) {
 				expect(e).toBeNull();
 			}
 		});
-	});
+	});*/
 });
