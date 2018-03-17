@@ -63,7 +63,7 @@
     "redux-thunk": "^2.2.0",
     "solc": "^0.4.11",
     "valid-url": "^1.0.9",
-    "web3": "1.0.0-beta.17"
+    "web3": "1.0.0-beta.18"
   },
   "configSchema": {
     "rpcAddress": {
