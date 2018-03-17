@@ -63,21 +63,64 @@ describe("Etheratom", async function() {
 		});
 	});
 
-	/*describe("Test compiler-imports functions", function() {
+	describe("Test github compiler-imports", function() {
 		it("Expect combineSource to put all sources in one file", async function() {
 			const contract = `
-/* Hello world contract */
-/*pragma solidity ^0.4.18;
-//import '../greeter/greeter.sol';
-import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/Crowdsale.sol';
+pragma solidity ^0.4.19;
 
-contract Greetings is Greeter {
+import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/emission/MintedCrowdsale.sol';
+import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/validation/TimedCrowdsale.sol';
+
+
+contract GustavoCoinCrowdsale is TimedCrowdsale, MintedCrowdsale {
+    function GustavoCoinCrowdsale
+        (
+            uint256 _openingTime,
+            uint256 _closingTime,
+            uint256 _rate,
+            address _wallet,
+            MintableToken _token
+        )
+        public
+        Crowdsale(_rate, _wallet, _token)
+        TimedCrowdsale(_openingTime, _closingTime) {
+
+        }
+}
+
+			`
+			const dir = "~/";
+			try {
+				var sources = { "GustavoCoinCrowdsale.sol": { content: contract } };
+				source = await combineSource(dir, sources);
+				expect(typeof source).toBe("object");
+			} catch (e) {
+				expect(e).toBeNull();
+			}
+		});
+	});
+
+	/*describe("Test local compiler-imports", function() {
+		it("Expect combineSource to put all sources in one file", async function() {
+			const contract = `
+pragma solidity 0.4.19;
+
+import '../node_modules/zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+
+contract GustavoCoin is MintableToken {
+    string public name = "GUSTAVO COIN";
+    string public symbol = "GUS";
+    uint8 public decimals = 18;
 }
 			`
-			const dir = "/home/0mkar/Karma/Solidity";
-			const source = await combineSource(dir, contract);
-			console.log(source);
-			expect(typeof source).toBe("string");
+			const dir = "/home/0mkar/Karma/Solidity/zeplin/Token/";
+			try {
+				var sources = { "token.sol": { content: contract } };
+				sources = await combineSource(dir, sources);
+				expect(typeof sources).toBe("object");
+			} catch (e) {
+				expect(e).toBeNull();
+			}
 		});
 	});*/
 });
