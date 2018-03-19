@@ -92,9 +92,8 @@
       "title": "Environment selection",
       "description": "Choose between VM and Web3 endpoint",
       "type": "string",
-      "default": "solcjs",
+      "default": "web3",
       "enum": [
-        "solcjs",
         "web3"
       ],
       "order": 4
