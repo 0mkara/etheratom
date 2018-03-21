@@ -13,6 +13,8 @@ Etheratom is a package for hackable Atom editor. It uses web3js to interact with
 
 #### Install geth
 [Ethereum client installation instruction](https://www.ethereum.org/cli)
+**Or**
+You can just download binary from [https://geth.ethereum.org/downloads/](https://geth.ethereum.org/downloads/) and run.
 
 #### Run go-ethereum client
 Start geth node on testnet using following command:
@@ -22,6 +24,10 @@ Start geth node on testnet using following command:
 *Note:* Only solidity compiler is supported.
 
 # Installation
+
+`apm install etheratom`
+
+Or you can install [Etheratom](https://atom.io/packages/etheratom) from Atom packages.
 
 #### Install from source
 
@@ -34,13 +40,6 @@ Install as atom package
 
     apm link .
     apm install
-
-#### Install using atom-package-manager
-Install using `apm` **recomended**.
-
-`apm install etheratom`
-
-Or you can install [Etheratom](https://atom.io/packages/etheratom) from Atom packages.
 
 # Configuration
 
@@ -66,19 +65,9 @@ Also you can select between **Javascript VM** and an actual running **Ethereum n
 
 ![New panel features](https://cloud.githubusercontent.com/assets/13261372/20199656/227e5a52-a7d2-11e6-95f5-ec7fb16b4564.png)
 
-Once contract is mined you will see buttons with function names to call those functions
 
-Use **Transaction Analyzer** to get details about any transaction.
+# Support development :heart:
 
-Transaction                |  Transaction Recipt
-:-------------------------:|:-------------------------:
-![Transaction hash](https://user-images.githubusercontent.com/13261372/37555558-260d3a92-2a0f-11e8-8c18-f1ebe9a326ef.png)  |  ![Transaction recipt](https://user-images.githubusercontent.com/13261372/37555557-25dbb30a-2a0f-11e8-88f2-8e6208e9ddd1.png)
+Etheratom aims to provide a clean interactive interface to develop solidity smart contracts, test them on testnet, do security analysis and deploy them on mainnet. **Etheratom needs your help!**
 
-###
-
-# Expectations
-
-Etheratom aims to provide an interface where developers can write solidity smart contracts, test them on Javascript VM, deploy them to testnets & mainnet and do a transaction analysis.
-
-# Support development :green_heart: show some love
 ## Ethereum :point_right: 0xd22fE4aEFed0A984B1165dc24095728EE7005a36
