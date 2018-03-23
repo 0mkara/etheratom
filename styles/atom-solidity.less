@@ -129,6 +129,10 @@
 	#compiled-error {
 		ul {
 			list-style: none;
+			display: flex;
+			flex-direction: column;
+			justify-content: flex-start;
+			align-items: flex-start;
 		}
 	}
 
@@ -239,6 +243,7 @@
 .vertical-tabs {
 	display: flex;
 	flex-direction: row;
+	align-items: center;
 
 	.vertical {
 		rotate: -90deg;
@@ -253,7 +258,7 @@
 		margin-top: 30vh;
 	}
 	.react-tabs__tab-panel--selected {
-		width: 100%;
+		width: 90%;
 	}
 }
 
