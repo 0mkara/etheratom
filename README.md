@@ -5,7 +5,7 @@
 
 Etheratom is a package for hackable Atom editor. It uses web3js to interact with Ethereum node.
 
-![A screenshot of Etheratom package](https://user-images.githubusercontent.com/13261372/37424010-5f70657e-27e5-11e8-8639-0f2f0361f03c.png)
+![A screenshot of Etheratom package](https://user-images.githubusercontent.com/13261372/37828365-f43a0c8c-2ec0-11e8-8d09-d1c29d7168d3.png)
 
 # Requirements
 
