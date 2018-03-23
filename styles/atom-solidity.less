@@ -17,15 +17,16 @@
 	display: flex;
 	flex-direction: row;
 	height: 100%;
-	max-width: 550px;
+	max-width: 50vw;
+	min-width: 20vw;
 	overflow: scroll;
 	&-resize-handle {
-		flex: 0 0 0.2em;
+		flex: 0 0 0.3em;
 		height: initial;
 		right: auto;
 		bottom: 0;
 		cursor: col-resize;
-		background-color: #282c34;
+		background-color: #353b45;
 	}
 }
 
@@ -235,13 +236,27 @@
 }
 
 // Tab view styling
-.tab_btns {
+.vertical-tabs {
 	display: flex;
 	flex-direction: row;
-	list-style: none;
-	justify-content: flex-start;
-	align-items: center;
+
+	.vertical {
+		rotate: -90deg;
+	}
+	.tab_btns {
+		display: flex;
+		flex-direction: row-reverse;
+		list-style: none;
+	}
+	.tablist {
+		width: 0;
+		margin-top: 30vh;
+	}
+	.react-tabs__tab-panel--selected {
+		width: 100%;
+	}
 }
+
 
 .flex-row {
 	display: flex;
