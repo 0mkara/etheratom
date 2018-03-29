@@ -33,8 +33,7 @@
     "atom": ">=1.0.0 <2.0.0"
   },
   "package-deps": [
-    "linter-solidity",
-    "atom-solidity-linter"
+      "language-solidity"
   ],
   "dependencies": {
     "atom-message-panel": "^1.2.7",
