@@ -1,7 +1,7 @@
 {
   "name": "etheratom",
   "main": "./lib/ethereum-interface",
-  "version": "4.0.9",
+  "version": "4.1.0",
   "description": "Solidity compilation and Ethereum contract execution interface for hackable atom editor.",
   "keywords": [
     "ethereum",
@@ -33,7 +33,7 @@
     "atom": ">=1.0.0 <2.0.0"
   },
   "package-deps": [
-      "language-solidity"
+    "language-solidity"
   ],
   "dependencies": {
     "atom-message-panel": "^1.2.7",
