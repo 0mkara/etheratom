@@ -9,8 +9,7 @@ Etheratom is a package for hackable Atom editor. It uses web3js to interact with
 
 # Requirements
 
-~~To run and compile using Etheratom, it is now __not required to have a local ethereum node running and compilers installed__. New version adds support to solc and ethereumjs to compile and run solidity codes without running a local node.~~
-
+#### Use [Ganache](http://truffleframework.com/ganache/) or
 #### Install geth
 [Ethereum client installation instruction](https://www.ethereum.org/cli)
 **Or**
@@ -64,6 +63,10 @@ After compiling your code hit **Create** button to deploy the contract on blockc
 Also you can select between **Javascript VM** and an actual running **Ethereum node**.
 
 ![New panel features](https://cloud.githubusercontent.com/assets/13261372/20199656/227e5a52-a7d2-11e6-95f5-ec7fb16b4564.png)
+
+It has a tiny **Ethereum client monitor** to check how your node is doing
+
+![nodeinfo](https://user-images.githubusercontent.com/13261372/39017080-f99b6d76-443f-11e8-94b5-ca77238a7011.png)
 
 
 # Support development :heart:
