@@ -2,6 +2,7 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/0mkara/etheratom.svg?branch=master)](https://travis-ci.org/0mkara/etheratom)
+[![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom)
 
 Etheratom is a package for hackable Atom editor. It uses web3js to interact with Ethereum node.
 
