@@ -49,6 +49,7 @@
     "merkle-patricia-tree": "^2.1.2",
     "react": "^16.2.0",
     "react-addons-update": "^15.4.2",
+    "react-checkbox-tree": "file:///home/0mkar/Karma/react-checkbox-tree",
     "react-collapse": "^4.0.3",
     "react-dom": "^16.2.0",
     "react-json-view": "^1.16.1",
@@ -59,7 +60,8 @@
     "redux": "^3.7.2",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
-    "solc": "^0.4.11",
+    "remix-solidity": "^0.1.7",
+    "solc": "0.4.21",
     "valid-url": "^1.0.9",
     "web3": "1.0.0-beta.18"
   },
