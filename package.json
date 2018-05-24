@@ -47,7 +47,7 @@
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-vm": "^2.0.2",
     "merkle-patricia-tree": "^2.1.2",
-    "react": "^16.2.0",
+    "react": "^16.4.0",
     "react-addons-update": "^15.4.2",
     "react-checkbox-tree": "file:///home/0mkar/Karma/react-checkbox-tree",
     "react-collapse": "^4.0.3",
