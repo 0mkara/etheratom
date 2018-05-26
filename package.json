@@ -1,6 +1,6 @@
 {
   "name": "etheratom",
-  "main": "./lib/ethereum-interface",
+  "main": "./build/main.js",
   "version": "4.2.1",
   "description": "Solidity compilation and Ethereum contract execution interface for hackable atom editor.",
   "keywords": [
@@ -49,7 +49,7 @@
     "merkle-patricia-tree": "^2.1.2",
     "react": "^16.2.0",
     "react-addons-update": "^15.4.2",
-    "react-checkbox-tree": "file:///home/0mkar/Karma/react-checkbox-tree",
+    "react-checkbox-tree": "file:../react-checkbox-tree",
     "react-collapse": "^4.0.3",
     "react-dom": "^16.2.0",
     "react-json-view": "^1.16.1",
@@ -103,6 +103,15 @@
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
-    "babel-preset-env": "^1.6.1"
+    "babel-loader": "^7.1.4",
+    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-polyfill": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-react": "^6.24.1",
+    "babel-preset-stage-3": "^6.24.1",
+    "rollup-plugin-babel": "^3.0.4",
+    "rollup-plugin-commonjs": "^9.1.3",
+    "rollup-plugin-node-resolve": "^3.3.0"
   }
 }
