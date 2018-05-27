@@ -99,7 +99,7 @@
     }
   },
   "scripts": {
-    "postinstall": "node ./formatSolc.js"
+    "postinstall": "npm install solc; node ./formatSolc.js"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
