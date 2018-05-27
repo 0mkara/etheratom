@@ -20,7 +20,9 @@ export default {
         babel({
             exclude: 'node_modules/**'
         }),
-        commonjs()
+        commonjs({
+            include: [ "node_modules/react-checkbox-tree/**" ]
+        })
     ],
     external,
 };
