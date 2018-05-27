@@ -50,7 +50,7 @@
     "react": "16.3.2",
     "react-addons-update": "^15.4.2",
     "react-collapse": "^4.0.3",
-    "react-checkbox-tree": "git@github.com:0mkara/react-checkbox-tree.git#v1.2.4",
+    "react-checkbox-tree": "https://github.com/0mkara/react-checkbox-tree.git#v1.2.4",
     "react-dom": "^16.4.0",
     "react-json-view": "^1.16.1",
     "react-motion": "^0.5.2",
