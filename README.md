@@ -2,6 +2,7 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/0mkara/etheratom.svg?branch=master)](https://travis-ci.org/0mkara/etheratom)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2F0mkara%2Fetheratom.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2F0mkara%2Fetheratom?ref=badge_shield)
 
 Etheratom is a package for hackable Atom editor. It uses web3js to interact with Ethereum node.
 
@@ -74,3 +75,7 @@ It has a tiny **Ethereum client monitor** to check how your node is doing
 Etheratom aims to provide a clean interactive interface to develop solidity smart contracts, test them on testnet, do security analysis and deploy them on mainnet. **Etheratom needs your help!**
 
 ## Ethereum :point_right: 0xd22fE4aEFed0A984B1165dc24095728EE7005a36
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2F0mkara%2Fetheratom.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2F0mkara%2Fetheratom?ref=badge_large)
