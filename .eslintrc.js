@@ -41,6 +41,7 @@ module.exports = {
         ],
         // allow paren-less arrow functions
         'arrow-parens': 0,
-        'space-before-function-paren': ["error", "never"]
+        'space-before-function-paren': ["error", "never"],
+        'no-console': ["error", { allow: ["warn", "error", "log"] }]
     }
 };
