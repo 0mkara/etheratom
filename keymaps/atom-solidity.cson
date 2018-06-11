@@ -7,9 +7,9 @@
 
 # For more detailed documentation see
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
-"atom-workspace":
+'atom-workspace':
     'ctrl-alt-e': 'eth-interface:activate'
     'ctrl-alt-c': 'eth-interface:compile'
     'ctrl-alt-v': 'eth-interface:toggle'
-    'atom-text-editor[data-grammar~=\"solidity\"]:not([mini])':
+    'atom-text-editor[data-grammar~="solidity"]:not([mini])':
         'ctrl-alt-e': 'eth-interface:activate'
