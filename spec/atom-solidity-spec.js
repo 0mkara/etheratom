@@ -62,40 +62,4 @@ describe('Etheratom', async function() {
 			expect(workspaceElement.querySelector('.etheratom-panel')).not.toShow();
 		});
 	});
-
-	describe('Test github compiler-imports', function() {
-		it('Expect combineSource to put all sources in one file', async function() {
-			const contract = `
-pragma solidity ^0.4.19;
-
-import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/emission/MintedCrowdsale.sol';
-import 'https://github.com/OpenZeppelin/zeppelin-solidity/contracts/crowdsale/validation/TimedCrowdsale.sol';
-
-
-contract GustavoCoinCrowdsale is TimedCrowdsale, MintedCrowdsale {
-    function GustavoCoinCrowdsale
-        (
-            uint256 _openingTime,
-            uint256 _closingTime,
-            uint256 _rate,
-            address _wallet,
-            MintableToken _token
-        )
-        public
-        Crowdsale(_rate, _wallet, _token)
-        TimedCrowdsale(_openingTime, _closingTime) {
-
-        }
-}
-			`
-			const dir = '~/';
-			try {
-				var sources = { 'GustavoCoinCrowdsale.sol': { content: contract } };
-				const source = await combineSource(dir, sources);
-				expect(typeof source).toBe('object');
-			} catch (e) {
-				expect(e).toBeNull();
-			}
-		});
-	});	
 });

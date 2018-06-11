@@ -32,13 +32,13 @@ Or you can install [Etheratom](https://atom.io/packages/etheratom) from Atom pac
 
 Clone git repository
 
-    git clone https://gitlab.com/0mkara/etheratom.git
+    git clone https://github.com/0mkara/etheratom.git
     cd etheratom
 
 Install as atom package
 
-    apm link .
     apm install
+    apm link .
 
 # Configuration
 
