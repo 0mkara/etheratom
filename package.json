@@ -1,6 +1,6 @@
 {
   "name": "etheratom",
-  "main": "./build/main.js",
+  "main": "index.js",
   "version": "4.2.1",
   "description": "Solidity compilation and Ethereum contract execution interface for hackable atom editor.",
   "keywords": [
