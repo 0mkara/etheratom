@@ -10,7 +10,8 @@ module.exports = {
     },
     "extends": ["standard", "eslint:recommended", "plugin:react/recommended"],
     globals: {
-      __static: true
+      __static: true,
+      atom: true
     },
     "parserOptions": {
         "ecmaFeatures": {
@@ -23,8 +24,9 @@ module.exports = {
         "react"
     ],
     "rules": {
+        "strict": 0,
         // tab indentation
-        'indent': [1, "tab"],
+        'indent': ["warn", 4],
         "linebreak-style": [
             "error",
             "unix"
@@ -34,11 +36,12 @@ module.exports = {
             "single"
         ],
         "semi": [
-            "error",
+            "warn",
             "always", { "omitLastInOneLineBlock": true}
         ],
         // allow paren-less arrow functions
         'arrow-parens': 0,
-        'space-before-function-paren': ["error", "never"]
+        'space-before-function-paren': ["error", "never"],
+        'no-console': ["error", { allow: ["warn", "error", "log"] }]
     }
 };
