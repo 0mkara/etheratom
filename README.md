@@ -2,6 +2,7 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/0mkara/etheratom.svg?branch=master)](https://travis-ci.org/0mkara/etheratom)
+[![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom)
 
 Etheratom is a package for hackable Atom editor. It uses web3js to interact with Ethereum node.
 
@@ -9,9 +10,8 @@ Etheratom is a package for hackable Atom editor. It uses web3js to interact with
 
 # Requirements
 
-#### Use [Ganache](http://truffleframework.com/ganache/) or
-#### Install geth
-[Ethereum client installation instruction](https://www.ethereum.org/cli)
+#### Use [Ganache](http://truffleframework.com/ganache/) or Install [geth](https://github.com/ethereum/go-ethereum)
+[Go Ethereum client installation instruction](https://www.ethereum.org/cli)
 **Or**
 You can just download binary from [https://geth.ethereum.org/downloads/](https://geth.ethereum.org/downloads/) and run.
 
@@ -20,7 +20,7 @@ Start geth node on testnet using following command:
 
     geth --testnet --fast --rpc --rpcapi="eth,web3,personal" --ws --wsorigins="*" --wsapi="eth,web3,personal" console
 
-*Note:* Only solidity compiler is supported.
+*Note:* Only solidity compilation is supported. `--wsorigins="*"` or `--wsorigins="file://"`  is necessary to allow Atom to connect to go-ethereum websocket endpoint.
 
 # Installation
 
@@ -41,12 +41,13 @@ Install as atom package
     apm link .
 
 # Configuration
+**Geth** defaults : **rpc** `http://127.0.0.1:8545/` **websocket** `http://127.0.0.1:8546/`
 
-Assuming you have a local geth client running and rpc api listening on [http://127.0.0.1:8545/](http://127.0.0.1:8545/) & websocket endpoint listening on [ws://127.0.0.1:8546](ws://127.0.0.1:8546)
+**Ganache** defaults : **rpc** `http://127.0.0.1:7545/`
 
 #### Go to package settings and set rpc address & websocket address.
 
-![etheratom package config](https://cloud.githubusercontent.com/assets/13261372/15468216/9989115e-2100-11e6-8dd5-e02fb9459ab6.gif)
+![etheratom package config](https://user-images.githubusercontent.com/13261372/41284998-96a25e26-6e58-11e8-80a6-1860368bcaed.png)
 
 **Restart atom** to load your configuration changes.
 
@@ -54,20 +55,15 @@ Assuming you have a local geth client running and rpc api listening on [http://1
 
 Activate Etheratom package `ctrl+alt+e`
 
-Compile solidity code `ctrl+alt+c`
+Compile solidity code with `ctrl+alt+c` or just by saving a solidity file with `ctrl+s`
 
 Show/hide etheratom panel `ctrl+alt+v`
 
-After compiling your code hit **Create** button to deploy the contract on blockchain.
+After compiling your solidity code click **Deploy to blockchain** button to deploy the contract on blockchain. Optionally you can deploy your contract at some previously created address.
 
-Also you can select between **Javascript VM** and an actual running **Ethereum node**.
+![New panel features](https://user-images.githubusercontent.com/13261372/41285521-0dd4154c-6e5a-11e8-843d-505368a31302.png)
 
-![New panel features](https://cloud.githubusercontent.com/assets/13261372/20199656/227e5a52-a7d2-11e6-95f5-ec7fb16b4564.png)
-
-It has a tiny **Ethereum client monitor** to check how your node is doing
-
-![nodeinfo](https://user-images.githubusercontent.com/13261372/39017080-f99b6d76-443f-11e8-94b5-ca77238a7011.png)
-
+##### Follow [Etheratom Wiki](https://github.com/0mkara/etheratom/wiki) for more information.
 
 # Support development :heart:
 

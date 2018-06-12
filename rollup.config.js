@@ -21,7 +21,7 @@ export default {
             exclude: 'node_modules/**'
         }),
         commonjs({
-            include: [ 'node_modules/react-checkbox-tree/**' ]
+            include: [ 'node_modules/react-checkbox-tree/**', 'node_modules/prop-types/**' ]
         })
     ],
     external,

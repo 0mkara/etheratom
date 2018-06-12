@@ -67,14 +67,14 @@
   },
   "configSchema": {
     "rpcAddress": {
-      "title": "Ethereum rpc endpoint.",
+      "title": "Ethereum rpc endpoint:",
       "description": "Point to local ethereum rpc endpoint. Used as HttpProvider.",
       "type": "string",
-      "default": "http://127.0.0.1:8545/",
+      "default": "",
       "order": 1
     },
     "websocketAddress": {
-      "title": "Ethereum websocket endpoint.",
+      "title": "Ethereum websocket endpoint:",
       "description": "Point to local ethereum websocket endpoint. Used as WebsocketProvider.",
       "type": "string",
       "default": "",
@@ -86,16 +86,6 @@
       "type": "boolean",
       "default": true,
       "order": 3
-    },
-    "executionEnv": {
-      "title": "Environment selection",
-      "description": "Choose between VM and Web3 endpoint",
-      "type": "string",
-      "default": "web3",
-      "enum": [
-        "web3"
-      ],
-      "order": 4
     }
   },
   "scripts": {
