@@ -1,6 +1,6 @@
 {
   "name": "etheratom",
-  "main": "index.js",
+  "main": "build/main.js",
   "version": "4.2.1",
   "description": "Solidity compilation and Ethereum contract execution interface for hackable atom editor.",
   "keywords": [
@@ -47,6 +47,7 @@
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-vm": "^2.0.2",
     "merkle-patricia-tree": "^2.1.2",
+    "prop-types": "^15.6.1",
     "react": "16.3.2",
     "react-addons-update": "^15.4.2",
     "react-checkbox-tree": "https://github.com/0mkara/react-checkbox-tree.git#v1.2.4",
@@ -60,8 +61,8 @@
     "redux": "^3.7.2",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
-    "solc": "^0.4.24",
     "remix-solidity": "^0.1.7",
+    "solc": "^0.4.24",
     "valid-url": "^1.0.9",
     "web3": "1.0.0-beta.18"
   },

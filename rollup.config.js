@@ -7,22 +7,24 @@ const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json'), 'utf-8'))
 const external = Object.keys(pkg.dependencies || {});
 
 export default {
-    entry: 'index.js',
-    dest: './build/main.js',
-    format: 'cjs',
-    sourceMap: 'inline',
+    input: 'index.js',
+    output: {
+      file: 'build/main.js',
+      format: 'cjs',
+      sourceMap: false
+    },
     plugins: [
         resolve({
             module: true,
             main: true,
-            extensions: [ '.mjs', '.js', '.jsx', '.json' ]
+            extensions: [ '.js', '.jsx', '.json' ]
         }),
         babel({
             exclude: 'node_modules/**'
         }),
         commonjs({
-            include: [ 'node_modules/react-checkbox-tree/**', 'node_modules/prop-types/**' ]
+            include: [ 'node_modules/react-checkbox-tree/**' ]
         })
     ],
-    external,
+    external
 };

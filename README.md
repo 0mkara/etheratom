@@ -65,8 +65,20 @@ After compiling your solidity code click **Deploy to blockchain** button to depl
 
 ##### Follow [Etheratom Wiki](https://github.com/0mkara/etheratom/wiki) for more information.
 
+# Development guideline
+
+##### Clone & code
+```
+git clone https://github.com/0mkara/etheratom.git
+cd etheratom
+```
+##### Build
+`rollup -c`
+
 # Support development :heart:
 
 Etheratom aims to provide a clean interactive interface to develop solidity smart contracts, test them on testnet, do security analysis and deploy them on mainnet. **Etheratom needs your help!**
+
+**Etheratom is looking for financial help. Any organization or individual wants to help grow etheratom is requested to contact `0mkar@protonmail.com`**
 
 ## Ethereum :point_right: 0xd22fE4aEFed0A984B1165dc24095728EE7005a36
