@@ -5819,9 +5819,9 @@
       "integrity": "sha1-ltDNYQ69WNS03pzAxoKM2pnHVI8="
     },
     "nanoid": {
-      "version": "1.0.2",
-      "resolved": "https://registry.npmjs.org/nanoid/-/nanoid-1.0.2.tgz",
-      "integrity": "sha1-FdK152ttv7FcrBAAy0V9S/yEW9s="
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/nanoid/-/nanoid-1.0.3.tgz",
+      "integrity": "sha512-l5PWjXxZa6DTMzCO3uXNnnNxuqSUeTxNEMWsSr+5QUbC7g00Z4d6tSp8r0RQpY5h49KjwsMxmehLIfmuLv+6CQ=="
     },
     "natural-compare": {
       "version": "1.4.0",
