@@ -21,10 +21,12 @@ module.exports = {
         "sourceType": "module"
     },
     "plugins": [
-        "react"
+        "react",
+        "babel"
     ],
     "rules": {
         "strict": 0,
+        "babel/semi": 1,
         // tab indentation
         'indent': ["warn", 4],
         "linebreak-style": [
@@ -34,10 +36,6 @@ module.exports = {
         "quotes": [
             "error",
             "single"
-        ],
-        "semi": [
-            "warn",
-            "always", { "omitLastInOneLineBlock": true}
         ],
         // allow paren-less arrow functions
         'arrow-parens': 0,

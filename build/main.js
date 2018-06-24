@@ -4449,436 +4449,436 @@ var View = function () {
 }();
 
 var Web3Env = function () {
-	function Web3Env(store) {
-		classCallCheck(this, Web3Env);
-
-		this.subscriptions = new atom$1.CompositeDisposable();
-		this.web3Subscriptions = new atom$1.CompositeDisposable();
-		this.saveSubscriptions = new atom$1.CompositeDisposable();
-		this.compileSubscriptions = new atom$1.CompositeDisposable();
-		this.store = store;
-		this.subscribeToWeb3Commands();
-		this.subscribeToWeb3Events();
-	}
-
-	createClass(Web3Env, [{
-		key: 'dispose',
-		value: function dispose() {
-			if (this.subscriptions) {
-				this.subscriptions.dispose();
-			}
-			this.subscriptions = null;
-
-			if (this.saveSubscriptions) {
-				this.saveSubscriptions.dispose();
-			}
-			this.saveSubscriptions = null;
-
-			if (this.web3Subscriptions) {
-				this.web3Subscriptions.dispose();
-			}
-			this.web3Subscriptions = null;
-		}
-	}, {
-		key: 'destroy',
-		value: function destroy() {
-			if (this.saveSubscriptions) {
-				this.saveSubscriptions.dispose();
-			}
-			this.saveSubscriptions = null;
-
-			if (this.compileSubscriptions) {
-				this.compileSubscriptions.dispose();
-			}
-			this.compileSubscriptions = null;
-
-			if (this.web3Subscriptions) {
-				this.web3Subscriptions.dispose();
-			}
-			this.web3Subscriptions = null;
-		}
-
-		// Subscriptions
-
-	}, {
-		key: 'subscribeToWeb3Commands',
-		value: function subscribeToWeb3Commands() {
-			var _this = this;
-
-			if (!this.web3Subscriptions) {
-				return;
-			}
-			this.web3Subscriptions.add(atom.commands.add('atom-workspace', 'eth-interface:compile', function () {
-				if (_this.compileSubscriptions) {
-					_this.compileSubscriptions.dispose();
-				}
-				_this.compileSubscriptions = new atom$1.CompositeDisposable();
-				_this.subscribeToCompileEvents();
-			}));
-		}
-	}, {
-		key: 'subscribeToWeb3Events',
-		value: function () {
-			var _ref = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
-				var _this2 = this;
-
-				var rpcAddress, websocketAddress;
-				return regeneratorRuntime.wrap(function _callee$(_context) {
-					while (1) {
-						switch (_context.prev = _context.next) {
-							case 0:
-								if (this.web3Subscriptions) {
-									_context.next = 2;
-									break;
-								}
-
-								return _context.abrupt('return');
-
-							case 2:
-								rpcAddress = atom.config.get('etheratom.rpcAddress');
-								websocketAddress = atom.config.get('etheratom.websocketAddress');
-
-								if (typeof this.web3 !== 'undefined') {
-									this.web3 = new Web3(this.web3.currentProvider);
-								} else {
-									this.web3 = new Web3(Web3.givenProvider || new Web3.providers.HttpProvider(rpcAddress));
-									if (websocketAddress) {
-										this.web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
-									}
-									this.helpers = new Web3Helpers(this.web3);
-								}
-								this.view = new View(this.store, this.web3);
-								if (Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider)) {
-									console.log('%c Provider is websocket. Creating subscriptions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-									// newBlockHeaders subscriber
-									this.web3.eth.subscribe('newBlockHeaders').on('data', function (blocks) {
-										console.log('%c newBlockHeaders:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-										console.log(blocks);
-									}).on('error', function (e) {
-										console.log('%c newBlockHeaders:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-										console.log(e);
-									});
-									// pendingTransactions subscriber
-									this.web3.eth.subscribe('pendingTransactions').on('data', function (transaction) {
-										/*console.log("%c pendingTransactions:data ", 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-          console.log(transaction);*/
-										_this2.store.dispatch({ type: ADD_PENDING_TRANSACTION, payload: transaction });
-									}).on('error', function (e) {
-										console.log('%c pendingTransactions:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-										console.log(e);
-									});
-									// syncing subscription
-									this.web3.eth.subscribe('syncing').on('data', function (sync) {
-										console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-										console.log(sync);
-										if (typeof sync === 'boolean') {
-											_this2.store.dispatch({ type: SET_SYNCING, payload: sync });
-										}
-										if ((typeof sync === 'undefined' ? 'undefined' : _typeof(sync)) === 'object') {
-											_this2.store.dispatch({ type: SET_SYNCING, payload: sync.syncing });
-											var status = {
-												currentBlock: sync.status.CurrentBlock,
-												highestBlock: sync.status.HighestBlock,
-												knownStates: sync.status.KnownStates,
-												pulledStates: sync.status.PulledStates,
-												startingBlock: sync.status.StartingBlock
-											};
-											_this2.store.dispatch({ type: SET_SYNC_STATUS, payload: status });
-										}
-									}).on('changed', function (isSyncing) {
-										console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-										console.log(isSyncing);
-									}).on('error', function (e) {
-										console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-										console.log(e);
-									});
-								}
-								this.checkConnection(function (error, connection) {
-									if (error) {
-										_this2.helpers.showPanelError(error);
-									} else if (connection) {
-										_this2.view.createCoinbaseView();
-										_this2.view.createButtonsView();
-										_this2.view.createTabView();
-									}
-								});
-								this.web3Subscriptions.add(atom.workspace.observeTextEditors(function (editor) {
-									if (!editor || !editor.getBuffer()) {
-										return;
-									}
-
-									_this2.web3Subscriptions.add(atom.config.observe('etheratom.compileOnSave', function (compileOnSave) {
-										if (_this2.saveSubscriptions) {
-											_this2.saveSubscriptions.dispose();
-										}
-										_this2.saveSubscriptions = new atom$1.CompositeDisposable();
-										if (compileOnSave) {
-											_this2.subscribeToSaveEvents();
-										}
-									}));
-								}));
-
-							case 9:
-							case 'end':
-								return _context.stop();
-						}
-					}
-				}, _callee, this);
-			}));
-
-			function subscribeToWeb3Events() {
-				return _ref.apply(this, arguments);
-			}
-
-			return subscribeToWeb3Events;
-		}()
-
-		// Event subscriptions
-
-	}, {
-		key: 'subscribeToSaveEvents',
-		value: function subscribeToSaveEvents() {
-			var _this3 = this;
-
-			if (!this.web3Subscriptions) {
-				return;
-			}
-			this.saveSubscriptions.add(atom.workspace.observeTextEditors(function (editor) {
-				if (!editor || !editor.getBuffer()) {
-					return;
-				}
-
-				var bufferSubscriptions = new atom$1.CompositeDisposable();
-				bufferSubscriptions.add(editor.getBuffer().onDidSave(function (filePath) {
-					_this3.compile(editor);
-				}));
-				bufferSubscriptions.add(editor.getBuffer().onDidDestroy(function () {
-					bufferSubscriptions.dispose();
-				}));
-				_this3.saveSubscriptions.add(bufferSubscriptions);
-			}));
-		}
-	}, {
-		key: 'subscribeToCompileEvents',
-		value: function subscribeToCompileEvents() {
-			var _this4 = this;
-
-			if (!this.web3Subscriptions) {
-				return;
-			}
-			this.compileSubscriptions.add(atom.workspace.observeTextEditors(function (editor) {
-				if (!editor || !editor.getBuffer()) {
-					return;
-				}
-				_this4.compile(editor);
-			}));
-		}
-
-		// common functions
-
-	}, {
-		key: 'checkConnection',
-		value: function checkConnection(callback) {
-			var haveConn = void 0;
-			haveConn = this.web3.currentProvider;
-			if (!haveConn) {
-				return callback(new Error('Error could not connect to local geth instance!'), null);
-			} else {
-				return callback(null, true);
-			}
-		}
-	}, {
-		key: 'compile',
-		value: function () {
-			var _ref2 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(editor) {
-				var filePath, filename, dir, sources, compiled, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, file, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, _ref3, _ref4, contractName, contract, gasLimit;
-
-				return regeneratorRuntime.wrap(function _callee2$(_context2) {
-					while (1) {
-						switch (_context2.prev = _context2.next) {
-							case 0:
-								filePath = editor.getPath();
-								filename = filePath.replace(/^.*[\\\/]/, '');
-
-								if (!(filePath.split('.').pop() == 'sol')) {
-									_context2.next = 77;
-									break;
-								}
-
-								console.log('%c Compiling contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-								this.store.dispatch({ type: SET_COMPILING, payload: true });
-								dir = path.dirname(filePath);
-								sources = {};
-
-								sources[filename] = { content: editor.getText() };
-								_context2.next = 10;
-								return combineSource(dir, sources);
-
-							case 10:
-								sources = _context2.sent;
-								_context2.prev = 11;
-
-								// Reset redux store
-								this.store.dispatch({ type: SET_COMPILED, payload: null });
-								this.store.dispatch({ type: SET_ERRORS, payload: [] });
-								this.store.dispatch({ type: SET_EVENTS, payload: [] });
-								_context2.next = 17;
-								return this.helpers.compileWeb3(sources);
-
-							case 17:
-								compiled = _context2.sent;
-
-								this.store.dispatch({ type: SET_COMPILED, payload: compiled });
-
-								if (!compiled.contracts) {
-									_context2.next = 63;
-									break;
-								}
-
-								_iteratorNormalCompletion = true;
-								_didIteratorError = false;
-								_iteratorError = undefined;
-								_context2.prev = 23;
-								_iterator = Object.entries(compiled.contracts)[Symbol.iterator]();
-
-							case 25:
-								if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-									_context2.next = 49;
-									break;
-								}
-
-								file = _step.value;
-								_iteratorNormalCompletion2 = true;
-								_didIteratorError2 = false;
-								_iteratorError2 = undefined;
-								_context2.prev = 30;
-
-								for (_iterator2 = Object.entries(file[1])[Symbol.iterator](); !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-									_ref3 = _step2.value;
-									_ref4 = slicedToArray(_ref3, 2);
-									contractName = _ref4[0];
-									contract = _ref4[1];
-
-									// Add interface to redux
-									this.store.dispatch({ type: ADD_INTERFACE, payload: { contractName: contractName, interface: contract.abi } });
-								}
-								_context2.next = 38;
-								break;
-
-							case 34:
-								_context2.prev = 34;
-								_context2.t0 = _context2['catch'](30);
-								_didIteratorError2 = true;
-								_iteratorError2 = _context2.t0;
-
-							case 38:
-								_context2.prev = 38;
-								_context2.prev = 39;
-
-								if (!_iteratorNormalCompletion2 && _iterator2.return) {
-									_iterator2.return();
-								}
-
-							case 41:
-								_context2.prev = 41;
-
-								if (!_didIteratorError2) {
-									_context2.next = 44;
-									break;
-								}
-
-								throw _iteratorError2;
-
-							case 44:
-								return _context2.finish(41);
-
-							case 45:
-								return _context2.finish(38);
-
-							case 46:
-								_iteratorNormalCompletion = true;
-								_context2.next = 25;
-								break;
-
-							case 49:
-								_context2.next = 55;
-								break;
-
-							case 51:
-								_context2.prev = 51;
-								_context2.t1 = _context2['catch'](23);
-								_didIteratorError = true;
-								_iteratorError = _context2.t1;
-
-							case 55:
-								_context2.prev = 55;
-								_context2.prev = 56;
-
-								if (!_iteratorNormalCompletion && _iterator.return) {
-									_iterator.return();
-								}
-
-							case 58:
-								_context2.prev = 58;
-
-								if (!_didIteratorError) {
-									_context2.next = 61;
-									break;
-								}
-
-								throw _iteratorError;
-
-							case 61:
-								return _context2.finish(58);
-
-							case 62:
-								return _context2.finish(55);
-
-							case 63:
-								if (compiled.errors) {
-									this.store.dispatch({ type: SET_ERRORS, payload: compiled.errors });
-								}
-								_context2.next = 66;
-								return this.helpers.getGasLimit();
-
-							case 66:
-								gasLimit = _context2.sent;
-
-								this.store.dispatch({ type: SET_GAS_LIMIT, payload: gasLimit });
-								this.store.dispatch({ type: SET_COMPILING, payload: false });
-								_context2.next = 75;
-								break;
-
-							case 71:
-								_context2.prev = 71;
-								_context2.t2 = _context2['catch'](11);
-
-								console.log(_context2.t2);
-								this.helpers.showPanelError(_context2.t2);
-
-							case 75:
-								_context2.next = 78;
-								break;
-
-							case 77:
-								return _context2.abrupt('return');
-
-							case 78:
-							case 'end':
-								return _context2.stop();
-						}
-					}
-				}, _callee2, this, [[11, 71], [23, 51, 55, 63], [30, 34, 38, 46], [39,, 41, 45], [56,, 58, 62]]);
-			}));
-
-			function compile(_x) {
-				return _ref2.apply(this, arguments);
-			}
-
-			return compile;
-		}()
-	}]);
-	return Web3Env;
+    function Web3Env(store) {
+        classCallCheck(this, Web3Env);
+
+        this.subscriptions = new atom$1.CompositeDisposable();
+        this.web3Subscriptions = new atom$1.CompositeDisposable();
+        this.saveSubscriptions = new atom$1.CompositeDisposable();
+        this.compileSubscriptions = new atom$1.CompositeDisposable();
+        this.store = store;
+        this.subscribeToWeb3Commands();
+        this.subscribeToWeb3Events();
+    }
+
+    createClass(Web3Env, [{
+        key: 'dispose',
+        value: function dispose() {
+            if (this.subscriptions) {
+                this.subscriptions.dispose();
+            }
+            this.subscriptions = null;
+
+            if (this.saveSubscriptions) {
+                this.saveSubscriptions.dispose();
+            }
+            this.saveSubscriptions = null;
+
+            if (this.web3Subscriptions) {
+                this.web3Subscriptions.dispose();
+            }
+            this.web3Subscriptions = null;
+        }
+    }, {
+        key: 'destroy',
+        value: function destroy() {
+            if (this.saveSubscriptions) {
+                this.saveSubscriptions.dispose();
+            }
+            this.saveSubscriptions = null;
+
+            if (this.compileSubscriptions) {
+                this.compileSubscriptions.dispose();
+            }
+            this.compileSubscriptions = null;
+
+            if (this.web3Subscriptions) {
+                this.web3Subscriptions.dispose();
+            }
+            this.web3Subscriptions = null;
+        }
+
+        // Subscriptions
+
+    }, {
+        key: 'subscribeToWeb3Commands',
+        value: function subscribeToWeb3Commands() {
+            var _this = this;
+
+            if (!this.web3Subscriptions) {
+                return;
+            }
+            this.web3Subscriptions.add(atom.commands.add('atom-workspace', 'eth-interface:compile', function () {
+                if (_this.compileSubscriptions) {
+                    _this.compileSubscriptions.dispose();
+                }
+                _this.compileSubscriptions = new atom$1.CompositeDisposable();
+                _this.subscribeToCompileEvents();
+            }));
+        }
+    }, {
+        key: 'subscribeToWeb3Events',
+        value: function () {
+            var _ref = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+                var _this2 = this;
+
+                var rpcAddress, websocketAddress;
+                return regeneratorRuntime.wrap(function _callee$(_context) {
+                    while (1) {
+                        switch (_context.prev = _context.next) {
+                            case 0:
+                                if (this.web3Subscriptions) {
+                                    _context.next = 2;
+                                    break;
+                                }
+
+                                return _context.abrupt('return');
+
+                            case 2:
+                                rpcAddress = atom.config.get('etheratom.rpcAddress');
+                                websocketAddress = atom.config.get('etheratom.websocketAddress');
+
+                                if (typeof this.web3 !== 'undefined') {
+                                    this.web3 = new Web3(this.web3.currentProvider);
+                                } else {
+                                    this.web3 = new Web3(Web3.givenProvider || new Web3.providers.HttpProvider(rpcAddress));
+                                    if (websocketAddress) {
+                                        this.web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
+                                    }
+                                    this.helpers = new Web3Helpers(this.web3);
+                                }
+                                this.view = new View(this.store, this.web3);
+                                if (Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider)) {
+                                    console.log('%c Provider is websocket. Creating subscriptions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                    // newBlockHeaders subscriber
+                                    this.web3.eth.subscribe('newBlockHeaders').on('data', function (blocks) {
+                                        console.log('%c newBlockHeaders:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                        console.log(blocks);
+                                    }).on('error', function (e) {
+                                        console.log('%c newBlockHeaders:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                        console.log(e);
+                                    });
+                                    // pendingTransactions subscriber
+                                    this.web3.eth.subscribe('pendingTransactions').on('data', function (transaction) {
+                                        /*console.log("%c pendingTransactions:data ", 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                        console.log(transaction);*/
+                                        _this2.store.dispatch({ type: ADD_PENDING_TRANSACTION, payload: transaction });
+                                    }).on('error', function (e) {
+                                        console.log('%c pendingTransactions:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                        console.log(e);
+                                    });
+                                    // syncing subscription
+                                    this.web3.eth.subscribe('syncing').on('data', function (sync) {
+                                        console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                        console.log(sync);
+                                        if (typeof sync === 'boolean') {
+                                            _this2.store.dispatch({ type: SET_SYNCING, payload: sync });
+                                        }
+                                        if ((typeof sync === 'undefined' ? 'undefined' : _typeof(sync)) === 'object') {
+                                            _this2.store.dispatch({ type: SET_SYNCING, payload: sync.syncing });
+                                            var status = {
+                                                currentBlock: sync.status.CurrentBlock,
+                                                highestBlock: sync.status.HighestBlock,
+                                                knownStates: sync.status.KnownStates,
+                                                pulledStates: sync.status.PulledStates,
+                                                startingBlock: sync.status.StartingBlock
+                                            };
+                                            _this2.store.dispatch({ type: SET_SYNC_STATUS, payload: status });
+                                        }
+                                    }).on('changed', function (isSyncing) {
+                                        console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                        console.log(isSyncing);
+                                    }).on('error', function (e) {
+                                        console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                        console.log(e);
+                                    });
+                                }
+                                this.checkConnection(function (error, connection) {
+                                    if (error) {
+                                        _this2.helpers.showPanelError(error);
+                                    } else if (connection) {
+                                        _this2.view.createCoinbaseView();
+                                        _this2.view.createButtonsView();
+                                        _this2.view.createTabView();
+                                    }
+                                });
+                                this.web3Subscriptions.add(atom.workspace.observeTextEditors(function (editor) {
+                                    if (!editor || !editor.getBuffer()) {
+                                        return;
+                                    }
+
+                                    _this2.web3Subscriptions.add(atom.config.observe('etheratom.compileOnSave', function (compileOnSave) {
+                                        if (_this2.saveSubscriptions) {
+                                            _this2.saveSubscriptions.dispose();
+                                        }
+                                        _this2.saveSubscriptions = new atom$1.CompositeDisposable();
+                                        if (compileOnSave) {
+                                            _this2.subscribeToSaveEvents();
+                                        }
+                                    }));
+                                }));
+
+                            case 9:
+                            case 'end':
+                                return _context.stop();
+                        }
+                    }
+                }, _callee, this);
+            }));
+
+            function subscribeToWeb3Events() {
+                return _ref.apply(this, arguments);
+            }
+
+            return subscribeToWeb3Events;
+        }()
+
+        // Event subscriptions
+
+    }, {
+        key: 'subscribeToSaveEvents',
+        value: function subscribeToSaveEvents() {
+            var _this3 = this;
+
+            if (!this.web3Subscriptions) {
+                return;
+            }
+            this.saveSubscriptions.add(atom.workspace.observeTextEditors(function (editor) {
+                if (!editor || !editor.getBuffer()) {
+                    return;
+                }
+
+                var bufferSubscriptions = new atom$1.CompositeDisposable();
+                bufferSubscriptions.add(editor.getBuffer().onDidSave(function (filePath) {
+                    _this3.compile(editor);
+                }));
+                bufferSubscriptions.add(editor.getBuffer().onDidDestroy(function () {
+                    bufferSubscriptions.dispose();
+                }));
+                _this3.saveSubscriptions.add(bufferSubscriptions);
+            }));
+        }
+    }, {
+        key: 'subscribeToCompileEvents',
+        value: function subscribeToCompileEvents() {
+            var _this4 = this;
+
+            if (!this.web3Subscriptions) {
+                return;
+            }
+            this.compileSubscriptions.add(atom.workspace.observeTextEditors(function (editor) {
+                if (!editor || !editor.getBuffer()) {
+                    return;
+                }
+                _this4.compile(editor);
+            }));
+        }
+
+        // common functions
+
+    }, {
+        key: 'checkConnection',
+        value: function checkConnection(callback) {
+            var haveConn = void 0;
+            haveConn = this.web3.currentProvider;
+            if (!haveConn) {
+                return callback(new Error('Error could not connect to local geth instance!'), null);
+            } else {
+                return callback(null, true);
+            }
+        }
+    }, {
+        key: 'compile',
+        value: function () {
+            var _ref2 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(editor) {
+                var filePath, filename, dir, sources, compiled, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, file, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, _ref3, _ref4, contractName, contract, gasLimit;
+
+                return regeneratorRuntime.wrap(function _callee2$(_context2) {
+                    while (1) {
+                        switch (_context2.prev = _context2.next) {
+                            case 0:
+                                filePath = editor.getPath();
+                                filename = filePath.replace(/^.*[\\\/]/, '');
+
+                                if (!(filePath.split('.').pop() == 'sol')) {
+                                    _context2.next = 77;
+                                    break;
+                                }
+
+                                console.log('%c Compiling contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                this.store.dispatch({ type: SET_COMPILING, payload: true });
+                                dir = path.dirname(filePath);
+                                sources = {};
+
+                                sources[filename] = { content: editor.getText() };
+                                _context2.prev = 8;
+                                _context2.next = 11;
+                                return combineSource(dir, sources);
+
+                            case 11:
+                                sources = _context2.sent;
+
+                                // Reset redux store
+                                this.store.dispatch({ type: SET_COMPILED, payload: null });
+                                this.store.dispatch({ type: SET_ERRORS, payload: [] });
+                                this.store.dispatch({ type: SET_EVENTS, payload: [] });
+                                _context2.next = 17;
+                                return this.helpers.compileWeb3(sources);
+
+                            case 17:
+                                compiled = _context2.sent;
+
+                                this.store.dispatch({ type: SET_COMPILED, payload: compiled });
+
+                                if (!compiled.contracts) {
+                                    _context2.next = 63;
+                                    break;
+                                }
+
+                                _iteratorNormalCompletion = true;
+                                _didIteratorError = false;
+                                _iteratorError = undefined;
+                                _context2.prev = 23;
+                                _iterator = Object.entries(compiled.contracts)[Symbol.iterator]();
+
+                            case 25:
+                                if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
+                                    _context2.next = 49;
+                                    break;
+                                }
+
+                                file = _step.value;
+                                _iteratorNormalCompletion2 = true;
+                                _didIteratorError2 = false;
+                                _iteratorError2 = undefined;
+                                _context2.prev = 30;
+
+                                for (_iterator2 = Object.entries(file[1])[Symbol.iterator](); !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                                    _ref3 = _step2.value;
+                                    _ref4 = slicedToArray(_ref3, 2);
+                                    contractName = _ref4[0];
+                                    contract = _ref4[1];
+
+                                    // Add interface to redux
+                                    this.store.dispatch({ type: ADD_INTERFACE, payload: { contractName: contractName, interface: contract.abi } });
+                                }
+                                _context2.next = 38;
+                                break;
+
+                            case 34:
+                                _context2.prev = 34;
+                                _context2.t0 = _context2['catch'](30);
+                                _didIteratorError2 = true;
+                                _iteratorError2 = _context2.t0;
+
+                            case 38:
+                                _context2.prev = 38;
+                                _context2.prev = 39;
+
+                                if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                    _iterator2.return();
+                                }
+
+                            case 41:
+                                _context2.prev = 41;
+
+                                if (!_didIteratorError2) {
+                                    _context2.next = 44;
+                                    break;
+                                }
+
+                                throw _iteratorError2;
+
+                            case 44:
+                                return _context2.finish(41);
+
+                            case 45:
+                                return _context2.finish(38);
+
+                            case 46:
+                                _iteratorNormalCompletion = true;
+                                _context2.next = 25;
+                                break;
+
+                            case 49:
+                                _context2.next = 55;
+                                break;
+
+                            case 51:
+                                _context2.prev = 51;
+                                _context2.t1 = _context2['catch'](23);
+                                _didIteratorError = true;
+                                _iteratorError = _context2.t1;
+
+                            case 55:
+                                _context2.prev = 55;
+                                _context2.prev = 56;
+
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
+                                }
+
+                            case 58:
+                                _context2.prev = 58;
+
+                                if (!_didIteratorError) {
+                                    _context2.next = 61;
+                                    break;
+                                }
+
+                                throw _iteratorError;
+
+                            case 61:
+                                return _context2.finish(58);
+
+                            case 62:
+                                return _context2.finish(55);
+
+                            case 63:
+                                if (compiled.errors) {
+                                    this.store.dispatch({ type: SET_ERRORS, payload: compiled.errors });
+                                }
+                                _context2.next = 66;
+                                return this.helpers.getGasLimit();
+
+                            case 66:
+                                gasLimit = _context2.sent;
+
+                                this.store.dispatch({ type: SET_GAS_LIMIT, payload: gasLimit });
+                                this.store.dispatch({ type: SET_COMPILING, payload: false });
+                                _context2.next = 75;
+                                break;
+
+                            case 71:
+                                _context2.prev = 71;
+                                _context2.t2 = _context2['catch'](8);
+
+                                console.log(_context2.t2);
+                                this.helpers.showPanelError(_context2.t2);
+
+                            case 75:
+                                _context2.next = 78;
+                                break;
+
+                            case 77:
+                                return _context2.abrupt('return');
+
+                            case 78:
+                            case 'end':
+                                return _context2.stop();
+                        }
+                    }
+                }, _callee2, this, [[8, 71], [23, 51, 55, 63], [30, 34, 38, 46], [39,, 41, 45], [56,, 58, 62]]);
+            }));
+
+            function compile(_x) {
+                return _ref2.apply(this, arguments);
+            }
+
+            return compile;
+        }()
+    }]);
+    return Web3Env;
 }();
 
 var INITIAL_STATE = {
