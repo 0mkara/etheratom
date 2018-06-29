@@ -1603,6 +1603,7 @@ var SET_COMPILING = 'set_compiling';
 var SET_COMPILED = 'set_compiled';
 var SET_PARAMS = 'set_params';
 var ADD_INTERFACE = 'add_interface';
+var UPDATE_INTERFACE = 'update_interface';
 var SET_INSTANCE = 'set_instance';
 var SET_DEPLOYED = 'set_deployed';
 var SET_GAS_LIMIT = 'set_gas_limit';
@@ -1642,18 +1643,27 @@ var addInterface = function addInterface(_ref2) {
     };
 };
 
-var setInstance = function setInstance(_ref3) {
+var updateInterface = function updateInterface(_ref3) {
     var contractName = _ref3.contractName,
-        instance = _ref3.instance;
+        ContractABI = _ref3.ContractABI;
+
+    return function (dispatch) {
+        dispatch({ type: ADD_INTERFACE, payload: { contractName: contractName, interface: ContractABI } });
+    };
+};
+
+var setInstance = function setInstance(_ref4) {
+    var contractName = _ref4.contractName,
+        instance = _ref4.instance;
 
     return function (dispatch) {
         dispatch({ type: SET_INSTANCE, payload: { contractName: contractName, instance: instance } });
     };
 };
 
-var setDeployed = function setDeployed(_ref4) {
-    var contractName = _ref4.contractName,
-        deployed = _ref4.deployed;
+var setDeployed = function setDeployed(_ref5) {
+    var contractName = _ref5.contractName,
+        deployed = _ref5.deployed;
 
     return function (dispatch) {
         dispatch({ type: SET_DEPLOYED, payload: { contractName: contractName, deployed: deployed } });
@@ -2347,8 +2357,16 @@ var FunctionABI = function (_React$Component) {
 
     createClass(FunctionABI, [{
         key: '_handleChange',
-        value: function _handleChange(input, event) {
+        value: function _handleChange(i, j, event) {
+            var _props = this.props,
+                contractName = _props.contractName,
+                interfaces = _props.interfaces;
+
+            var ContractABI = interfaces[contractName].interface;
+            var input = ContractABI[i].inputs[j];
             input.value = event.target.value;
+            ContractABI[i].inputs[j] = Object.assign({}, input);
+            this.props.updateInterface({ contractName: contractName, ContractABI: ContractABI });
         }
     }, {
         key: '_handlePayableValue',
@@ -2359,13 +2377,13 @@ var FunctionABI = function (_React$Component) {
         key: '_handleFallback',
         value: function () {
             var _ref = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(abiItem) {
-                var _props, contractName, coinbase, password, instances, contract, result;
+                var _props2, contractName, coinbase, password, instances, contract, result;
 
                 return regeneratorRuntime.wrap(function _callee$(_context) {
                     while (1) {
                         switch (_context.prev = _context.next) {
                             case 0:
-                                _props = this.props, contractName = _props.contractName, coinbase = _props.coinbase, password = _props.password, instances = _props.instances;
+                                _props2 = this.props, contractName = _props2.contractName, coinbase = _props2.coinbase, password = _props2.password, instances = _props2.instances;
                                 contract = instances[contractName];
                                 _context.prev = 2;
                                 _context.next = 5;
@@ -2403,14 +2421,14 @@ var FunctionABI = function (_React$Component) {
         key: '_handleSubmit',
         value: function () {
             var _ref2 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(methodItem) {
-                var _props2, contractName, coinbase, password, instances, contract, params, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, input, result;
+                var _props3, contractName, coinbase, password, instances, contract, params, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, input, result;
 
                 return regeneratorRuntime.wrap(function _callee2$(_context2) {
                     while (1) {
                         switch (_context2.prev = _context2.next) {
                             case 0:
                                 _context2.prev = 0;
-                                _props2 = this.props, contractName = _props2.contractName, coinbase = _props2.coinbase, password = _props2.password, instances = _props2.instances;
+                                _props3 = this.props, contractName = _props3.contractName, coinbase = _props3.coinbase, password = _props3.password, instances = _props3.instances;
                                 contract = instances[contractName];
                                 params = [];
                                 _iteratorNormalCompletion = true;
@@ -2495,9 +2513,9 @@ var FunctionABI = function (_React$Component) {
         value: function render() {
             var _this2 = this;
 
-            var _props3 = this.props,
-                contractName = _props3.contractName,
-                interfaces = _props3.interfaces;
+            var _props4 = this.props,
+                contractName = _props4.contractName,
+                interfaces = _props4.interfaces;
 
             var ContractABI = interfaces[contractName].interface;
             return React.createElement(
@@ -2507,11 +2525,11 @@ var FunctionABI = function (_React$Component) {
                     if (abi.type === 'function') {
                         return React.createElement(
                             'div',
-                            { className: 'function-container' },
+                            { key: i, className: 'function-container' },
                             React.createElement(
                                 'form',
                                 { key: i, onSubmit: function onSubmit() {
-                                        _this2._handleSubmit(abi);
+                                        return _this2._handleSubmit(abi);
                                     } },
                                 React.createElement('input', { key: i, type: 'submit', value: abi.name, className: 'text-subtle call-button' }),
                                 abi.inputs.map(function (input, j) {
@@ -2521,7 +2539,7 @@ var FunctionABI = function (_React$Component) {
                                         placeholder: input.name + ' ' + input.type,
                                         value: input.value,
                                         onChange: function onChange(event) {
-                                            return _this2._handleChange(input, event);
+                                            return _this2._handleChange(i, j, event);
                                         },
                                         key: j
                                     });
@@ -2529,7 +2547,7 @@ var FunctionABI = function (_React$Component) {
                                 abi.payable === true && React.createElement('input', {
                                     className: 'call-button-values',
                                     type: 'number',
-                                    placeholder: 'payable value',
+                                    placeholder: 'payable value in wei',
                                     onChange: function onChange(event) {
                                         return _this2._handlePayableValue(abi, event);
                                     }
@@ -2554,7 +2572,7 @@ var FunctionABI = function (_React$Component) {
                                 abi.payable === true && React.createElement('input', {
                                     className: 'call-button-values',
                                     type: 'number',
-                                    placeholder: 'send ether to contract',
+                                    placeholder: 'send wei to contract',
                                     onChange: function onChange(event) {
                                         return _this2._handlePayableValue(abi, event);
                                     }
@@ -2572,7 +2590,8 @@ var FunctionABI = function (_React$Component) {
 FunctionABI.propTypes = {
     helpers: PropTypes.any.isRequired,
     contractName: PropTypes.string,
-    interfaces: PropTypes.object
+    interfaces: PropTypes.object,
+    updateInterface: PropTypes.func
 };
 
 var mapStateToProps$4 = function mapStateToProps(_ref3) {
@@ -2587,7 +2606,7 @@ var mapStateToProps$4 = function mapStateToProps(_ref3) {
     return { compiled: compiled, interfaces: interfaces, instances: instances, coinbase: coinbase, password: password };
 };
 
-var FunctionABI$1 = reactRedux.connect(mapStateToProps$4, {})(FunctionABI);
+var FunctionABI$1 = reactRedux.connect(mapStateToProps$4, { updateInterface: updateInterface })(FunctionABI);
 
 var ContractExecution = function (_React$Component) {
     inherits(ContractExecution, _React$Component);
@@ -4878,6 +4897,8 @@ var ContractReducer = (function () {
         case SET_PARAMS:
             return _extends({}, state, { interfaces: _extends({}, state.interfaces, defineProperty({}, action.payload.contractName, { interface: action.payload.interface })) });
         case ADD_INTERFACE:
+            return _extends({}, state, { interfaces: _extends({}, state.interfaces, defineProperty({}, action.payload.contractName, { interface: action.payload.interface })) });
+        case UPDATE_INTERFACE:
             return _extends({}, state, { interfaces: _extends({}, state.interfaces, defineProperty({}, action.payload.contractName, { interface: action.payload.interface })) });
         case SET_GAS_LIMIT:
             return _extends({}, state, { gasLimit: action.payload });
