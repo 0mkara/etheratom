@@ -18,6 +18,7 @@ var ReactJson = _interopDefault(require('react-json-view'));
 var reactTabs = require('react-tabs');
 var reactCollapse = require('react-collapse');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
+var RemixTests = _interopDefault(require('remix-tests'));
 var remixSolidity = require('remix-solidity');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
 var ReactDOM = _interopDefault(require('react-dom'));
@@ -1607,6 +1608,7 @@ var UPDATE_INTERFACE = 'update_interface';
 var SET_INSTANCE = 'set_instance';
 var SET_DEPLOYED = 'set_deployed';
 var SET_GAS_LIMIT = 'set_gas_limit';
+var SET_SOURCES = 'set_sources';
 
 var SET_COINBASE = 'set_coinbase';
 var SET_PASSWORD = 'set_password';
@@ -3362,6 +3364,241 @@ var mapStateToProps$9 = function mapStateToProps(_ref) {
 
 var Events$1 = reactRedux.connect(mapStateToProps$9, {})(Events);
 
+var RemixTest = function (_React$Component) {
+    inherits(RemixTest, _React$Component);
+
+    function RemixTest(props) {
+        classCallCheck(this, RemixTest);
+
+        var _this = possibleConstructorReturn(this, (RemixTest.__proto__ || Object.getPrototypeOf(RemixTest)).call(this, props));
+
+        _this.state = {
+            testResults: [],
+            running: false
+        };
+        _this._runRemixTests = _this._runRemixTests.bind(_this);
+        _this._testCallback = _this._testCallback.bind(_this);
+        _this._finalCallback = _this._finalCallback.bind(_this);
+        return _this;
+    }
+
+    createClass(RemixTest, [{
+        key: '_testCallback',
+        value: function _testCallback(result) {
+            try {
+                var testResults = this.state.testResults;
+
+                var t = testResults.slice();
+                t.push(result);
+                this.setState({ testResults: t });
+            } catch (e) {
+                throw e;
+            }
+        }
+    }, {
+        key: '_resultsCallback',
+        value: function _resultsCallback(result) {
+            console.log(result);
+        }
+    }, {
+        key: '_finalCallback',
+        value: function _finalCallback(err, result) {
+            if (err) {
+                throw err;
+            }
+            this.setState({ testResult: result, running: false });
+        }
+    }, {
+        key: '_importFileCb',
+        value: function _importFileCb(err, result) {
+            console.log(err);
+            console.log(result);
+        }
+    }, {
+        key: '_runRemixTests',
+        value: function () {
+            var _ref = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+                var _this2 = this;
+
+                var sources, promises, filename;
+                return regeneratorRuntime.wrap(function _callee$(_context) {
+                    while (1) {
+                        switch (_context.prev = _context.next) {
+                            case 0:
+                                sources = this.props.sources;
+
+                                this.setState({ testResults: [], running: true });
+                                promises = [];
+                                _context.t0 = regeneratorRuntime.keys(sources);
+
+                            case 4:
+                                if ((_context.t1 = _context.t0()).done) {
+                                    _context.next = 14;
+                                    break;
+                                }
+
+                                filename = _context.t1.value;
+
+                                if (!(filename === 'remix_tests.sol')) {
+                                    _context.next = 8;
+                                    break;
+                                }
+
+                                return _context.abrupt('continue', 4);
+
+                            case 8:
+                                _context.next = 10;
+                                return this.injectTests(sources[filename]);
+
+                            case 10:
+                                sources[filename].content = _context.sent;
+
+                                promises.push(filename);
+                                _context.next = 4;
+                                break;
+
+                            case 14:
+                                Promise.all(promises).then(function (testSources) {
+                                    console.log(sources);
+                                    RemixTests.runTestSources(sources, _this2._testCallback, _this2._resultsCallback, _this2._finalCallback, _this2._importFileCb);
+                                }).catch(function (e) {
+                                    console.log(e);
+                                });
+
+                            case 15:
+                            case 'end':
+                                return _context.stop();
+                        }
+                    }
+                }, _callee, this);
+            }));
+
+            function _runRemixTests() {
+                return _ref.apply(this, arguments);
+            }
+
+            return _runRemixTests;
+        }()
+    }, {
+        key: 'injectTests',
+        value: function () {
+            var _ref2 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(source) {
+                return regeneratorRuntime.wrap(function _callee2$(_context2) {
+                    while (1) {
+                        switch (_context2.prev = _context2.next) {
+                            case 0:
+                                return _context2.abrupt('return', source.content.replace(/(pragma solidity \^\d+\.\d+\.\d+;)/, '$1\nimport \'remix_tests.sol\';'));
+
+                            case 1:
+                            case 'end':
+                                return _context2.stop();
+                        }
+                    }
+                }, _callee2, this);
+            }));
+
+            function injectTests(_x) {
+                return _ref2.apply(this, arguments);
+            }
+
+            return injectTests;
+        }()
+    }, {
+        key: 'render',
+        value: function render() {
+            var _state = this.state,
+                testResults = _state.testResults,
+                testResult = _state.testResult,
+                running = _state.running;
+
+            return React.createElement(
+                'div',
+                { id: 'remix-tests' },
+                React.createElement(
+                    'h2',
+                    { className: 'block test-header' },
+                    'Naming conventions'
+                ),
+                React.createElement(
+                    'h3',
+                    { className: 'block test-header' },
+                    'File names should end with _test, as in foo_test.sol'
+                ),
+                React.createElement(
+                    'div',
+                    { className: 'test-selector' },
+                    React.createElement(
+                        'button',
+                        { className: 'btn btn-primary inline-block-tight', onClick: this._runRemixTests },
+                        'Run tests'
+                    ),
+                    running && React.createElement('span', { className: 'loading loading-spinner-tiny inline-block' }),
+                    testResult && React.createElement(
+                        'div',
+                        { className: 'test-result' },
+                        React.createElement(
+                            'span',
+                            { className: 'text-error' },
+                            'Total failing: ',
+                            testResult.totalFailing,
+                            ' '
+                        ),
+                        React.createElement(
+                            'span',
+                            { className: 'text-success' },
+                            'Total passing: ',
+                            testResult.totalPassing,
+                            ' '
+                        ),
+                        React.createElement(
+                            'span',
+                            { className: 'text-info' },
+                            'Time: ',
+                            testResult.totalTime
+                        )
+                    )
+                ),
+                React.createElement(VirtualList, {
+                    height: '100vh',
+                    itemCount: testResults.length,
+                    itemSize: 30,
+                    className: 'test-result-list-container',
+                    overscanCount: 10,
+                    renderItem: function renderItem(_ref3) {
+                        var index = _ref3.index;
+                        return React.createElement(
+                            'div',
+                            { key: index, className: 'test-result-list-item' },
+                            testResults[index].type === 'contract' && React.createElement('span', { className: 'status-renamed icon icon-checklist' }),
+                            testResults[index].type === 'testPass' && React.createElement('span', { className: 'status-added icon icon-check' }),
+                            testResults[index].type === 'testFailure' && React.createElement('span', { className: 'status-removed icon icon-x' }),
+                            React.createElement(
+                                'span',
+                                { className: 'padded text-warning' },
+                                testResults[index].value
+                            )
+                        );
+                    }
+                })
+            );
+        }
+    }]);
+    return RemixTest;
+}(React.Component);
+
+RemixTest.propTypes = {
+    helpers: PropTypes.any.isRequired,
+    sources: PropTypes.object,
+    compiled: PropTypes.object
+};
+var mapStateToProps$a = function mapStateToProps(_ref4) {
+    var contract = _ref4.contract;
+    var sources = contract.sources;
+
+    return { sources: sources };
+};
+var RemixTest$1 = reactRedux.connect(mapStateToProps$a, {})(RemixTest);
+
 var NodeControl = function (_React$Component) {
     inherits(NodeControl, _React$Component);
 
@@ -3675,7 +3912,7 @@ NodeControl.propTypes = {
     setAccounts: PropTypes.func
 };
 
-var mapStateToProps$a = function mapStateToProps(_ref4) {
+var mapStateToProps$b = function mapStateToProps(_ref4) {
     var account = _ref4.account,
         node = _ref4.node;
     var coinbase = account.coinbase;
@@ -3687,7 +3924,7 @@ var mapStateToProps$a = function mapStateToProps(_ref4) {
     return { coinbase: coinbase, status: status, syncing: syncing, mining: mining, hashRate: hashRate };
 };
 
-var NodeControl$1 = reactRedux.connect(mapStateToProps$a, { setAccounts: setAccounts, setSyncStatus: setSyncStatus, setMining: setMining, setHashrate: setHashrate })(NodeControl);
+var NodeControl$1 = reactRedux.connect(mapStateToProps$b, { setAccounts: setAccounts, setSyncStatus: setSyncStatus, setMining: setMining, setHashrate: setHashrate })(NodeControl);
 
 var StaticAnalysis = function (_React$Component) {
     inherits(StaticAnalysis, _React$Component);
@@ -3876,14 +4113,14 @@ StaticAnalysis.propTypes = {
     helpers: PropTypes.any.isRequired
 };
 
-var mapStateToProps$b = function mapStateToProps(_ref3) {
+var mapStateToProps$c = function mapStateToProps(_ref3) {
     var contract = _ref3.contract;
     var compiled = contract.compiled;
 
     return { compiled: compiled };
 };
 
-var StaticAnalysis$1 = reactRedux.connect(mapStateToProps$b, {})(StaticAnalysis);
+var StaticAnalysis$1 = reactRedux.connect(mapStateToProps$c, {})(StaticAnalysis);
 
 var TabView = function (_React$Component) {
     inherits(TabView, _React$Component);
@@ -4003,6 +4240,15 @@ var TabView = function (_React$Component) {
                             React.createElement(
                                 'div',
                                 { className: 'btn' },
+                                'Tests'
+                            )
+                        ),
+                        React.createElement(
+                            reactTabs.Tab,
+                            null,
+                            React.createElement(
+                                'div',
+                                { className: 'btn' },
                                 'Node'
                             )
                         ),
@@ -4036,6 +4282,11 @@ var TabView = function (_React$Component) {
                     reactTabs.TabPanel,
                     null,
                     React.createElement(Events$1, { store: this.props.store, helpers: this.helpers })
+                ),
+                React.createElement(
+                    reactTabs.TabPanel,
+                    null,
+                    React.createElement(RemixTest$1, { store: this.props.store, helpers: this.helpers })
                 ),
                 React.createElement(
                     reactTabs.TabPanel,
@@ -4093,7 +4344,7 @@ TabView.propTypes = {
     events: PropTypes.array
 };
 
-var mapStateToProps$c = function mapStateToProps(_ref) {
+var mapStateToProps$d = function mapStateToProps(_ref) {
     var contract = _ref.contract,
         eventReducer = _ref.eventReducer;
     var compiled = contract.compiled;
@@ -4103,7 +4354,7 @@ var mapStateToProps$c = function mapStateToProps(_ref) {
     return { compiled: compiled, pendingTransactions: pendingTransactions, events: events };
 };
 
-var TabView$1 = reactRedux.connect(mapStateToProps$c, {})(TabView);
+var TabView$1 = reactRedux.connect(mapStateToProps$d, {})(TabView);
 
 var CoinbaseView = function (_React$Component) {
     inherits(CoinbaseView, _React$Component);
@@ -4282,7 +4533,7 @@ CoinbaseView.propTypes = {
     setPassword: PropTypes.any
 };
 
-var mapStateToProps$d = function mapStateToProps(_ref3) {
+var mapStateToProps$e = function mapStateToProps(_ref3) {
     var account = _ref3.account;
     var coinbase = account.coinbase,
         password = account.password,
@@ -4291,7 +4542,7 @@ var mapStateToProps$d = function mapStateToProps(_ref3) {
     return { coinbase: coinbase, password: password, accounts: accounts };
 };
 
-var CoinbaseView$1 = reactRedux.connect(mapStateToProps$d, { setCoinbase: setCoinbase, setPassword: setPassword })(CoinbaseView);
+var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, { setCoinbase: setCoinbase, setPassword: setPassword })(CoinbaseView);
 
 var CompileBtn = function (_React$Component) {
     inherits(CompileBtn, _React$Component);
@@ -4352,14 +4603,14 @@ CompileBtn.propTypes = {
     compiling: PropTypes.bool
 };
 
-var mapStateToProps$e = function mapStateToProps(_ref2) {
+var mapStateToProps$f = function mapStateToProps(_ref2) {
     var contract = _ref2.contract;
     var compiling = contract.compiling;
 
     return { compiling: compiling };
 };
 
-var CompileBtn$1 = reactRedux.connect(mapStateToProps$e, {})(CompileBtn);
+var CompileBtn$1 = reactRedux.connect(mapStateToProps$f, {})(CompileBtn);
 
 var View = function () {
 	function View(store, web3) {
@@ -4543,13 +4794,15 @@ var Web3Env = function () {
                                 if (Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider)) {
                                     console.log('%c Provider is websocket. Creating subscriptions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
                                     // newBlockHeaders subscriber
-                                    this.web3.eth.subscribe('newBlockHeaders').on('data', function (blocks) {
-                                        console.log('%c newBlockHeaders:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-                                        console.log(blocks);
-                                    }).on('error', function (e) {
-                                        console.log('%c newBlockHeaders:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-                                        console.log(e);
-                                    });
+                                    /*this.web3.eth.subscribe('newBlockHeaders')
+                                        .on('data', (blocks) => {
+                                            console.log('%c newBlockHeaders:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                            console.log(blocks);
+                                        })
+                                        .on('error', (e) => {
+                                            console.log('%c newBlockHeaders:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+                                            console.log(e);
+                                        });*/
                                     // pendingTransactions subscriber
                                     this.web3.eth.subscribe('pendingTransactions').on('data', function (transaction) {
                                         /*console.log("%c pendingTransactions:data ", 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
@@ -4693,7 +4946,7 @@ var Web3Env = function () {
                                 filename = filePath.replace(/^.*[\\\/]/, '');
 
                                 if (!(filePath.split('.').pop() == 'sol')) {
-                                    _context2.next = 77;
+                                    _context2.next = 78;
                                     break;
                                 }
 
@@ -4710,6 +4963,7 @@ var Web3Env = function () {
                             case 11:
                                 sources = _context2.sent;
 
+
                                 // Reset redux store
                                 this.store.dispatch({ type: SET_COMPILED, payload: null });
                                 this.store.dispatch({ type: SET_ERRORS, payload: [] });
@@ -4721,21 +4975,22 @@ var Web3Env = function () {
                                 compiled = _context2.sent;
 
                                 this.store.dispatch({ type: SET_COMPILED, payload: compiled });
+                                this.store.dispatch({ type: SET_SOURCES, payload: sources });
 
                                 if (!compiled.contracts) {
-                                    _context2.next = 63;
+                                    _context2.next = 64;
                                     break;
                                 }
 
                                 _iteratorNormalCompletion = true;
                                 _didIteratorError = false;
                                 _iteratorError = undefined;
-                                _context2.prev = 23;
+                                _context2.prev = 24;
                                 _iterator = Object.entries(compiled.contracts)[Symbol.iterator]();
 
-                            case 25:
+                            case 26:
                                 if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                                    _context2.next = 49;
+                                    _context2.next = 50;
                                     break;
                                 }
 
@@ -4743,7 +4998,7 @@ var Web3Env = function () {
                                 _iteratorNormalCompletion2 = true;
                                 _didIteratorError2 = false;
                                 _iteratorError2 = undefined;
-                                _context2.prev = 30;
+                                _context2.prev = 31;
 
                                 for (_iterator2 = Object.entries(file[1])[Symbol.iterator](); !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
                                     _ref3 = _step2.value;
@@ -4754,113 +5009,113 @@ var Web3Env = function () {
                                     // Add interface to redux
                                     this.store.dispatch({ type: ADD_INTERFACE, payload: { contractName: contractName, interface: contract.abi } });
                                 }
-                                _context2.next = 38;
+                                _context2.next = 39;
                                 break;
 
-                            case 34:
-                                _context2.prev = 34;
-                                _context2.t0 = _context2['catch'](30);
+                            case 35:
+                                _context2.prev = 35;
+                                _context2.t0 = _context2['catch'](31);
                                 _didIteratorError2 = true;
                                 _iteratorError2 = _context2.t0;
 
-                            case 38:
-                                _context2.prev = 38;
+                            case 39:
                                 _context2.prev = 39;
+                                _context2.prev = 40;
 
                                 if (!_iteratorNormalCompletion2 && _iterator2.return) {
                                     _iterator2.return();
                                 }
 
-                            case 41:
-                                _context2.prev = 41;
+                            case 42:
+                                _context2.prev = 42;
 
                                 if (!_didIteratorError2) {
-                                    _context2.next = 44;
+                                    _context2.next = 45;
                                     break;
                                 }
 
                                 throw _iteratorError2;
 
-                            case 44:
-                                return _context2.finish(41);
-
                             case 45:
-                                return _context2.finish(38);
+                                return _context2.finish(42);
 
                             case 46:
+                                return _context2.finish(39);
+
+                            case 47:
                                 _iteratorNormalCompletion = true;
-                                _context2.next = 25;
+                                _context2.next = 26;
                                 break;
 
-                            case 49:
-                                _context2.next = 55;
+                            case 50:
+                                _context2.next = 56;
                                 break;
 
-                            case 51:
-                                _context2.prev = 51;
-                                _context2.t1 = _context2['catch'](23);
+                            case 52:
+                                _context2.prev = 52;
+                                _context2.t1 = _context2['catch'](24);
                                 _didIteratorError = true;
                                 _iteratorError = _context2.t1;
 
-                            case 55:
-                                _context2.prev = 55;
+                            case 56:
                                 _context2.prev = 56;
+                                _context2.prev = 57;
 
                                 if (!_iteratorNormalCompletion && _iterator.return) {
                                     _iterator.return();
                                 }
 
-                            case 58:
-                                _context2.prev = 58;
+                            case 59:
+                                _context2.prev = 59;
 
                                 if (!_didIteratorError) {
-                                    _context2.next = 61;
+                                    _context2.next = 62;
                                     break;
                                 }
 
                                 throw _iteratorError;
 
-                            case 61:
-                                return _context2.finish(58);
-
                             case 62:
-                                return _context2.finish(55);
+                                return _context2.finish(59);
 
                             case 63:
+                                return _context2.finish(56);
+
+                            case 64:
                                 if (compiled.errors) {
                                     this.store.dispatch({ type: SET_ERRORS, payload: compiled.errors });
                                 }
-                                _context2.next = 66;
+                                _context2.next = 67;
                                 return this.helpers.getGasLimit();
 
-                            case 66:
+                            case 67:
                                 gasLimit = _context2.sent;
 
                                 this.store.dispatch({ type: SET_GAS_LIMIT, payload: gasLimit });
                                 this.store.dispatch({ type: SET_COMPILING, payload: false });
-                                _context2.next = 75;
+                                _context2.next = 76;
                                 break;
 
-                            case 71:
-                                _context2.prev = 71;
+                            case 72:
+                                _context2.prev = 72;
                                 _context2.t2 = _context2['catch'](8);
 
                                 console.log(_context2.t2);
                                 this.helpers.showPanelError(_context2.t2);
 
-                            case 75:
-                                _context2.next = 78;
+                            case 76:
+                                _context2.next = 79;
                                 break;
 
-                            case 77:
+                            case 78:
                                 return _context2.abrupt('return');
 
-                            case 78:
+                            case 79:
                             case 'end':
                                 return _context2.stop();
                         }
                     }
-                }, _callee2, this, [[8, 71], [23, 51, 55, 63], [30, 34, 38, 46], [39,, 41, 45], [56,, 58, 62]]);
+                }, _callee2, this, [[8, 72], [24, 52, 56, 64], [31, 35, 39, 47], [40,, 42, 46], [57,, 59, 63]]);
             }));
 
             function compile(_x) {
@@ -4879,13 +5134,16 @@ var INITIAL_STATE = {
     deployed: false,
     interfaces: null,
     instances: null,
-    gasLimit: 0
+    gasLimit: 0,
+    sources: {}
 };
 var ContractReducer = (function () {
     var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : INITIAL_STATE;
     var action = arguments[1];
 
     switch (action.type) {
+        case SET_SOURCES:
+            return _extends({}, state, { sources: action.payload });
         case SET_COMPILING:
             return _extends({}, state, { compiling: action.payload });
         case SET_DEPLOYED:
