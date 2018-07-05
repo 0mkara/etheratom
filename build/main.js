@@ -25,6 +25,7 @@ var Web3 = _interopDefault(require('web3'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
+require('idempotent-babel-polyfill');
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
   return typeof obj;
@@ -5035,10 +5036,6 @@ function configureStore(initialState) {
     }
     var store = redux.createStore(etheratomReducers, initialState, redux.applyMiddleware.apply(undefined, middleWares));
     return store;
-}
-
-if (!global._babelPolyfill) {
-	require('babel-polyfill');
 }
 
 var Etheratom = function () {
