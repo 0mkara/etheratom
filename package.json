@@ -62,7 +62,7 @@
     "redux": "^3.7.2",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
-    "remix-solidity": "^0.1.7",
+    "remix-solidity": "https://github.com/0mkara/remix-solidity.git",
     "solc": "^0.4.24",
     "valid-url": "^1.0.9",
     "web3": "1.0.0-beta.18"
