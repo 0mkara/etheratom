@@ -7056,6 +7056,11 @@ var Web3Env = function () {
                             case 0:
                                 filePath = editor.getPath();
                                 filename = filePath.replace(/^.*[\\/]/, '');
+                                // Reset redux store
+
+                                this.store.dispatch({ type: SET_COMPILED, payload: null });
+                                this.store.dispatch({ type: SET_ERRORS, payload: [] });
+                                this.store.dispatch({ type: SET_EVENTS, payload: [] });
 
                                 if (!(filePath.split('.').pop() == 'sol')) {
                                     _context2.next = 78;
@@ -7068,18 +7073,12 @@ var Web3Env = function () {
                                 sources = {};
 
                                 sources[filename] = { content: editor.getText() };
-                                _context2.prev = 8;
-                                _context2.next = 11;
+                                _context2.prev = 11;
+                                _context2.next = 14;
                                 return combineSource(dir, sources);
 
-                            case 11:
+                            case 14:
                                 sources = _context2.sent;
-
-
-                                // Reset redux store
-                                this.store.dispatch({ type: SET_COMPILED, payload: null });
-                                this.store.dispatch({ type: SET_ERRORS, payload: [] });
-                                this.store.dispatch({ type: SET_EVENTS, payload: [] });
                                 _context2.next = 17;
                                 return this.helpers.compileWeb3(sources);
 
@@ -7210,7 +7209,7 @@ var Web3Env = function () {
 
                             case 72:
                                 _context2.prev = 72;
-                                _context2.t2 = _context2['catch'](8);
+                                _context2.t2 = _context2['catch'](11);
 
                                 console.log(_context2.t2);
                                 this.helpers.showPanelError(_context2.t2);
@@ -7227,7 +7226,7 @@ var Web3Env = function () {
                                 return _context2.stop();
                         }
                     }
-                }, _callee2, this, [[8, 72], [24, 52, 56, 64], [31, 35, 39, 47], [40,, 42, 46], [57,, 59, 63]]);
+                }, _callee2, this, [[11, 72], [24, 52, 56, 64], [31, 35, 39, 47], [40,, 42, 46], [57,, 59, 63]]);
             }));
 
             function compile(_x) {
