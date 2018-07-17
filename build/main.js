@@ -448,16 +448,49 @@ var Web3Helpers = function () {
 			return getGasEstimate;
 		}()
 	}, {
-		key: 'getBalance',
+		key: 'setCoinbase',
 		value: function () {
 			var _ref3 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(coinbase) {
-				var error, weiBalance, ethBalance;
 				return regeneratorRuntime.wrap(function _callee3$(_context3) {
 					while (1) {
 						switch (_context3.prev = _context3.next) {
 							case 0:
+								_context3.prev = 0;
+
+								this.web3.eth.defaultAccount = coinbase;
+								_context3.next = 7;
+								break;
+
+							case 4:
+								_context3.prev = 4;
+								_context3.t0 = _context3['catch'](0);
+								throw _context3.t0;
+
+							case 7:
+							case 'end':
+								return _context3.stop();
+						}
+					}
+				}, _callee3, this, [[0, 4]]);
+			}));
+
+			function setCoinbase(_x4) {
+				return _ref3.apply(this, arguments);
+			}
+
+			return setCoinbase;
+		}()
+	}, {
+		key: 'getBalance',
+		value: function () {
+			var _ref4 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(coinbase) {
+				var error, weiBalance, ethBalance;
+				return regeneratorRuntime.wrap(function _callee4$(_context4) {
+					while (1) {
+						switch (_context4.prev = _context4.next) {
+							case 0:
 								if (coinbase) {
-									_context3.next = 3;
+									_context4.next = 3;
 									break;
 								}
 
@@ -465,34 +498,34 @@ var Web3Helpers = function () {
 								throw error;
 
 							case 3:
-								_context3.prev = 3;
-								_context3.next = 6;
+								_context4.prev = 3;
+								_context4.next = 6;
 								return this.web3.eth.getBalance(coinbase);
 
 							case 6:
-								weiBalance = _context3.sent;
-								_context3.next = 9;
+								weiBalance = _context4.sent;
+								_context4.next = 9;
 								return this.web3.utils.fromWei(weiBalance, 'ether');
 
 							case 9:
-								ethBalance = _context3.sent;
-								return _context3.abrupt('return', ethBalance);
+								ethBalance = _context4.sent;
+								return _context4.abrupt('return', ethBalance);
 
 							case 13:
-								_context3.prev = 13;
-								_context3.t0 = _context3['catch'](3);
-								throw _context3.t0;
+								_context4.prev = 13;
+								_context4.t0 = _context4['catch'](3);
+								throw _context4.t0;
 
 							case 16:
 							case 'end':
-								return _context3.stop();
+								return _context4.stop();
 						}
 					}
-				}, _callee3, this, [[3, 13]]);
+				}, _callee4, this, [[3, 13]]);
 			}));
 
-			function getBalance(_x4) {
-				return _ref3.apply(this, arguments);
+			function getBalance(_x5) {
+				return _ref4.apply(this, arguments);
 			}
 
 			return getBalance;
@@ -500,29 +533,29 @@ var Web3Helpers = function () {
 	}, {
 		key: 'getSyncStat',
 		value: function () {
-			var _ref4 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
-				return regeneratorRuntime.wrap(function _callee4$(_context4) {
+			var _ref5 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
+				return regeneratorRuntime.wrap(function _callee5$(_context5) {
 					while (1) {
-						switch (_context4.prev = _context4.next) {
+						switch (_context5.prev = _context5.next) {
 							case 0:
-								_context4.prev = 0;
-								return _context4.abrupt('return', this.web3.eth.isSyncing());
+								_context5.prev = 0;
+								return _context5.abrupt('return', this.web3.eth.isSyncing());
 
 							case 4:
-								_context4.prev = 4;
-								_context4.t0 = _context4['catch'](0);
-								throw _context4.t0;
+								_context5.prev = 4;
+								_context5.t0 = _context5['catch'](0);
+								throw _context5.t0;
 
 							case 7:
 							case 'end':
-								return _context4.stop();
+								return _context5.stop();
 						}
 					}
-				}, _callee4, this, [[0, 4]]);
+				}, _callee5, this, [[0, 4]]);
 			}));
 
 			function getSyncStat() {
-				return _ref4.apply(this, arguments);
+				return _ref5.apply(this, arguments);
 			}
 
 			return getSyncStat;
@@ -530,12 +563,12 @@ var Web3Helpers = function () {
 	}, {
 		key: 'create',
 		value: function () {
-			var _ref6 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(_ref5) {
-				var args = objectWithoutProperties(_ref5, []);
+			var _ref7 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(_ref6) {
+				var args = objectWithoutProperties(_ref6, []);
 				var coinbase, password, abi, code, gasSupply, error, gasPrice, contract;
-				return regeneratorRuntime.wrap(function _callee5$(_context5) {
+				return regeneratorRuntime.wrap(function _callee6$(_context6) {
 					while (1) {
-						switch (_context5.prev = _context5.next) {
+						switch (_context6.prev = _context6.next) {
 							case 0:
 								console.log('%c Creating contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
 								coinbase = args.coinbase;
@@ -545,7 +578,7 @@ var Web3Helpers = function () {
 								gasSupply = args.gas;
 
 								if (coinbase) {
-									_context5.next = 9;
+									_context6.next = 9;
 									break;
 								}
 
@@ -554,24 +587,24 @@ var Web3Helpers = function () {
 
 							case 9:
 								this.web3.eth.defaultAccount = coinbase;
-								_context5.prev = 10;
+								_context6.prev = 10;
 
 								if (!password) {
-									_context5.next = 14;
+									_context6.next = 14;
 									break;
 								}
 
-								_context5.next = 14;
+								_context6.next = 14;
 								return this.web3.eth.personal.unlockAccount(coinbase, password);
 
 							case 14:
-								_context5.prev = 14;
-								_context5.next = 17;
+								_context6.prev = 14;
+								_context6.next = 17;
 								return this.web3.eth.getGasPrice();
 
 							case 17:
-								gasPrice = _context5.sent;
-								_context5.next = 20;
+								gasPrice = _context6.sent;
+								_context6.next = 20;
 								return new this.web3.eth.Contract(abi, {
 									from: this.web3.eth.defaultAccount,
 									data: '0x' + code,
@@ -580,37 +613,37 @@ var Web3Helpers = function () {
 								});
 
 							case 20:
-								contract = _context5.sent;
-								return _context5.abrupt('return', contract);
+								contract = _context6.sent;
+								return _context6.abrupt('return', contract);
 
 							case 24:
-								_context5.prev = 24;
-								_context5.t0 = _context5['catch'](14);
+								_context6.prev = 24;
+								_context6.t0 = _context6['catch'](14);
 
-								console.log(_context5.t0);
-								throw _context5.t0;
+								console.log(_context6.t0);
+								throw _context6.t0;
 
 							case 28:
-								_context5.next = 34;
+								_context6.next = 34;
 								break;
 
 							case 30:
-								_context5.prev = 30;
-								_context5.t1 = _context5['catch'](10);
+								_context6.prev = 30;
+								_context6.t1 = _context6['catch'](10);
 
-								console.log(_context5.t1);
-								throw _context5.t1;
+								console.log(_context6.t1);
+								throw _context6.t1;
 
 							case 34:
 							case 'end':
-								return _context5.stop();
+								return _context6.stop();
 						}
 					}
-				}, _callee5, this, [[10, 30], [14, 24]]);
+				}, _callee6, this, [[10, 30], [14, 24]]);
 			}));
 
-			function create(_x5) {
-				return _ref6.apply(this, arguments);
+			function create(_x6) {
+				return _ref7.apply(this, arguments);
 			}
 
 			return create;
@@ -618,11 +651,11 @@ var Web3Helpers = function () {
 	}, {
 		key: 'deploy',
 		value: function () {
-			var _ref7 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(contract, params) {
+			var _ref8 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(contract, params) {
 				var ContractInstance, contractInstance;
-				return regeneratorRuntime.wrap(function _callee6$(_context6) {
+				return regeneratorRuntime.wrap(function _callee7$(_context7) {
 					while (1) {
-						switch (_context6.prev = _context6.next) {
+						switch (_context7.prev = _context7.next) {
 							case 0:
 								console.log('%c Deploying contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
 
@@ -638,7 +671,7 @@ var Web3Helpers = function () {
 								}(EventEmitter);
 
 								contractInstance = new ContractInstance();
-								_context6.prev = 3;
+								_context7.prev = 3;
 
 								params = params.map(function (param) {
 									return param.type.endsWith('[]') ? param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',') : param.value;
@@ -659,25 +692,25 @@ var Web3Helpers = function () {
 									contractInstance.emit('address', instance.options.address);
 									contractInstance.emit('instance', instance);
 								});
-								return _context6.abrupt('return', contractInstance);
+								return _context7.abrupt('return', contractInstance);
 
 							case 9:
-								_context6.prev = 9;
-								_context6.t0 = _context6['catch'](3);
+								_context7.prev = 9;
+								_context7.t0 = _context7['catch'](3);
 
-								console.log(_context6.t0);
-								throw _context6.t0;
+								console.log(_context7.t0);
+								throw _context7.t0;
 
 							case 13:
 							case 'end':
-								return _context6.stop();
+								return _context7.stop();
 						}
 					}
-				}, _callee6, this, [[3, 9]]);
+				}, _callee7, this, [[3, 9]]);
 			}));
 
-			function deploy(_x6, _x7) {
-				return _ref7.apply(this, arguments);
+			function deploy(_x7, _x8) {
+				return _ref8.apply(this, arguments);
 			}
 
 			return deploy;
@@ -685,16 +718,16 @@ var Web3Helpers = function () {
 	}, {
 		key: 'call',
 		value: function () {
-			var _ref9 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(_ref8) {
+			var _ref10 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(_ref9) {
 				var _this2 = this;
 
-				var args = objectWithoutProperties(_ref8, []);
+				var args = objectWithoutProperties(_ref9, []);
 
 				var coinbase, password, contract, abiItem, params, _result, _contract$methods, _result3, _result2, _contract$methods2, _result4, result;
 
-				return regeneratorRuntime.wrap(function _callee7$(_context7) {
+				return regeneratorRuntime.wrap(function _callee8$(_context8) {
 					while (1) {
-						switch (_context7.prev = _context7.next) {
+						switch (_context8.prev = _context8.next) {
 							case 0:
 								console.log('%c Web3 calling functions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
 								coinbase = args.coinbase;
@@ -705,7 +738,7 @@ var Web3Helpers = function () {
 
 
 								this.web3.eth.defaultAccount = coinbase;
-								_context7.prev = 7;
+								_context8.prev = 7;
 
 								// Prepare params for call
 								params = params.map(function (param) {
@@ -721,20 +754,20 @@ var Web3Helpers = function () {
 								// Handle fallback
 
 								if (!(abiItem.type === 'fallback')) {
-									_context7.next = 17;
+									_context8.next = 17;
 									break;
 								}
 
 								if (!password) {
-									_context7.next = 13;
+									_context8.next = 13;
 									break;
 								}
 
-								_context7.next = 13;
+								_context8.next = 13;
 								return this.web3.eth.personal.unlockAccount(coinbase, password);
 
 							case 13:
-								_context7.next = 15;
+								_context8.next = 15;
 								return this.web3.eth.sendTransaction({
 									from: coinbase,
 									to: contract.options.address,
@@ -742,132 +775,121 @@ var Web3Helpers = function () {
 								});
 
 							case 15:
-								_result = _context7.sent;
-								return _context7.abrupt('return', _result);
+								_result = _context8.sent;
+								return _context8.abrupt('return', _result);
 
 							case 17:
 								if (!(abiItem.constant === false || abiItem.payable === true)) {
-									_context7.next = 30;
+									_context8.next = 30;
 									break;
 								}
 
 								if (!password) {
-									_context7.next = 21;
+									_context8.next = 21;
 									break;
 								}
 
-								_context7.next = 21;
+								_context8.next = 21;
 								return this.web3.eth.personal.unlockAccount(coinbase, password);
 
 							case 21:
 								if (!(params.length > 0)) {
-									_context7.next = 26;
+									_context8.next = 26;
 									break;
 								}
 
-								_context7.next = 24;
+								_context8.next = 24;
 								return (_contract$methods = contract.methods)[abiItem.name].apply(_contract$methods, toConsumableArray(params)).send({ from: coinbase, value: abiItem.payableValue });
 
 							case 24:
-								_result3 = _context7.sent;
-								return _context7.abrupt('return', _result3);
+								_result3 = _context8.sent;
+								return _context8.abrupt('return', _result3);
 
 							case 26:
-								_context7.next = 28;
+								_context8.next = 28;
 								return contract.methods[abiItem.name]().send({ from: coinbase, value: abiItem.payableValue });
 
 							case 28:
-								_result2 = _context7.sent;
-								return _context7.abrupt('return', _result2);
+								_result2 = _context8.sent;
+								return _context8.abrupt('return', _result2);
 
 							case 30:
 								if (!(params.length > 0)) {
-									_context7.next = 35;
+									_context8.next = 35;
 									break;
 								}
 
-								_context7.next = 33;
+								_context8.next = 33;
 								return (_contract$methods2 = contract.methods)[abiItem.name].apply(_contract$methods2, toConsumableArray(params)).call({ from: coinbase });
 
 							case 33:
-								_result4 = _context7.sent;
-								return _context7.abrupt('return', _result4);
+								_result4 = _context8.sent;
+								return _context8.abrupt('return', _result4);
 
 							case 35:
-								_context7.next = 37;
+								_context8.next = 37;
 								return contract.methods[abiItem.name]().call({ from: coinbase });
 
 							case 37:
-								result = _context7.sent;
-								return _context7.abrupt('return', result);
+								result = _context8.sent;
+								return _context8.abrupt('return', result);
 
 							case 41:
-								_context7.prev = 41;
-								_context7.t0 = _context7['catch'](7);
+								_context8.prev = 41;
+								_context8.t0 = _context8['catch'](7);
 
-								console.log(_context7.t0);
-								throw _context7.t0;
+								console.log(_context8.t0);
+								throw _context8.t0;
 
 							case 45:
 							case 'end':
-								return _context7.stop();
+								return _context8.stop();
 						}
 					}
-				}, _callee7, this, [[7, 41]]);
+				}, _callee8, this, [[7, 41]]);
 			}));
 
-			function call(_x8) {
-				return _ref9.apply(this, arguments);
+			function call(_x9) {
+				return _ref10.apply(this, arguments);
 			}
 
 			return call;
 		}()
 	}, {
-		key: 'funcParamsToArray',
+		key: 'send',
 		value: function () {
-			var _ref10 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9(contractFunction) {
+			var _ref11 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9(to, amount, password) {
 				var _this3 = this;
 
-				var inputElements;
 				return regeneratorRuntime.wrap(function _callee9$(_context9) {
 					while (1) {
 						switch (_context9.prev = _context9.next) {
 							case 0:
-								if (!(contractFunction && contractFunction.inputs.length > 0)) {
-									_context9.next = 5;
-									break;
-								}
+								return _context9.abrupt('return', new Promise(function (resolve, reject) {
+									try {
+										var coinbase = _this3.web3.eth.defaultAccount;
+										if (password) {
+											_this3.web3.eth.personal.unlockAccount(coinbase, password);
+										}
+										_this3.web3.eth.sendTransaction({
+											from: coinbase,
+											to: to,
+											value: amount
+										}).on('transactionHash', function (txHash) {
+											_this3.showTransaction({ head: "Transaction hash:", data: txHash });
+										}).then(function (txRecipt) {
+											console.info('Transaction recipt:', txRecipt);
+											resolve(txRecipt);
+										}).catch(function (e) {
+											reject(e);
+										});
+									} catch (e) {
+										console.error(e);
+										reject(e);
+									}
+								}));
 
-								_context9.next = 3;
-								return Promise.all(contractFunction.inputs.map(function () {
-									var _ref11 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(input) {
-										return regeneratorRuntime.wrap(function _callee8$(_context8) {
-											while (1) {
-												switch (_context8.prev = _context8.next) {
-													case 0:
-														return _context8.abrupt('return', [input.type, input.name]);
-
-													case 1:
-													case 'end':
-														return _context8.stop();
-												}
-											}
-										}, _callee8, _this3);
-									}));
-
-									return function (_x10) {
-										return _ref11.apply(this, arguments);
-									};
-								}()));
-
-							case 3:
-								inputElements = _context9.sent;
-								return _context9.abrupt('return', inputElements);
-
-							case 5:
-								return _context9.abrupt('return', []);
-
-							case 6:
+							case 1:
 							case 'end':
 								return _context9.stop();
 						}
@@ -875,8 +897,67 @@ var Web3Helpers = function () {
 				}, _callee9, this);
 			}));
 
-			function funcParamsToArray(_x9) {
-				return _ref10.apply(this, arguments);
+			function send(_x10, _x11, _x12) {
+				return _ref11.apply(this, arguments);
+			}
+
+			return send;
+		}()
+	}, {
+		key: 'funcParamsToArray',
+		value: function () {
+			var _ref12 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11(contractFunction) {
+				var _this4 = this;
+
+				var inputElements;
+				return regeneratorRuntime.wrap(function _callee11$(_context11) {
+					while (1) {
+						switch (_context11.prev = _context11.next) {
+							case 0:
+								if (!(contractFunction && contractFunction.inputs.length > 0)) {
+									_context11.next = 5;
+									break;
+								}
+
+								_context11.next = 3;
+								return Promise.all(contractFunction.inputs.map(function () {
+									var _ref13 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee10(input) {
+										return regeneratorRuntime.wrap(function _callee10$(_context10) {
+											while (1) {
+												switch (_context10.prev = _context10.next) {
+													case 0:
+														return _context10.abrupt('return', [input.type, input.name]);
+
+													case 1:
+													case 'end':
+														return _context10.stop();
+												}
+											}
+										}, _callee10, _this4);
+									}));
+
+									return function (_x14) {
+										return _ref13.apply(this, arguments);
+									};
+								}()));
+
+							case 3:
+								inputElements = _context11.sent;
+								return _context11.abrupt('return', inputElements);
+
+							case 5:
+								return _context11.abrupt('return', []);
+
+							case 6:
+							case 'end':
+								return _context11.stop();
+						}
+					}
+				}, _callee11, this);
+			}));
+
+			function funcParamsToArray(_x13) {
+				return _ref12.apply(this, arguments);
 			}
 
 			return funcParamsToArray;
@@ -884,35 +965,35 @@ var Web3Helpers = function () {
 	}, {
 		key: 'inputsToArray',
 		value: function () {
-			var _ref12 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee10(paramObject) {
-				var _this4 = this;
+			var _ref14 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee12(paramObject) {
+				var _this5 = this;
 
-				return regeneratorRuntime.wrap(function _callee10$(_context10) {
+				return regeneratorRuntime.wrap(function _callee12$(_context12) {
 					while (1) {
-						switch (_context10.prev = _context10.next) {
+						switch (_context12.prev = _context12.next) {
 							case 0:
 								if (!paramObject.type.endsWith('[]')) {
-									_context10.next = 2;
+									_context12.next = 2;
 									break;
 								}
 
-								return _context10.abrupt('return', paramObject.value.split(',').map(function (val) {
-									return _this4.web3.utils.toHex(val.trim());
+								return _context12.abrupt('return', paramObject.value.split(',').map(function (val) {
+									return _this5.web3.utils.toHex(val.trim());
 								}));
 
 							case 2:
-								return _context10.abrupt('return', this.web3.utils.toHex(paramObject.value));
+								return _context12.abrupt('return', this.web3.utils.toHex(paramObject.value));
 
 							case 3:
 							case 'end':
-								return _context10.stop();
+								return _context12.stop();
 						}
 					}
-				}, _callee10, this);
+				}, _callee12, this);
 			}));
 
-			function inputsToArray(_x11) {
-				return _ref12.apply(this, arguments);
+			function inputsToArray(_x15) {
+				return _ref14.apply(this, arguments);
 			}
 
 			return inputsToArray;
@@ -927,8 +1008,8 @@ var Web3Helpers = function () {
 		}
 	}, {
 		key: 'showOutput',
-		value: function showOutput(_ref13) {
-			var args = objectWithoutProperties(_ref13, []);
+		value: function showOutput(_ref15) {
+			var args = objectWithoutProperties(_ref15, []);
 
 			var address = args.address;
 			var data = args.data;
@@ -953,45 +1034,73 @@ var Web3Helpers = function () {
 			}));
 			return;
 		}
+	}, {
+		key: 'showTransaction',
+		value: function showTransaction(_ref16) {
+			var args = objectWithoutProperties(_ref16, []);
+
+			var head = args.head;
+			var data = args.data;
+			var messages = new atomMessagePanel.MessagePanelView({ title: 'Etheratom output' });
+			messages.attach();
+			messages.add(new atomMessagePanel.PlainMessageView({
+				message: head,
+				className: 'green-message'
+			}));
+			if (data instanceof Object) {
+				var rawMessage = '<pre>' + JSON.stringify(data, null, 4) + '</pre>';
+				messages.add(new atomMessagePanel.PlainMessageView({
+					message: rawMessage,
+					raw: true,
+					className: 'green-message'
+				}));
+				return;
+			}
+			messages.add(new atomMessagePanel.PlainMessageView({
+				message: data,
+				className: 'green-message'
+			}));
+			return;
+		}
 		// Transaction analysis
 
 	}, {
 		key: 'getTxAnalysis',
 		value: function () {
-			var _ref14 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11(txHash) {
+			var _ref17 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee13(txHash) {
 				var transaction, transactionRecipt;
-				return regeneratorRuntime.wrap(function _callee11$(_context11) {
+				return regeneratorRuntime.wrap(function _callee13$(_context13) {
 					while (1) {
-						switch (_context11.prev = _context11.next) {
+						switch (_context13.prev = _context13.next) {
 							case 0:
-								_context11.prev = 0;
-								_context11.next = 3;
+								_context13.prev = 0;
+								_context13.next = 3;
 								return this.web3.eth.getTransaction(txHash);
 
 							case 3:
-								transaction = _context11.sent;
-								_context11.next = 6;
+								transaction = _context13.sent;
+								_context13.next = 6;
 								return this.web3.eth.getTransactionReceipt(txHash);
 
 							case 6:
-								transactionRecipt = _context11.sent;
-								return _context11.abrupt('return', { transaction: transaction, transactionRecipt: transactionRecipt });
+								transactionRecipt = _context13.sent;
+								return _context13.abrupt('return', { transaction: transaction, transactionRecipt: transactionRecipt });
 
 							case 10:
-								_context11.prev = 10;
-								_context11.t0 = _context11['catch'](0);
-								throw _context11.t0;
+								_context13.prev = 10;
+								_context13.t0 = _context13['catch'](0);
+								throw _context13.t0;
 
 							case 13:
 							case 'end':
-								return _context11.stop();
+								return _context13.stop();
 						}
 					}
-				}, _callee11, this, [[0, 10]]);
+				}, _callee13, this, [[0, 10]]);
 			}));
 
-			function getTxAnalysis(_x12) {
-				return _ref14.apply(this, arguments);
+			function getTxAnalysis(_x16) {
+				return _ref17.apply(this, arguments);
 			}
 
 			return getTxAnalysis;
@@ -1001,35 +1110,35 @@ var Web3Helpers = function () {
 	}, {
 		key: 'getGasLimit',
 		value: function () {
-			var _ref15 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee12() {
+			var _ref18 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee14() {
 				var block;
-				return regeneratorRuntime.wrap(function _callee12$(_context12) {
+				return regeneratorRuntime.wrap(function _callee14$(_context14) {
 					while (1) {
-						switch (_context12.prev = _context12.next) {
+						switch (_context14.prev = _context14.next) {
 							case 0:
-								_context12.prev = 0;
-								_context12.next = 3;
+								_context14.prev = 0;
+								_context14.next = 3;
 								return this.web3.eth.getBlock('latest');
 
 							case 3:
-								block = _context12.sent;
-								return _context12.abrupt('return', block.gasLimit);
+								block = _context14.sent;
+								return _context14.abrupt('return', block.gasLimit);
 
 							case 7:
-								_context12.prev = 7;
-								_context12.t0 = _context12['catch'](0);
-								throw _context12.t0;
+								_context14.prev = 7;
+								_context14.t0 = _context14['catch'](0);
+								throw _context14.t0;
 
 							case 10:
 							case 'end':
-								return _context12.stop();
+								return _context14.stop();
 						}
 					}
-				}, _callee12, this, [[0, 7]]);
+				}, _callee14, this, [[0, 7]]);
 			}));
 
 			function getGasLimit() {
-				return _ref15.apply(this, arguments);
+				return _ref18.apply(this, arguments);
 			}
 
 			return getGasLimit;
@@ -1037,82 +1146,14 @@ var Web3Helpers = function () {
 	}, {
 		key: 'getAccounts',
 		value: function () {
-			var _ref16 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee13() {
-				return regeneratorRuntime.wrap(function _callee13$(_context13) {
-					while (1) {
-						switch (_context13.prev = _context13.next) {
-							case 0:
-								_context13.prev = 0;
-								_context13.next = 3;
-								return this.web3.eth.getAccounts();
-
-							case 3:
-								return _context13.abrupt('return', _context13.sent);
-
-							case 6:
-								_context13.prev = 6;
-								_context13.t0 = _context13['catch'](0);
-								throw _context13.t0;
-
-							case 9:
-							case 'end':
-								return _context13.stop();
-						}
-					}
-				}, _callee13, this, [[0, 6]]);
-			}));
-
-			function getAccounts() {
-				return _ref16.apply(this, arguments);
-			}
-
-			return getAccounts;
-		}()
-	}, {
-		key: 'getMining',
-		value: function () {
-			var _ref17 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee14() {
-				return regeneratorRuntime.wrap(function _callee14$(_context14) {
-					while (1) {
-						switch (_context14.prev = _context14.next) {
-							case 0:
-								_context14.prev = 0;
-								_context14.next = 3;
-								return this.web3.eth.isMining();
-
-							case 3:
-								return _context14.abrupt('return', _context14.sent);
-
-							case 6:
-								_context14.prev = 6;
-								_context14.t0 = _context14['catch'](0);
-								throw _context14.t0;
-
-							case 9:
-							case 'end':
-								return _context14.stop();
-						}
-					}
-				}, _callee14, this, [[0, 6]]);
-			}));
-
-			function getMining() {
-				return _ref17.apply(this, arguments);
-			}
-
-			return getMining;
-		}()
-	}, {
-		key: 'getHashrate',
-		value: function () {
-			var _ref18 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee15() {
+			var _ref19 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee15() {
 				return regeneratorRuntime.wrap(function _callee15$(_context15) {
 					while (1) {
 						switch (_context15.prev = _context15.next) {
 							case 0:
 								_context15.prev = 0;
 								_context15.next = 3;
-								return this.web3.eth.getHashrate();
+								return this.web3.eth.getAccounts();
 
 							case 3:
 								return _context15.abrupt('return', _context15.sent);
@@ -1130,8 +1171,76 @@ var Web3Helpers = function () {
 				}, _callee15, this, [[0, 6]]);
 			}));
 
+			function getAccounts() {
+				return _ref19.apply(this, arguments);
+			}
+
+			return getAccounts;
+		}()
+	}, {
+		key: 'getMining',
+		value: function () {
+			var _ref20 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee16() {
+				return regeneratorRuntime.wrap(function _callee16$(_context16) {
+					while (1) {
+						switch (_context16.prev = _context16.next) {
+							case 0:
+								_context16.prev = 0;
+								_context16.next = 3;
+								return this.web3.eth.isMining();
+
+							case 3:
+								return _context16.abrupt('return', _context16.sent);
+
+							case 6:
+								_context16.prev = 6;
+								_context16.t0 = _context16['catch'](0);
+								throw _context16.t0;
+
+							case 9:
+							case 'end':
+								return _context16.stop();
+						}
+					}
+				}, _callee16, this, [[0, 6]]);
+			}));
+
+			function getMining() {
+				return _ref20.apply(this, arguments);
+			}
+
+			return getMining;
+		}()
+	}, {
+		key: 'getHashrate',
+		value: function () {
+			var _ref21 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee17() {
+				return regeneratorRuntime.wrap(function _callee17$(_context17) {
+					while (1) {
+						switch (_context17.prev = _context17.next) {
+							case 0:
+								_context17.prev = 0;
+								_context17.next = 3;
+								return this.web3.eth.getHashrate();
+
+							case 3:
+								return _context17.abrupt('return', _context17.sent);
+
+							case 6:
+								_context17.prev = 6;
+								_context17.t0 = _context17['catch'](0);
+								throw _context17.t0;
+
+							case 9:
+							case 'end':
+								return _context17.stop();
+						}
+					}
+				}, _callee17, this, [[0, 6]]);
+			}));
+
 			function getHashrate() {
-				return _ref18.apply(this, arguments);
+				return _ref21.apply(this, arguments);
 			}
 
 			return getHashrate;
@@ -3372,8 +3481,16 @@ var NodeControl = function (_React$Component) {
         var _this = possibleConstructorReturn(this, (NodeControl.__proto__ || Object.getPrototypeOf(NodeControl)).call(this, props));
 
         _this.helpers = props.helpers;
+        _this.state = {
+            toAddress: '',
+            amount: 0
+        };
+
         _this._refreshSync = _this._refreshSync.bind(_this);
         _this.getNodeInfo = _this.getNodeInfo.bind(_this);
+        _this._handleToAddrrChange = _this._handleToAddrrChange.bind(_this);
+        _this._handleSend = _this._handleSend.bind(_this);
+        _this._handleAmountChange = _this._handleAmountChange.bind(_this);
         return _this;
     }
 
@@ -3481,6 +3598,59 @@ var NodeControl = function (_React$Component) {
             return getNodeInfo;
         }()
     }, {
+        key: '_handleToAddrrChange',
+        value: function _handleToAddrrChange(event) {
+            this.setState({ toAddress: event.target.value });
+        }
+    }, {
+        key: '_handleAmountChange',
+        value: function _handleAmountChange(event) {
+            this.setState({ amount: event.target.value });
+        }
+    }, {
+        key: '_handleSend',
+        value: function () {
+            var _ref4 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
+                var password, _state, toAddress, amount, txRecipt;
+
+                return regeneratorRuntime.wrap(function _callee4$(_context4) {
+                    while (1) {
+                        switch (_context4.prev = _context4.next) {
+                            case 0:
+                                _context4.prev = 0;
+                                password = this.props.password;
+                                _state = this.state, toAddress = _state.toAddress, amount = _state.amount;
+                                _context4.next = 5;
+                                return this.helpers.send(toAddress, amount, password);
+
+                            case 5:
+                                txRecipt = _context4.sent;
+
+                                this.helpers.showTransaction({ head: 'Transaction recipt:', data: txRecipt });
+                                _context4.next = 12;
+                                break;
+
+                            case 9:
+                                _context4.prev = 9;
+                                _context4.t0 = _context4['catch'](0);
+
+                                this.helpers.showPanelError(_context4.t0);
+
+                            case 12:
+                            case 'end':
+                                return _context4.stop();
+                        }
+                    }
+                }, _callee4, this, [[0, 9]]);
+            }));
+
+            function _handleSend() {
+                return _ref4.apply(this, arguments);
+            }
+
+            return _handleSend;
+        }()
+    }, {
         key: 'render',
         value: function render() {
             var _props = this.props,
@@ -3489,6 +3659,9 @@ var NodeControl = function (_React$Component) {
                 syncing = _props.syncing,
                 mining = _props.mining,
                 hashRate = _props.hashRate;
+            var _state2 = this.state,
+                toAddress = _state2.toAddress,
+                amount = _state2.amount;
 
 
             return React.createElement(
@@ -3656,6 +3829,25 @@ var NodeControl = function (_React$Component) {
                     'button',
                     { className: 'btn', onClick: this._refreshSync },
                     'Refresh'
+                ),
+                React.createElement(
+                    'form',
+                    { className: 'row', onSubmit: this._handleSend },
+                    React.createElement('input', {
+                        type: 'string', placeholder: 'Address',
+                        value: toAddress,
+                        onChange: this._handleToAddrrChange
+                    }),
+                    React.createElement('input', {
+                        type: 'number', placeholder: 'Amount',
+                        value: amount,
+                        onChange: this._handleAmountChange
+                    }),
+                    React.createElement('input', {
+                        className: 'btn inline-block-tight',
+                        type: 'submit',
+                        value: 'Send'
+                    })
                 )
             );
         }
@@ -3676,16 +3868,17 @@ NodeControl.propTypes = {
     setAccounts: PropTypes.func
 };
 
-var mapStateToProps$a = function mapStateToProps(_ref4) {
-    var account = _ref4.account,
-        node = _ref4.node;
-    var coinbase = account.coinbase;
+var mapStateToProps$a = function mapStateToProps(_ref5) {
+    var account = _ref5.account,
+        node = _ref5.node;
+    var coinbase = account.coinbase,
+        password = account.password;
     var status = node.status,
         syncing = node.syncing,
         mining = node.mining,
         hashRate = node.hashRate;
 
-    return { coinbase: coinbase, status: status, syncing: syncing, mining: mining, hashRate: hashRate };
+    return { coinbase: coinbase, password: password, status: status, syncing: syncing, mining: mining, hashRate: hashRate };
 };
 
 var NodeControl$1 = reactRedux.connect(mapStateToProps$a, { setAccounts: setAccounts, setSyncStatus: setSyncStatus, setMining: setMining, setHashrate: setHashrate })(NodeControl);
@@ -4119,12 +4312,15 @@ var CoinbaseView = function (_React$Component) {
             coinbase: props.accounts[0],
             balance: 0.00,
             password: '',
-            unlock_style: 'unlock-default'
+            toAddress: '',
+            unlock_style: 'unlock-default',
+            amount: 0
         };
         _this._handleAccChange = _this._handleAccChange.bind(_this);
         _this._handlePasswordChange = _this._handlePasswordChange.bind(_this);
         _this._handleUnlock = _this._handleUnlock.bind(_this);
         _this._linkClick = _this._linkClick.bind(_this);
+        _this._refreshBal = _this._refreshBal.bind(_this);
         return _this;
     }
 
@@ -4214,20 +4410,59 @@ var CoinbaseView = function (_React$Component) {
         key: '_handleUnlock',
         value: function _handleUnlock(event) {
             // TODO: here try to unlock geth backend node using coinbase and password and show result
-            var password = this.state.password;
+            var _state = this.state,
+                password = _state.password,
+                coinbase = _state.coinbase;
 
+            console.log(coinbase);
             if (password.length > 0) {
                 this.props.setPassword({ password: password });
+                this.props.setCoinbase(coinbase);
+                // TODO: Set web3.eth.defaultAccount on unlock
+                this.helpers.setCoinbase(coinbase);
                 this.setState({ unlock_style: 'unlock-active' });
             }
             event.preventDefault();
         }
     }, {
+        key: '_refreshBal',
+        value: function () {
+            var _ref3 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
+                var coinbase, balance;
+                return regeneratorRuntime.wrap(function _callee3$(_context3) {
+                    while (1) {
+                        switch (_context3.prev = _context3.next) {
+                            case 0:
+                                coinbase = this.state.coinbase;
+                                _context3.next = 3;
+                                return this.helpers.getBalance(coinbase);
+
+                            case 3:
+                                balance = _context3.sent;
+
+                                console.info("Balance:", balance);
+                                this.setState({ balance: balance });
+
+                            case 6:
+                            case 'end':
+                                return _context3.stop();
+                        }
+                    }
+                }, _callee3, this);
+            }));
+
+            function _refreshBal() {
+                return _ref3.apply(this, arguments);
+            }
+
+            return _refreshBal;
+        }()
+    }, {
         key: 'render',
         value: function render() {
-            var _state = this.state,
-                balance = _state.balance,
-                password = _state.password;
+            var _state2 = this.state,
+                balance = _state2.balance,
+                password = _state2.password;
             var accounts = this.props.accounts;
 
             return React.createElement(
@@ -4250,7 +4485,7 @@ var CoinbaseView = function (_React$Component) {
                     ),
                     React.createElement(
                         'button',
-                        { className: 'btn' },
+                        { onClick: this._refreshBal, className: 'btn' },
                         balance,
                         ' ETH'
                     )
@@ -4283,8 +4518,8 @@ CoinbaseView.propTypes = {
     setPassword: PropTypes.any
 };
 
-var mapStateToProps$d = function mapStateToProps(_ref3) {
-    var account = _ref3.account;
+var mapStateToProps$d = function mapStateToProps(_ref4) {
+    var account = _ref4.account;
     var coinbase = account.coinbase,
         password = account.password,
         accounts = account.accounts;
