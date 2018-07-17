@@ -54,7 +54,7 @@
     "react-checkbox-tree": "1.2.3",
     "react-collapse": "^4.0.3",
     "react-dom": "^16.4.1",
-    "react-json-view": "^1.19.0",
+    "react-json-view": "1.18.3",
     "react-motion": "^0.5.2",
     "react-redux": "^5.0.7",
     "react-tabs": "2.2.1",
