@@ -876,9 +876,8 @@ var Web3Helpers = function () {
 											to: to,
 											value: amount
 										}).on('transactionHash', function (txHash) {
-											_this3.showTransaction({ head: "Transaction hash:", data: txHash });
+											_this3.showTransaction({ head: 'Transaction hash:', data: txHash });
 										}).then(function (txRecipt) {
-											console.info('Transaction recipt:', txRecipt);
 											resolve(txRecipt);
 										}).catch(function (e) {
 											reject(e);
@@ -4440,10 +4439,9 @@ var CoinbaseView = function (_React$Component) {
                             case 3:
                                 balance = _context3.sent;
 
-                                console.info("Balance:", balance);
                                 this.setState({ balance: balance });
 
-                            case 6:
+                            case 5:
                             case 'end':
                                 return _context3.stop();
                         }
