@@ -42,7 +42,7 @@
     "create-react-class": "^15.6.2",
     "ethereumjs-abi": "^0.6.4",
     "ethereumjs-account": "^2.0.4",
-    "ethereumjs-block": "^2.0.0",
+    "ethereumjs-block": "^2.0.1",
     "ethereumjs-tx": "^1.2.5",
     "ethereumjs-util": "^5.1.1",
     "ethereumjs-vm": "^2.0.2",
