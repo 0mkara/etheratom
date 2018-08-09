@@ -27,6 +27,7 @@ notifications:
 branches:
   only:
     - master
+    - /^greenkeeper/.*$/
 
 git:
   depth: 10
