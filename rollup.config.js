@@ -7,6 +7,7 @@ import builtins from 'rollup-plugin-node-builtins';
 const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json'), 'utf-8'));
 const external = Object.keys(pkg.dependencies || {});
 external.push('atom');
+external.push('fs');
 
 export default {
     input: 'index.js',
