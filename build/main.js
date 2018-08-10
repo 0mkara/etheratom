@@ -7,6 +7,7 @@ var Solc = _interopDefault(require('solc'));
 var atomMessagePanel = require('atom-message-panel');
 var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
+var fs = _interopDefault(require('fs'));
 var React = _interopDefault(require('react'));
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
@@ -3122,8 +3123,6 @@ function parseHost(self) {
   if (host) self.hostname = host;
 }
 
-var fs = {};
-
 // Copyright 2018 Etheratom Authors
 // This file is part of Etheratom.
 
@@ -3183,19 +3182,20 @@ var handleGithubCall = function () {
 
 var handleLocalImport = function () {
     var _ref2 = asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(pathString, filename, fileRoot) {
-        var o, content, response;
+        var o, p, content, response;
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
             while (1) {
                 switch (_context2.prev = _context2.next) {
                     case 0:
                         o = { encoding: 'UTF-8' };
-                        content = fs.readFileSync(path.resolve(fileRoot, pathString, filename), o);
+                        p = pathString ? path.resolve(fileRoot, pathString, filename) : path.resolve(fileRoot, filename);
+                        content = fs.readFileSync(p, o);
 
-                        fileRoot = path.resolve(fileRoot, pathString);
+                        fileRoot = pathString ? path.resolve(fileRoot, pathString) : fileRoot;
                         response = { filename: filename, content: content, fileRoot: fileRoot };
                         return _context2.abrupt('return', response);
 
-                    case 5:
+                    case 6:
                     case 'end':
                         return _context2.stop();
                 }
