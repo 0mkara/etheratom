@@ -3297,99 +3297,100 @@ var resolveImports = function () {
             while (1) {
                 switch (_context6.prev = _context6.next) {
                     case 0:
-                        _context6.next = 2;
+                        console.log(sourcePath);
+                        _context6.next = 3;
                         return getHandlers();
 
-                    case 2:
+                    case 3:
                         handlers = _context6.sent;
                         response = {};
                         _iteratorNormalCompletion = true;
                         _didIteratorError = false;
                         _iteratorError = undefined;
-                        _context6.prev = 7;
+                        _context6.prev = 8;
                         _iterator = handlers[Symbol.iterator]();
 
-                    case 9:
+                    case 10:
                         if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                            _context6.next = 26;
+                            _context6.next = 27;
                             break;
                         }
 
                         handler = _step.value;
-                        _context6.prev = 11;
+                        _context6.prev = 12;
 
                         // here we are trying to find type of import path github/swarm/ipfs/local
                         match = handler.match.exec(sourcePath);
 
                         if (!match) {
-                            _context6.next = 18;
+                            _context6.next = 19;
                             break;
                         }
 
-                        _context6.next = 16;
+                        _context6.next = 17;
                         return handler.handle(match, fileRoot);
 
-                    case 16:
+                    case 17:
                         response = _context6.sent;
-                        return _context6.abrupt('break', 26);
+                        return _context6.abrupt('break', 27);
 
-                    case 18:
-                        _context6.next = 23;
+                    case 19:
+                        _context6.next = 24;
                         break;
 
-                    case 20:
-                        _context6.prev = 20;
-                        _context6.t0 = _context6['catch'](11);
+                    case 21:
+                        _context6.prev = 21;
+                        _context6.t0 = _context6['catch'](12);
                         throw _context6.t0;
 
-                    case 23:
+                    case 24:
                         _iteratorNormalCompletion = true;
-                        _context6.next = 9;
+                        _context6.next = 10;
                         break;
 
-                    case 26:
-                        _context6.next = 32;
+                    case 27:
+                        _context6.next = 33;
                         break;
 
-                    case 28:
-                        _context6.prev = 28;
-                        _context6.t1 = _context6['catch'](7);
+                    case 29:
+                        _context6.prev = 29;
+                        _context6.t1 = _context6['catch'](8);
                         _didIteratorError = true;
                         _iteratorError = _context6.t1;
 
-                    case 32:
-                        _context6.prev = 32;
+                    case 33:
                         _context6.prev = 33;
+                        _context6.prev = 34;
 
                         if (!_iteratorNormalCompletion && _iterator.return) {
                             _iterator.return();
                         }
 
-                    case 35:
-                        _context6.prev = 35;
+                    case 36:
+                        _context6.prev = 36;
 
                         if (!_didIteratorError) {
-                            _context6.next = 38;
+                            _context6.next = 39;
                             break;
                         }
 
                         throw _iteratorError;
 
-                    case 38:
-                        return _context6.finish(35);
-
                     case 39:
-                        return _context6.finish(32);
+                        return _context6.finish(36);
 
                     case 40:
-                        return _context6.abrupt('return', response);
+                        return _context6.finish(33);
 
                     case 41:
+                        return _context6.abrupt('return', response);
+
+                    case 42:
                     case 'end':
                         return _context6.stop();
                 }
             }
-        }, _callee6, this, [[7, 28, 32, 40], [11, 20], [33,, 35, 39]]);
+        }, _callee6, this, [[8, 29, 33, 41], [12, 21], [34,, 36, 40]]);
     }));
 
     return function resolveImports(_x13, _x14) {
@@ -3408,7 +3409,7 @@ var combineSource = function () {
                         fn = void 0, iline = void 0, ir = void 0;
                         matches = [];
 
-                        ir = /^import*\ [\'\"](.+)[\'\"]\;/gm;
+                        ir = /^import*\s?(?:.+)\s['"](.+)['"];/gm;
                         match = null;
                         _iteratorNormalCompletion2 = true;
                         _didIteratorError2 = false;
@@ -6800,7 +6801,7 @@ var Web3Env = function () {
                         switch (_context2.prev = _context2.next) {
                             case 0:
                                 filePath = editor.getPath();
-                                filename = filePath.replace(/^.*[\\\/]/, '');
+                                filename = filePath.replace(/^.*[\\/]/, '');
 
                                 if (!(filePath.split('.').pop() == 'sol')) {
                                     _context2.next = 77;
