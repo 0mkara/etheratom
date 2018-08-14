@@ -3297,100 +3297,99 @@ var resolveImports = function () {
             while (1) {
                 switch (_context6.prev = _context6.next) {
                     case 0:
-                        console.log(sourcePath);
-                        _context6.next = 3;
+                        _context6.next = 2;
                         return getHandlers();
 
-                    case 3:
+                    case 2:
                         handlers = _context6.sent;
                         response = {};
                         _iteratorNormalCompletion = true;
                         _didIteratorError = false;
                         _iteratorError = undefined;
-                        _context6.prev = 8;
+                        _context6.prev = 7;
                         _iterator = handlers[Symbol.iterator]();
 
-                    case 10:
+                    case 9:
                         if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                            _context6.next = 27;
+                            _context6.next = 26;
                             break;
                         }
 
                         handler = _step.value;
-                        _context6.prev = 12;
+                        _context6.prev = 11;
 
                         // here we are trying to find type of import path github/swarm/ipfs/local
                         match = handler.match.exec(sourcePath);
 
                         if (!match) {
-                            _context6.next = 19;
+                            _context6.next = 18;
                             break;
                         }
 
-                        _context6.next = 17;
+                        _context6.next = 16;
                         return handler.handle(match, fileRoot);
 
-                    case 17:
+                    case 16:
                         response = _context6.sent;
-                        return _context6.abrupt('break', 27);
+                        return _context6.abrupt('break', 26);
 
-                    case 19:
-                        _context6.next = 24;
+                    case 18:
+                        _context6.next = 23;
                         break;
 
-                    case 21:
-                        _context6.prev = 21;
-                        _context6.t0 = _context6['catch'](12);
+                    case 20:
+                        _context6.prev = 20;
+                        _context6.t0 = _context6['catch'](11);
                         throw _context6.t0;
 
-                    case 24:
+                    case 23:
                         _iteratorNormalCompletion = true;
-                        _context6.next = 10;
+                        _context6.next = 9;
                         break;
 
-                    case 27:
-                        _context6.next = 33;
+                    case 26:
+                        _context6.next = 32;
                         break;
 
-                    case 29:
-                        _context6.prev = 29;
-                        _context6.t1 = _context6['catch'](8);
+                    case 28:
+                        _context6.prev = 28;
+                        _context6.t1 = _context6['catch'](7);
                         _didIteratorError = true;
                         _iteratorError = _context6.t1;
 
-                    case 33:
+                    case 32:
+                        _context6.prev = 32;
                         _context6.prev = 33;
-                        _context6.prev = 34;
 
                         if (!_iteratorNormalCompletion && _iterator.return) {
                             _iterator.return();
                         }
 
-                    case 36:
-                        _context6.prev = 36;
+                    case 35:
+                        _context6.prev = 35;
 
                         if (!_didIteratorError) {
-                            _context6.next = 39;
+                            _context6.next = 38;
                             break;
                         }
 
                         throw _iteratorError;
 
+                    case 38:
+                        return _context6.finish(35);
+
                     case 39:
-                        return _context6.finish(36);
+                        return _context6.finish(32);
 
                     case 40:
-                        return _context6.finish(33);
-
-                    case 41:
                         return _context6.abrupt('return', response);
 
-                    case 42:
+                    case 41:
                     case 'end':
                         return _context6.stop();
                 }
             }
-        }, _callee6, this, [[8, 29, 33, 41], [12, 21], [34,, 36, 40]]);
+        }, _callee6, this, [[7, 28, 32, 40], [11, 20], [33,, 35, 39]]);
     }));
 
     return function resolveImports(_x13, _x14) {
@@ -6806,7 +6805,7 @@ var Web3Env = function () {
                                 filename = filePath.replace(/^.*[\\/]/, '');
 
                                 if (!(filePath.split('.').pop() == 'sol')) {
-                                    _context2.next = 78;
+                                    _context2.next = 77;
                                     break;
                                 }
 
@@ -6823,33 +6822,32 @@ var Web3Env = function () {
                             case 11:
                                 sources = _context2.sent;
 
-                                console.log(sources);
                                 // Reset redux store
                                 this.store.dispatch({ type: SET_COMPILED, payload: null });
                                 this.store.dispatch({ type: SET_ERRORS, payload: [] });
                                 this.store.dispatch({ type: SET_EVENTS, payload: [] });
-                                _context2.next = 18;
+                                _context2.next = 17;
                                 return this.helpers.compileWeb3(sources);
 
-                            case 18:
+                            case 17:
                                 compiled = _context2.sent;
 
                                 this.store.dispatch({ type: SET_COMPILED, payload: compiled });
 
                                 if (!compiled.contracts) {
-                                    _context2.next = 64;
+                                    _context2.next = 63;
                                     break;
                                 }
 
                                 _iteratorNormalCompletion = true;
                                 _didIteratorError = false;
                                 _iteratorError = undefined;
-                                _context2.prev = 24;
+                                _context2.prev = 23;
                                 _iterator = Object.entries(compiled.contracts)[Symbol.iterator]();
 
-                            case 26:
+                            case 25:
                                 if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                                    _context2.next = 50;
+                                    _context2.next = 49;
                                     break;
                                 }
 
@@ -6857,7 +6855,7 @@ var Web3Env = function () {
                                 _iteratorNormalCompletion2 = true;
                                 _didIteratorError2 = false;
                                 _iteratorError2 = undefined;
-                                _context2.prev = 31;
+                                _context2.prev = 30;
 
                                 for (_iterator2 = Object.entries(file[1])[Symbol.iterator](); !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
                                     _ref3 = _step2.value;
@@ -6868,113 +6866,113 @@ var Web3Env = function () {
                                     // Add interface to redux
                                     this.store.dispatch({ type: ADD_INTERFACE, payload: { contractName: contractName, interface: contract.abi } });
                                 }
-                                _context2.next = 39;
+                                _context2.next = 38;
                                 break;
 
-                            case 35:
-                                _context2.prev = 35;
-                                _context2.t0 = _context2['catch'](31);
+                            case 34:
+                                _context2.prev = 34;
+                                _context2.t0 = _context2['catch'](30);
                                 _didIteratorError2 = true;
                                 _iteratorError2 = _context2.t0;
 
-                            case 39:
+                            case 38:
+                                _context2.prev = 38;
                                 _context2.prev = 39;
-                                _context2.prev = 40;
 
                                 if (!_iteratorNormalCompletion2 && _iterator2.return) {
                                     _iterator2.return();
                                 }
 
-                            case 42:
-                                _context2.prev = 42;
+                            case 41:
+                                _context2.prev = 41;
 
                                 if (!_didIteratorError2) {
-                                    _context2.next = 45;
+                                    _context2.next = 44;
                                     break;
                                 }
 
                                 throw _iteratorError2;
 
+                            case 44:
+                                return _context2.finish(41);
+
                             case 45:
-                                return _context2.finish(42);
+                                return _context2.finish(38);
 
                             case 46:
-                                return _context2.finish(39);
-
-                            case 47:
                                 _iteratorNormalCompletion = true;
-                                _context2.next = 26;
+                                _context2.next = 25;
                                 break;
 
-                            case 50:
-                                _context2.next = 56;
+                            case 49:
+                                _context2.next = 55;
                                 break;
 
-                            case 52:
-                                _context2.prev = 52;
-                                _context2.t1 = _context2['catch'](24);
+                            case 51:
+                                _context2.prev = 51;
+                                _context2.t1 = _context2['catch'](23);
                                 _didIteratorError = true;
                                 _iteratorError = _context2.t1;
 
-                            case 56:
+                            case 55:
+                                _context2.prev = 55;
                                 _context2.prev = 56;
-                                _context2.prev = 57;
 
                                 if (!_iteratorNormalCompletion && _iterator.return) {
                                     _iterator.return();
                                 }
 
-                            case 59:
-                                _context2.prev = 59;
+                            case 58:
+                                _context2.prev = 58;
 
                                 if (!_didIteratorError) {
-                                    _context2.next = 62;
+                                    _context2.next = 61;
                                     break;
                                 }
 
                                 throw _iteratorError;
 
+                            case 61:
+                                return _context2.finish(58);
+
                             case 62:
-                                return _context2.finish(59);
+                                return _context2.finish(55);
 
                             case 63:
-                                return _context2.finish(56);
-
-                            case 64:
                                 if (compiled.errors) {
                                     this.store.dispatch({ type: SET_ERRORS, payload: compiled.errors });
                                 }
-                                _context2.next = 67;
+                                _context2.next = 66;
                                 return this.helpers.getGasLimit();
 
-                            case 67:
+                            case 66:
                                 gasLimit = _context2.sent;
 
                                 this.store.dispatch({ type: SET_GAS_LIMIT, payload: gasLimit });
                                 this.store.dispatch({ type: SET_COMPILING, payload: false });
-                                _context2.next = 76;
+                                _context2.next = 75;
                                 break;
 
-                            case 72:
-                                _context2.prev = 72;
+                            case 71:
+                                _context2.prev = 71;
                                 _context2.t2 = _context2['catch'](8);
 
                                 console.log(_context2.t2);
                                 this.helpers.showPanelError(_context2.t2);
 
-                            case 76:
-                                _context2.next = 79;
+                            case 75:
+                                _context2.next = 78;
                                 break;
 
-                            case 78:
+                            case 77:
                                 return _context2.abrupt('return');
 
-                            case 79:
+                            case 78:
                             case 'end':
                                 return _context2.stop();
                         }
                     }
-                }, _callee2, this, [[8, 72], [24, 52, 56, 64], [31, 35, 39, 47], [40,, 42, 46], [57,, 59, 63]]);
+                }, _callee2, this, [[8, 71], [23, 51, 55, 63], [30, 34, 38, 46], [39,, 41, 45], [56,, 58, 62]]);
             }));
 
             function compile(_x) {
