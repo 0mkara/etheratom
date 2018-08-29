@@ -1,8 +1,7 @@
 {
   "presets": [
-      ["react"],
-      ["es2015", { "modules": false }],
-      ["env", { "modules": false }]
+      "@babel/preset-react",
+      [ "@babel/preset-env", { "targets": { "electron": "2.0.7" } } ]
   ],
-  "plugins": ["external-helpers", "transform-object-rest-spread"]
+  "plugins": ["@babel/plugin-proposal-object-rest-spread"]
 }
