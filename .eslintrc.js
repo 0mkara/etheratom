@@ -14,8 +14,8 @@ module.exports = {
       atom: true
     },
     "parserOptions": {
+        "ecmaVersion": 6,
         "ecmaFeatures": {
-            "experimentalObjectRestSpread": true,
             "jsx": true
         },
         "sourceType": "module"
