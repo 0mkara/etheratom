@@ -2679,7 +2679,9 @@ const ADD_INTERFACE = 'add_interface';
 const UPDATE_INTERFACE = 'update_interface';
 const SET_INSTANCE = 'set_instance';
 const SET_DEPLOYED = 'set_deployed';
-const SET_GAS_LIMIT = 'set_gas_limit';
+const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
+
+const RESET_SOURCES = 'reset_sources';
 const SET_SOURCES = 'set_sources';
 const SET_COINBASE = 'set_coinbase';
 const SET_PASSWORD = 'set_password';
@@ -5225,15 +5227,6 @@ class Web3Env {
     }
   }
 
-  async selectSources(state) {
-    return state.contract.sources;
-  }
-
-  async handleSourcesUpdste() {
-    let currentValue = this.selectSources(this.store.getState());
-    console.log(currentValue);
-  }
-
   async compile(editor) {
     const filePath = editor.getPath(); // Reset redux store
 
@@ -5261,7 +5254,7 @@ class Web3Env {
         const state = this.store.getState();
         const {
           sources
-        } = state.contract;
+        } = state.files;
         delete sources['remix_tests.sol'];
         delete sources['tests.sol'];
         const compiled = await this.helpers.compileWeb3(sources);
@@ -5317,6 +5310,24 @@ class Web3Env {
 }
 
 const INITIAL_STATE = {
+  sources: {}
+};
+var FilesReducer = ((state = INITIAL_STATE, action) => {
+  switch (action.type) {
+    case SET_SOURCES:
+      return _objectSpread({}, state, {
+        sources: action.payload
+      });
+
+    case RESET_SOURCES:
+      return _objectSpread({}, INITIAL_STATE);
+
+    default:
+      return state;
+  }
+});
+
+const INITIAL_STATE$1 = {
   compiled: null,
   compiling: false,
   deployed: false,
@@ -5325,7 +5336,7 @@ const INITIAL_STATE = {
   gasLimit: 0,
   sources: {}
 };
-var ContractReducer = ((state = INITIAL_STATE, action) => {
+var ContractReducer = ((state = INITIAL_STATE$1, action) => {
   switch (action.type) {
     case SET_SOURCES:
       return _objectSpread({}, state, {
@@ -5393,12 +5404,12 @@ var ContractReducer = ((state = INITIAL_STATE, action) => {
   }
 });
 
-const INITIAL_STATE$1 = {
+const INITIAL_STATE$2 = {
   coinbase: null,
   password: false,
   accounts: []
 };
-var AccountReducer = ((state = INITIAL_STATE$1, action) => {
+var AccountReducer = ((state = INITIAL_STATE$2, action) => {
   switch (action.type) {
     case SET_COINBASE:
       return _objectSpread({}, state, {
@@ -5420,10 +5431,10 @@ var AccountReducer = ((state = INITIAL_STATE$1, action) => {
   }
 });
 
-const INITIAL_STATE$2 = {
+const INITIAL_STATE$3 = {
   errormsg: []
 };
-var ErrorReducer = ((state = INITIAL_STATE$2, action) => {
+var ErrorReducer = ((state = INITIAL_STATE$3, action) => {
   switch (action.type) {
     case SET_ERRORS:
       return _objectSpread({}, state, {
@@ -5435,11 +5446,11 @@ var ErrorReducer = ((state = INITIAL_STATE$2, action) => {
   }
 });
 
-const INITIAL_STATE$3 = {
+const INITIAL_STATE$4 = {
   pendingTransactions: [],
   events: []
 };
-var EventReducer = ((state = INITIAL_STATE$3, action) => {
+var EventReducer = ((state = INITIAL_STATE$4, action) => {
   switch (action.type) {
     case ADD_PENDING_TRANSACTION:
       return _objectSpread({}, state, {
@@ -5473,26 +5484,26 @@ var EventReducer = ((state = INITIAL_STATE$3, action) => {
 // You should have received a copy of the GNU General Public License
 // along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
 
-const INITIAL_STATE$4 = {
+const INITIAL_STATE$5 = {
   clients: [{
     provider: 'web3',
     desc: 'Backend ethereum node'
   }]
 };
-var ClientReducer = ((state = INITIAL_STATE$4, action) => {
+var ClientReducer = ((state = INITIAL_STATE$5, action) => {
   switch (action.type) {
     default:
       return state;
   }
 });
 
-const INITIAL_STATE$5 = {
+const INITIAL_STATE$6 = {
   syncing: false,
   status: {},
   mining: false,
   hashRate: 0
 };
-var NodeReducer = ((state = INITIAL_STATE$5, action) => {
+var NodeReducer = ((state = INITIAL_STATE$6, action) => {
   switch (action.type) {
     case SET_SYNCING:
       return _objectSpread({}, state, {
@@ -5520,6 +5531,7 @@ var NodeReducer = ((state = INITIAL_STATE$5, action) => {
 });
 
 var etheratomReducers = redux.combineReducers({
+  files: FilesReducer,
   contract: ContractReducer,
   account: AccountReducer,
   errors: ErrorReducer,
