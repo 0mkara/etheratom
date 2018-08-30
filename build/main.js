@@ -2686,7 +2686,8 @@ const SET_SOURCES = 'set_sources';
 const SET_COINBASE = 'set_coinbase';
 const SET_PASSWORD = 'set_password';
 const SET_ACCOUNTS = 'set_accounts';
-const SET_ERRORS = 'set_errors'; // Ethereum client events
+const SET_ERRORS = 'set_errors';
+const RESET_ERRORS = 'reset_errors'; // Ethereum client events
 
 const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
 const ADD_EVENTS = 'add_logs';
@@ -2840,6 +2841,13 @@ const setErrors = payload => {
     dispatch({
       type: SET_ERRORS,
       payload
+    });
+  };
+};
+const resetErrors = () => {
+  return dispatch => {
+    dispatch({
+      type: RESET_ERRORS
     });
   };
 };
@@ -4045,6 +4053,10 @@ class RemixTest extends React.Component {
     this._resultsCallback = this._resultsCallback.bind(this);
   }
 
+  componentDidMount() {
+    this.props.resetErrors();
+  }
+
   componentDidUpdate(prevProps) {
     const {
       sources
@@ -4105,23 +4117,13 @@ class RemixTest extends React.Component {
       testResults: [],
       running: true
     });
-    const promises = [];
 
-    for (let filename in sources) {
-      if (filename.indexOf('_test.sol') > 0) {
-        continue;
-      }
-
-      sources[filename].content = await this.injectTests(sources[filename]);
-      promises.push(filename);
-    }
-
-    Promise.all(promises).then(testSources => {
+    try {
       RemixTests.runTestSources(sources, this._testCallback, this._resultsCallback, this._finalCallback, this._importFileCb);
-    }).catch(e => {
+    } catch (e) {
       this.props.setErrors([e]);
       console.error(e);
-    });
+    }
   }
 
   async injectTests(source) {
@@ -4142,11 +4144,9 @@ class RemixTest extends React.Component {
       store: this.props.store
     }, React.createElement("div", {
       id: "remix-tests"
-    }, React.createElement("h2", {
+    }, React.createElement("h3", {
       className: "block test-header"
-    }, "Naming conventions"), React.createElement("h3", {
-      className: "block test-header"
-    }, "File names should end with _test, as in foo_test.sol"), React.createElement("div", {
+    }, "Test files should have [foo]_test.sol suffix"), React.createElement("div", {
       className: "test-selector"
     }, React.createElement("button", {
       className: "btn btn-primary inline-block-tight",
@@ -4194,22 +4194,24 @@ RemixTest.propTypes = {
   sources: PropTypes.object,
   compiled: PropTypes.object,
   setErrors: PropTypes.func,
+  resetErrors: PropTypes.func,
   store: PropTypes.any.isRequired
 };
 
 const mapStateToProps$a = ({
-  contract
+  files
 }) => {
   const {
     sources
-  } = contract;
+  } = files;
   return {
     sources
   };
 };
 
 var RemixTest$1 = reactRedux.connect(mapStateToProps$a, {
-  setErrors
+  setErrors,
+  resetErrors
 })(RemixTest);
 
 class NodeControl extends React.Component {
@@ -5440,6 +5442,9 @@ var ErrorReducer = ((state = INITIAL_STATE$3, action) => {
       return _objectSpread({}, state, {
         errormsg: action.payload
       });
+
+    case RESET_ERRORS:
+      return _objectSpread({}, INITIAL_STATE$3);
 
     default:
       return state;
