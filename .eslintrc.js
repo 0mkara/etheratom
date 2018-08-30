@@ -20,6 +20,11 @@ module.exports = {
         },
         "sourceType": "module"
     },
+    "settings": {
+        "react": {
+            "version": "16.4.2"
+        }
+    },
     "plugins": [
         "react",
         "babel"

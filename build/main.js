@@ -2642,7 +2642,7 @@ GasInput.propTypes = {
   interfaces: PropTypes.arrayOf(PropTypes.object),
   onChange: PropTypes.func,
   gasLimit: PropTypes.number,
-  gas: PropTypes.numebr
+  gas: PropTypes.number
 };
 
 const mapStateToProps = ({
@@ -3090,7 +3090,7 @@ class CreateButton extends React.Component {
 CreateButton.propTypes = {
   helpers: PropTypes.any.isRequired,
   coinbase: PropTypes.string,
-  password: PropTypes.string,
+  password: PropTypes.oneOfType([PropTypes.string, PropTypes.boolean]),
   interfaces: PropTypes.object,
   setInstance: PropTypes.func,
   setDeployed: PropTypes.func,
@@ -5258,7 +5258,14 @@ class Web3Env {
           sources
         } = state.files;
         delete sources['remix_tests.sol'];
-        delete sources['tests.sol'];
+        delete sources['tests.sol']; // TODO: delete _test files
+
+        for (let filename in sources) {
+          if (/^(.+)(_test.sol)/g.test(filename)) {
+            delete sources[filename];
+          }
+        }
+
         const compiled = await this.helpers.compileWeb3(sources);
         this.store.dispatch({
           type: SET_COMPILED,
