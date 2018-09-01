@@ -5342,8 +5342,7 @@ const INITIAL_STATE$1 = {
   deployed: false,
   interfaces: null,
   instances: null,
-  gasLimit: 0,
-  sources: {}
+  gasLimit: 0
 };
 var ContractReducer = ((state = INITIAL_STATE$1, action) => {
   switch (action.type) {
@@ -5365,7 +5364,7 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
       });
 
     case SET_COMPILED:
-      return _objectSpread({}, state, {
+      return _objectSpread({}, INITIAL_STATE$1, {
         compiled: action.payload
       });
 
