@@ -2642,7 +2642,7 @@ GasInput.propTypes = {
   interfaces: PropTypes.arrayOf(PropTypes.object),
   onChange: PropTypes.func,
   gasLimit: PropTypes.number,
-  gas: PropTypes.numebr
+  gas: PropTypes.number
 };
 
 const mapStateToProps = ({
@@ -2679,12 +2679,15 @@ const ADD_INTERFACE = 'add_interface';
 const UPDATE_INTERFACE = 'update_interface';
 const SET_INSTANCE = 'set_instance';
 const SET_DEPLOYED = 'set_deployed';
-const SET_GAS_LIMIT = 'set_gas_limit';
+const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
+
+const RESET_SOURCES = 'reset_sources';
 const SET_SOURCES = 'set_sources';
 const SET_COINBASE = 'set_coinbase';
 const SET_PASSWORD = 'set_password';
 const SET_ACCOUNTS = 'set_accounts';
-const SET_ERRORS = 'set_errors'; // Ethereum client events
+const SET_ERRORS = 'set_errors';
+const RESET_ERRORS = 'reset_errors'; // Ethereum client events
 
 const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
 const ADD_EVENTS = 'add_logs';
@@ -2838,6 +2841,13 @@ const setErrors = payload => {
     dispatch({
       type: SET_ERRORS,
       payload
+    });
+  };
+};
+const resetErrors = () => {
+  return dispatch => {
+    dispatch({
+      type: RESET_ERRORS
     });
   };
 };
@@ -3080,7 +3090,7 @@ class CreateButton extends React.Component {
 CreateButton.propTypes = {
   helpers: PropTypes.any.isRequired,
   coinbase: PropTypes.string,
-  password: PropTypes.string,
+  password: PropTypes.oneOfType([PropTypes.string, PropTypes.boolean]),
   interfaces: PropTypes.object,
   setInstance: PropTypes.func,
   setDeployed: PropTypes.func,
@@ -4043,6 +4053,10 @@ class RemixTest extends React.Component {
     this._resultsCallback = this._resultsCallback.bind(this);
   }
 
+  componentDidMount() {
+    this.props.resetErrors();
+  }
+
   componentDidUpdate(prevProps) {
     const {
       sources
@@ -4103,23 +4117,13 @@ class RemixTest extends React.Component {
       testResults: [],
       running: true
     });
-    const promises = [];
 
-    for (let filename in sources) {
-      if (filename.indexOf('_test.sol') > 0) {
-        continue;
-      }
-
-      sources[filename].content = await this.injectTests(sources[filename]);
-      promises.push(filename);
-    }
-
-    Promise.all(promises).then(testSources => {
+    try {
       RemixTests.runTestSources(sources, this._testCallback, this._resultsCallback, this._finalCallback, this._importFileCb);
-    }).catch(e => {
+    } catch (e) {
       this.props.setErrors([e]);
       console.error(e);
-    });
+    }
   }
 
   async injectTests(source) {
@@ -4140,11 +4144,9 @@ class RemixTest extends React.Component {
       store: this.props.store
     }, React.createElement("div", {
       id: "remix-tests"
-    }, React.createElement("h2", {
+    }, React.createElement("h3", {
       className: "block test-header"
-    }, "Naming conventions"), React.createElement("h3", {
-      className: "block test-header"
-    }, "File names should end with _test, as in foo_test.sol"), React.createElement("div", {
+    }, "Test files should have [foo]_test.sol suffix"), React.createElement("div", {
       className: "test-selector"
     }, React.createElement("button", {
       className: "btn btn-primary inline-block-tight",
@@ -4192,22 +4194,24 @@ RemixTest.propTypes = {
   sources: PropTypes.object,
   compiled: PropTypes.object,
   setErrors: PropTypes.func,
+  resetErrors: PropTypes.func,
   store: PropTypes.any.isRequired
 };
 
 const mapStateToProps$a = ({
-  contract
+  files
 }) => {
   const {
     sources
-  } = contract;
+  } = files;
   return {
     sources
   };
 };
 
 var RemixTest$1 = reactRedux.connect(mapStateToProps$a, {
-  setErrors
+  setErrors,
+  resetErrors
 })(RemixTest);
 
 class NodeControl extends React.Component {
@@ -5225,15 +5229,6 @@ class Web3Env {
     }
   }
 
-  async selectSources(state) {
-    return state.contract.sources;
-  }
-
-  async handleSourcesUpdste() {
-    let currentValue = this.selectSources(this.store.getState());
-    console.log(currentValue);
-  }
-
   async compile(editor) {
     const filePath = editor.getPath(); // Reset redux store
 
@@ -5261,9 +5256,16 @@ class Web3Env {
         const state = this.store.getState();
         const {
           sources
-        } = state.contract;
+        } = state.files;
         delete sources['remix_tests.sol'];
-        delete sources['tests.sol'];
+        delete sources['tests.sol']; // TODO: delete _test files
+
+        for (let filename in sources) {
+          if (/^(.+)(_test.sol)/g.test(filename)) {
+            delete sources[filename];
+          }
+        }
+
         const compiled = await this.helpers.compileWeb3(sources);
         this.store.dispatch({
           type: SET_COMPILED,
@@ -5317,15 +5319,32 @@ class Web3Env {
 }
 
 const INITIAL_STATE = {
+  sources: {}
+};
+var FilesReducer = ((state = INITIAL_STATE, action) => {
+  switch (action.type) {
+    case SET_SOURCES:
+      return _objectSpread({}, state, {
+        sources: action.payload
+      });
+
+    case RESET_SOURCES:
+      return _objectSpread({}, INITIAL_STATE);
+
+    default:
+      return state;
+  }
+});
+
+const INITIAL_STATE$1 = {
   compiled: null,
   compiling: false,
   deployed: false,
   interfaces: null,
   instances: null,
-  gasLimit: 0,
-  sources: {}
+  gasLimit: 0
 };
-var ContractReducer = ((state = INITIAL_STATE, action) => {
+var ContractReducer = ((state = INITIAL_STATE$1, action) => {
   switch (action.type) {
     case SET_SOURCES:
       return _objectSpread({}, state, {
@@ -5345,7 +5364,7 @@ var ContractReducer = ((state = INITIAL_STATE, action) => {
       });
 
     case SET_COMPILED:
-      return _objectSpread({}, state, {
+      return _objectSpread({}, INITIAL_STATE$1, {
         compiled: action.payload
       });
 
@@ -5393,12 +5412,12 @@ var ContractReducer = ((state = INITIAL_STATE, action) => {
   }
 });
 
-const INITIAL_STATE$1 = {
+const INITIAL_STATE$2 = {
   coinbase: null,
   password: false,
   accounts: []
 };
-var AccountReducer = ((state = INITIAL_STATE$1, action) => {
+var AccountReducer = ((state = INITIAL_STATE$2, action) => {
   switch (action.type) {
     case SET_COINBASE:
       return _objectSpread({}, state, {
@@ -5420,26 +5439,29 @@ var AccountReducer = ((state = INITIAL_STATE$1, action) => {
   }
 });
 
-const INITIAL_STATE$2 = {
+const INITIAL_STATE$3 = {
   errormsg: []
 };
-var ErrorReducer = ((state = INITIAL_STATE$2, action) => {
+var ErrorReducer = ((state = INITIAL_STATE$3, action) => {
   switch (action.type) {
     case SET_ERRORS:
       return _objectSpread({}, state, {
         errormsg: action.payload
       });
 
+    case RESET_ERRORS:
+      return _objectSpread({}, INITIAL_STATE$3);
+
     default:
       return state;
   }
 });
 
-const INITIAL_STATE$3 = {
+const INITIAL_STATE$4 = {
   pendingTransactions: [],
   events: []
 };
-var EventReducer = ((state = INITIAL_STATE$3, action) => {
+var EventReducer = ((state = INITIAL_STATE$4, action) => {
   switch (action.type) {
     case ADD_PENDING_TRANSACTION:
       return _objectSpread({}, state, {
@@ -5473,26 +5495,26 @@ var EventReducer = ((state = INITIAL_STATE$3, action) => {
 // You should have received a copy of the GNU General Public License
 // along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
 
-const INITIAL_STATE$4 = {
+const INITIAL_STATE$5 = {
   clients: [{
     provider: 'web3',
     desc: 'Backend ethereum node'
   }]
 };
-var ClientReducer = ((state = INITIAL_STATE$4, action) => {
+var ClientReducer = ((state = INITIAL_STATE$5, action) => {
   switch (action.type) {
     default:
       return state;
   }
 });
 
-const INITIAL_STATE$5 = {
+const INITIAL_STATE$6 = {
   syncing: false,
   status: {},
   mining: false,
   hashRate: 0
 };
-var NodeReducer = ((state = INITIAL_STATE$5, action) => {
+var NodeReducer = ((state = INITIAL_STATE$6, action) => {
   switch (action.type) {
     case SET_SYNCING:
       return _objectSpread({}, state, {
@@ -5520,6 +5542,7 @@ var NodeReducer = ((state = INITIAL_STATE$5, action) => {
 });
 
 var etheratomReducers = redux.combineReducers({
+  files: FilesReducer,
   contract: ContractReducer,
   account: AccountReducer,
   errors: ErrorReducer,
