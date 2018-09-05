@@ -15,7 +15,6 @@ var ReactJson = _interopDefault(require('react-json-view'));
 var reactTabs = require('react-tabs');
 var reactCollapse = require('react-collapse');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
-var RemixTests = _interopDefault(require('remix-tests'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
 var ReactDOM = _interopDefault(require('react-dom'));
@@ -4100,12 +4099,14 @@ class RemixTest extends React.Component {
     super(props);
     this.state = {
       testResults: [],
+      testResult: null,
       running: false
     };
-    this._runRemixTests = this._runRemixTests.bind(this);
-    this._testCallback = this._testCallback.bind(this);
-    this._finalCallback = this._finalCallback.bind(this);
-    this._resultsCallback = this._resultsCallback.bind(this);
+  }
+
+  createWorker(fn) {
+    const pkgPath = atom.packages.resolvePackagePath('etheratom');
+    return child_process.fork(`${pkgPath}/lib/web3/worker.js`);
   }
 
   componentDidMount() {
@@ -4122,68 +4123,75 @@ class RemixTest extends React.Component {
     }
   }
 
-  _testCallback(result) {
-    try {
-      const {
-        testResults
-      } = this.state;
-      const t = testResults.slice();
-      t.push(result);
-      this.setState({
-        testResults: t
-      });
-    } catch (e) {
-      this.props.setErrors(e);
-      e.forEach(err => {
-        console.error(err);
-      });
-    }
-  }
-
-  _resultsCallback(err, result) {
-    if (err) {
-      this.props.setErrors(err);
-      err.forEach(e => {
-        console.error(e);
-      });
-    }
-  }
-
-  _finalCallback(err, result) {
-    if (err) {
-      this.props.setErrors(err);
-      err.forEach(e => {
-        console.error(e);
-      });
-    }
-
-    this.setState({
-      testResult: result,
-      running: false
-    });
-  }
-
-  _importFileCb(err, result) {
-    if (err) {
-      this.props.setErrors(err);
-      err.forEach(e => {
-        console.error(e);
-      });
-    }
-  }
-
   async _runRemixTests() {
     const {
       sources
     } = this.props;
     this.setState({
       testResults: [],
+      testResult: {
+        totalFailing: 0,
+        totalPassing: 0,
+        totalTime: 0
+      },
       running: true
     });
     this.props.resetErrors();
 
     try {
-      RemixTests.runTestSources(sources, this._testCallback, this._resultsCallback, this._finalCallback, this._importFileCb);
+      const utWorker = this.createWorker();
+      utWorker.send({
+        command: 'runTests',
+        payload: sources
+      });
+      utWorker.on('message', m => {
+        if (m._testCallback) {
+          const result = m.result;
+          const {
+            testResults
+          } = this.state;
+          const t = testResults.slice();
+          t.push(result);
+          this.setState({
+            testResults: t
+          });
+        }
+
+        if (m._resultsCallback) {
+          const result = m.result;
+          console.log(result);
+        }
+
+        if (m._finalCallback) {
+          const result = m.result;
+          this.setState({
+            testResult: result,
+            running: false
+          });
+        }
+
+        if (m._importFileCb) {
+          const result = m.result;
+          console.log(result);
+        }
+
+        if (m.error) {
+          const e = m.error;
+          this.props.setErrors(e);
+          e.forEach(err => {
+            console.error(err);
+          });
+        }
+      });
+      utWorker.on('error', e => {
+        throw e;
+      });
+      utWorker.on('exit', (code, signal) => {
+        this.setState({
+          running: false
+        });
+        console.log('%c Compile worker process exited with ' + `code ${code} and signal ${signal}`, 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      });
     } catch (e) {
       this.props.setErrors(e);
       e.forEach(err => {
