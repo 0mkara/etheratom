@@ -8,6 +8,7 @@ const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json'), 'utf-8'))
 const external = Object.keys(pkg.dependencies || {});
 external.push('atom');
 external.push('fs');
+external.push('child_process');
 
 export default {
     input: 'index.js',

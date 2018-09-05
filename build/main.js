@@ -3,8 +3,8 @@
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var atom$1 = require('atom');
-var Solc = _interopDefault(require('solc'));
 var atomMessagePanel = require('atom-message-panel');
+var child_process = require('child_process');
 var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
@@ -893,9 +893,54 @@ function unwrapListeners(arr) {
   return ret;
 }
 
+// This file is part of Etheratom.
+// Etheratom is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// Etheratom is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
+
+const SET_COMPILING = 'set_compiling';
+const SET_COMPILED = 'set_compiled';
+const RESET_COMPILED = 'reset_compiled';
+const SET_PARAMS = 'set_params';
+const ADD_INTERFACE = 'add_interface';
+const UPDATE_INTERFACE = 'update_interface';
+const SET_INSTANCE = 'set_instance';
+const SET_DEPLOYED = 'set_deployed';
+const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
+
+const RESET_SOURCES = 'reset_sources';
+const SET_SOURCES = 'set_sources';
+const SET_COINBASE = 'set_coinbase';
+const SET_PASSWORD = 'set_password';
+const SET_ACCOUNTS = 'set_accounts';
+const SET_ERRORS = 'set_errors';
+const RESET_ERRORS = 'reset_errors'; // Ethereum client events
+
+const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
+const ADD_EVENTS = 'add_logs';
+const SET_EVENTS = 'set_events'; // Node variables
+
+const SET_SYNC_STATUS = 'set_sync_status';
+const SET_SYNCING = 'set_syncing';
+const SET_MINING = 'set_mining';
+const SET_HASH_RATE = 'set_hash_rate';
+
 class Web3Helpers {
-  constructor(web3) {
+  constructor(web3, store) {
     this.web3 = web3;
+    this.store = store;
+  }
+
+  createWorker(fn) {
+    const pkgPath = atom.packages.resolvePackagePath('etheratom');
+    return child_process.fork(`${pkgPath}/lib/web3/worker.js`);
   }
 
   async compileWeb3(sources) {
@@ -923,8 +968,31 @@ class Web3Helpers {
         sources,
         settings
       };
-      const output = await Solc.compileStandardWrapper(JSON.stringify(input));
-      return JSON.parse(output);
+      const solcWorker = this.createWorker();
+      solcWorker.send({
+        command: 'compile',
+        payload: input
+      });
+      solcWorker.on('message', m => {
+        if (m.compiled) {
+          this.store.dispatch({
+            type: SET_COMPILED,
+            payload: JSON.parse(m.compiled)
+          });
+          this.store.dispatch({
+            type: SET_COMPILING,
+            payload: false
+          });
+        }
+      });
+      solcWorker.on('error', e => console.error(e));
+      solcWorker.on('exit', (code, signal) => {
+        this.store.dispatch({
+          type: SET_COMPILING,
+          payload: false
+        });
+        console.log('%c Compile worker process exited with ' + `code ${code} and signal ${signal}`, 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      });
     } catch (e) {
       throw e;
     }
@@ -2660,44 +2728,6 @@ const mapStateToProps = ({
 
 var GasInput$1 = reactRedux.connect(mapStateToProps, {})(GasInput);
 
-// This file is part of Etheratom.
-// Etheratom is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// Etheratom is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
-
-const SET_COMPILING = 'set_compiling';
-const SET_COMPILED = 'set_compiled';
-const SET_PARAMS = 'set_params';
-const ADD_INTERFACE = 'add_interface';
-const UPDATE_INTERFACE = 'update_interface';
-const SET_INSTANCE = 'set_instance';
-const SET_DEPLOYED = 'set_deployed';
-const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
-
-const RESET_SOURCES = 'reset_sources';
-const SET_SOURCES = 'set_sources';
-const SET_COINBASE = 'set_coinbase';
-const SET_PASSWORD = 'set_password';
-const SET_ACCOUNTS = 'set_accounts';
-const SET_ERRORS = 'set_errors';
-const RESET_ERRORS = 'reset_errors'; // Ethereum client events
-
-const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
-const ADD_EVENTS = 'add_logs';
-const SET_EVENTS = 'set_events'; // Node variables
-
-const SET_SYNC_STATUS = 'set_sync_status';
-const SET_SYNCING = 'set_syncing';
-const SET_MINING = 'set_mining';
-const SET_HASH_RATE = 'set_hash_rate';
-
 const setParamsInput = ({
   contractName,
   abi
@@ -3669,13 +3699,33 @@ class Contracts extends React.Component {
 
   componentDidUpdate(prevProps) {
     const {
-      sources
+      sources,
+      compiled
     } = this.props;
 
     if (sources != prevProps.sources) {
       // Start compilation of contracts from here
       const workspaceElement = atom.views.getView(atom.workspace);
       atom.commands.dispatch(workspaceElement, 'eth-interface:compile');
+    }
+
+    if (compiled !== null && compiled !== prevProps.compiled) {
+      if (compiled.contracts) {
+        for (const file of Object.entries(compiled.contracts)) {
+          for (const [contractName, contract] of Object.entries(file[1])) {
+            // Add interface to redux
+            const ContractABI = contract.abi;
+            this.props.addInterface({
+              contractName,
+              ContractABI
+            });
+          }
+        }
+      }
+
+      if (compiled.errors) {
+        this.props.setErrors(compiled.errors);
+      }
     }
   }
 
@@ -3730,7 +3780,9 @@ Contracts.propTypes = {
   compiled: PropTypes.object,
   deployed: PropTypes.any,
   compiling: PropTypes.bool,
-  interfaces: PropTypes.object
+  interfaces: PropTypes.object,
+  addInterface: PropTypes.func,
+  setErrors: PropTypes.func
 };
 
 const mapStateToProps$7 = ({
@@ -3752,7 +3804,10 @@ const mapStateToProps$7 = ({
   };
 };
 
-var Contracts$1 = reactRedux.connect(mapStateToProps$7, {})(Contracts);
+var Contracts$1 = reactRedux.connect(mapStateToProps$7, {
+  addInterface,
+  setErrors
+})(Contracts);
 
 class TxAnalyzer extends React.Component {
   constructor(props) {
@@ -4078,22 +4133,28 @@ class RemixTest extends React.Component {
         testResults: t
       });
     } catch (e) {
-      this.props.setErrors([e]);
-      console.error(e);
+      this.props.setErrors(e);
+      e.forEach(err => {
+        console.error(err);
+      });
     }
   }
 
   _resultsCallback(err, result) {
     if (err) {
-      this.props.setErrors([err]);
-      console.error(err);
+      this.props.setErrors(err);
+      err.forEach(e => {
+        console.error(e);
+      });
     }
   }
 
   _finalCallback(err, result) {
     if (err) {
-      this.props.setErrors([err]);
-      console.error(err);
+      this.props.setErrors(err);
+      err.forEach(e => {
+        console.error(e);
+      });
     }
 
     this.setState({
@@ -4104,8 +4165,10 @@ class RemixTest extends React.Component {
 
   _importFileCb(err, result) {
     if (err) {
-      this.props.setErrors([err]);
-      console.error(err);
+      this.props.setErrors(err);
+      err.forEach(e => {
+        console.error(e);
+      });
     }
   }
 
@@ -4117,12 +4180,15 @@ class RemixTest extends React.Component {
       testResults: [],
       running: true
     });
+    this.props.resetErrors();
 
     try {
       RemixTests.runTestSources(sources, this._testCallback, this._resultsCallback, this._finalCallback, this._importFileCb);
     } catch (e) {
-      this.props.setErrors([e]);
-      console.error(e);
+      this.props.setErrors(e);
+      e.forEach(err => {
+        console.error(err);
+      });
     }
   }
 
@@ -5067,7 +5133,7 @@ class Web3Env {
         this.web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
       }
 
-      this.helpers = new Web3Helpers(this.web3);
+      this.helpers = new Web3Helpers(this.web3, this.store);
     }
 
     this.view = new View(this.store, this.web3);
@@ -5266,52 +5332,17 @@ class Web3Env {
           }
         }
 
-        const compiled = await this.helpers.compileWeb3(sources);
-        this.store.dispatch({
-          type: SET_COMPILED,
-          payload: compiled
-        });
-
-        if (compiled.contracts) {
-          for (const file of Object.entries(compiled.contracts)) {
-            for (const [contractName, contract] of Object.entries(file[1])) {
-              // Add interface to redux
-              this.store.dispatch({
-                type: ADD_INTERFACE,
-                payload: {
-                  contractName,
-                  interface: contract.abi
-                }
-              });
-            }
-          }
-        }
-
-        if (compiled.errors) {
-          this.store.dispatch({
-            type: SET_ERRORS,
-            payload: compiled.errors
-          });
-        }
-
+        this.helpers.compileWeb3(sources);
         const gasLimit = await this.helpers.getGasLimit();
         this.store.dispatch({
           type: SET_GAS_LIMIT,
           payload: gasLimit
-        });
-        this.store.dispatch({
-          type: SET_COMPILING,
-          payload: false
         });
       } catch (e) {
         console.log(e);
         this.helpers.showPanelError(e);
       }
     } else {
-      this.store.dispatch({
-        type: SET_COMPILING,
-        payload: false
-      });
       return;
     }
   }
@@ -5364,9 +5395,12 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
       });
 
     case SET_COMPILED:
-      return _objectSpread({}, INITIAL_STATE$1, {
+      return _objectSpread({}, state, {
         compiled: action.payload
       });
+
+    case RESET_COMPILED:
+      return _objectSpread({}, INITIAL_STATE$1);
 
     case SET_INSTANCE:
       return _objectSpread({}, state, {
