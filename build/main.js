@@ -4828,7 +4828,9 @@ class TabView extends React.Component {
       className: "text-success"
     }, "Donate Ethereum: 0xd22fE4aEFed0A984B1165dc24095728EE7005a36"), React.createElement("p", null, React.createElement("span", null, "Etheratom news "), React.createElement("a", {
       href: "https://twitter.com/hashtag/Etheratom"
-    }, "#Etheratom")), React.createElement("p", null, "Contact: ", React.createElement("a", {
+    }, "#Etheratom")), React.createElement("p", null, React.createElement("span", null, "Etheratom support "), React.createElement("a", {
+      href: "https://t.me/etheratom"
+    }, "t.me/etheratom")), React.createElement("p", null, "Contact: ", React.createElement("a", {
       href: "mailto:0mkar@protonmail.com",
       target: "_top"
     }, "0mkar@protonmail.com"))));
