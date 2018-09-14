@@ -4291,8 +4291,6 @@ class NodeControl extends React.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
-    console.log(props.web3.currentProvider);
-    console.log(Web3.providers);
     this.state = {
       wsProvider: Object.is(props.web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
       httpProvider: Object.is(props.web3.currentProvider.constructor, Web3.providers.HttpProvider),
@@ -4509,7 +4507,7 @@ class NodeControl extends React.Component {
       onSubmit: this._handleSend
     }, React.createElement("input", {
       type: "string",
-      placeholder: "Address",
+      placeholder: "To address",
       className: "input-text",
       value: toAddress,
       onChange: this._handleToAddrrChange
@@ -4870,6 +4868,7 @@ class CoinbaseView extends React.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
+    this.web3 = props.web3;
     this.state = {
       coinbase: props.accounts[0],
       balance: 0.00,
@@ -4889,6 +4888,7 @@ class CoinbaseView extends React.Component {
     const {
       coinbase
     } = this.state;
+    this.web3.eth.defaultAccount = coinbase;
     const balance = await this.helpers.getBalance(coinbase);
     this.setState({
       balance
@@ -4904,6 +4904,7 @@ class CoinbaseView extends React.Component {
 
   async _handleAccChange(event) {
     const coinbase = event.target.value;
+    this.web3.eth.defaultAccount = coinbase;
     const balance = await this.helpers.getBalance(coinbase);
     this.props.setCoinbase(coinbase);
     this.setState({
@@ -4931,7 +4932,6 @@ class CoinbaseView extends React.Component {
       password,
       coinbase
     } = this.state;
-    console.log(coinbase);
 
     if (password.length > 0) {
       this.props.setPassword({
@@ -5004,6 +5004,7 @@ class CoinbaseView extends React.Component {
 }
 
 CoinbaseView.propTypes = {
+  web3: PropTypes.any.isRequired,
   helpers: PropTypes.any.isRequired,
   accounts: PropTypes.arrayOf(PropTypes.string),
   setCoinbase: PropTypes.any,
@@ -5101,7 +5102,8 @@ class View {
       });
       ReactDOM.render(React.createElement(CoinbaseView$1, {
         store: this.store,
-        helpers: this.helpers
+        helpers: this.helpers,
+        web3: this.web3
       }), document.getElementById('accounts-list'));
     } catch (e) {
       console.log(e);
