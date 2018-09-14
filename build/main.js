@@ -15,10 +15,10 @@ var ReactJson = _interopDefault(require('react-json-view'));
 var reactTabs = require('react-tabs');
 var reactCollapse = require('react-collapse');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
+var Web3 = _interopDefault(require('web3'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
 var ReactDOM = _interopDefault(require('react-dom'));
-var Web3 = _interopDefault(require('web3'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
@@ -925,7 +925,6 @@ const RESET_ERRORS = 'reset_errors'; // Ethereum client events
 const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
 const ADD_EVENTS = 'add_logs';
 const SET_EVENTS = 'set_events'; // Node variables
-
 const SET_SYNC_STATUS = 'set_sync_status';
 const SET_SYNCING = 'set_syncing';
 const SET_MINING = 'set_mining';
@@ -4150,6 +4149,7 @@ class RemixTest extends React.Component {
           const {
             testResults
           } = this.state;
+          console.log(testResults);
           const t = testResults.slice();
           t.push(result);
           this.setState({
@@ -4176,14 +4176,13 @@ class RemixTest extends React.Component {
         }
 
         if (m.error) {
+          console.log(m);
           const e = m.error;
           this.props.setErrors(e);
-          e.forEach(err => {
-            console.error(err);
-          });
         }
       });
       utWorker.on('error', e => {
+        console.log(e);
         throw e;
       });
       utWorker.on('exit', (code, signal) => {
@@ -4292,15 +4291,24 @@ class NodeControl extends React.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
+    console.log(props.web3.currentProvider);
+    console.log(Web3.providers);
     this.state = {
+      wsProvider: Object.is(props.web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
+      httpProvider: Object.is(props.web3.currentProvider.constructor, Web3.providers.HttpProvider),
+      connected: props.web3.currentProvider.connected,
       toAddress: '',
-      amount: 0
+      amount: 0,
+      rpcAddress: atom.config.get('etheratom.rpcAddress'),
+      websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
     this._refreshSync = this._refreshSync.bind(this);
     this.getNodeInfo = this.getNodeInfo.bind(this);
     this._handleToAddrrChange = this._handleToAddrrChange.bind(this);
     this._handleSend = this._handleSend.bind(this);
     this._handleAmountChange = this._handleAmountChange.bind(this);
+    this._handleWsChange = this._handleWsChange.bind(this);
+    this._reconnect = this._reconnect.bind(this);
   }
 
   async componentDidMount() {
@@ -4339,6 +4347,19 @@ class NodeControl extends React.Component {
     });
   }
 
+  _handleWsChange(event) {
+    this.setState({
+      websocketAddress: event.target.value
+    });
+  }
+
+  _reconnect() {// TODO: set addresses & reconnect web3
+
+    /* const { websocketAddress, rpcAddress } = this.state;
+    atom.config.set('etheratom.rpcAddress', rpcAddress);
+    atom.config.set('etheratom.websocketAddress', websocketAddress); */
+  }
+
   async _handleSend() {
     try {
       const {
@@ -4367,12 +4388,48 @@ class NodeControl extends React.Component {
       hashRate
     } = this.props;
     const {
+      connected,
+      wsProvider,
+      httpProvider,
       toAddress,
-      amount
+      amount,
+      rpcAddress,
+      websocketAddress
     } = this.state;
     return React.createElement("div", {
       id: "NodeControl"
+    }, React.createElement("div", {
+      id: "connections"
     }, React.createElement("ul", {
+      className: "connection-urls list-group"
+    }, React.createElement("li", {
+      className: "list-item"
+    }, React.createElement("button", {
+      className: wsProvider && connected ? 'btn btn-success' : 'btn btn-error'
+    }, "WS"), React.createElement("input", {
+      type: "string",
+      placeholder: "Address",
+      className: "input-text",
+      value: websocketAddress,
+      disabled: true,
+      onChange: this._handleWsChange
+    })), React.createElement("li", {
+      className: "list-item"
+    }, React.createElement("button", {
+      className: httpProvider && connected ? 'btn btn-success' : 'btn btn-error'
+    }, "RPC"), React.createElement("input", {
+      type: "string",
+      placeholder: "Address",
+      className: "input-text",
+      disabled: true,
+      value: rpcAddress
+    })), React.createElement("li", {
+      className: "list-item"
+    }, React.createElement("span", {
+      className: "inline-block highlight"
+    }, "Connected:"), React.createElement("span", {
+      className: "inline-block"
+    }, `${connected}`)))), React.createElement("ul", {
       className: "list-group"
     }, React.createElement("li", {
       className: "list-item"
@@ -4453,11 +4510,13 @@ class NodeControl extends React.Component {
     }, React.createElement("input", {
       type: "string",
       placeholder: "Address",
+      className: "input-text",
       value: toAddress,
       onChange: this._handleToAddrrChange
     }), React.createElement("input", {
       type: "number",
       placeholder: "Amount",
+      className: "input-text",
       value: amount,
       onChange: this._handleAmountChange
     }), React.createElement("input", {
@@ -4470,6 +4529,7 @@ class NodeControl extends React.Component {
 }
 
 NodeControl.propTypes = {
+  web3: PropTypes.any.isRequired,
   helpers: PropTypes.any.isRequired,
   syncing: PropTypes.bool,
   status: PropTypes.object,
@@ -4522,7 +4582,8 @@ class StaticAnalysis extends React.Component {
       anlsModules: this.anlsRunner.modules(),
       nodes: this._getNodes(this.anlsRunner.modules()),
       checked: [],
-      analysis: []
+      analysis: [],
+      running: false
     };
     this._runAnalysis = this._runAnalysis.bind(this);
   }
@@ -4560,14 +4621,22 @@ class StaticAnalysis extends React.Component {
     const {
       compiled
     } = this.props;
+    this.setState({
+      analysis: [],
+      running: true
+    });
 
     if (compiled != null) {
       try {
         const analysis = await this.getAnalysis(compiled, checked);
         this.setState({
-          analysis
+          analysis,
+          running: false
         });
       } catch (e) {
+        this.setState({
+          running: false
+        });
         throw e;
       }
     }
@@ -4589,7 +4658,8 @@ class StaticAnalysis extends React.Component {
   render() {
     const {
       nodes,
-      analysis
+      analysis,
+      running
     } = this.state;
     return React.createElement("div", {
       className: "static-analyzer"
@@ -4604,7 +4674,9 @@ class StaticAnalysis extends React.Component {
     }), React.createElement("button", {
       className: "btn btn-primary inline-block-tight",
       onClick: this._runAnalysis
-    }, "Run analysis"), analysis.length > 0 && analysis.map(a => {
+    }, "Run analysis"), running && React.createElement("span", {
+      className: "loading loading-spinner-tiny inline-block"
+    }), analysis.length > 0 && analysis.map(a => {
       if (a.report.length > 0) {
         return React.createElement("div", {
           className: "padded"
@@ -4652,6 +4724,7 @@ class TabView extends React.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
+    this.web3 = props.web3;
     this.state = {
       txBtnStyle: 'btn',
       eventBtnStyle: 'btn',
@@ -4747,7 +4820,8 @@ class TabView extends React.Component {
       helpers: this.helpers
     })), React.createElement(reactTabs.TabPanel, null, React.createElement(NodeControl$1, {
       store: this.props.store,
-      helpers: this.helpers
+      helpers: this.helpers,
+      web3: this.web3
     })), React.createElement(reactTabs.TabPanel, null, React.createElement("h2", {
       className: "text-warning"
     }, "Help Etheratom to keep solidity development interactive."), React.createElement("h4", {
@@ -4763,6 +4837,7 @@ class TabView extends React.Component {
 }
 
 TabView.propTypes = {
+  web3: PropTypes.any.isRequired,
   helpers: PropTypes.any.isRequired,
   store: PropTypes.any.isRequired,
   pendingTransactions: PropTypes.array,
@@ -5042,7 +5117,8 @@ class View {
   createTabView() {
     ReactDOM.render(React.createElement(TabView$1, {
       store: this.store,
-      helpers: this.helpers
+      helpers: this.helpers,
+      web3: this.web3
     }), document.getElementById('tab_view'));
   }
 
