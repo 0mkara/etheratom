@@ -904,6 +904,7 @@ function unwrapListeners(arr) {
 // You should have received a copy of the GNU General Public License
 // along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
 
+const RESET_CONTRACTS = 'reset_contracts';
 const SET_COMPILING = 'set_compiling';
 const SET_COMPILED = 'set_compiled';
 const RESET_COMPILED = 'reset_compiled';
@@ -3622,6 +3623,7 @@ class CollapsedFile extends React.Component {
       toggleBtnTxt: 'Expand'
     };
     this._toggleCollapse = this._toggleCollapse.bind(this);
+    this._clearContract = this._clearContract.bind(this);
   }
 
   _toggleCollapse() {
@@ -3645,6 +3647,9 @@ class CollapsedFile extends React.Component {
     }
   }
 
+  _clearContract() {// TODO: clear interface from store
+  }
+
   render() {
     const {
       isOpened,
@@ -3662,10 +3667,10 @@ class CollapsedFile extends React.Component {
       className: "label file-collapse-label"
     }, React.createElement("h4", {
       className: "text-success"
-    }, fileName), React.createElement("button", {
+    }, fileName), React.createElement("div", null, React.createElement("button", {
       className: toggleBtnStyle,
       onClick: this._toggleCollapse
-    }, toggleBtnTxt)), React.createElement(reactCollapse.Collapse, {
+    }, toggleBtnTxt))), React.createElement(reactCollapse.Collapse, {
       isOpened: isOpened
     }, Object.keys(compiled.contracts[fileName]).map((contractName, index) => {
       const bytecode = compiled.contracts[fileName][contractName].evm.bytecode.object;
@@ -5385,10 +5390,10 @@ class Web3Env {
 
   async compile(editor) {
     const filePath = editor.getPath(); // Reset redux store
+    // this.store.dispatch({ type: SET_COMPILED, payload: null });
 
     this.store.dispatch({
-      type: SET_COMPILED,
-      payload: null
+      type: RESET_COMPILED
     });
     this.store.dispatch({
       type: SET_ERRORS,
@@ -5487,8 +5492,16 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
         compiled: action.payload
       });
 
-    case RESET_COMPILED:
+    case RESET_CONTRACTS:
       return _objectSpread({}, INITIAL_STATE$1);
+
+    case RESET_COMPILED:
+      return _objectSpread({}, state, {
+        compiled: null,
+        deployed: false,
+        interfaces: null,
+        instances: null
+      });
 
     case SET_INSTANCE:
       return _objectSpread({}, state, {
