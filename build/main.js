@@ -4174,6 +4174,7 @@ class RemixTest extends React.Component {
             testResult: result,
             running: false
           });
+          utWorker.kill();
         }
 
         if (m._importFileCb) {
