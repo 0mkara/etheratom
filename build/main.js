@@ -982,6 +982,7 @@ class Web3Helpers {
             type: SET_COMPILING,
             payload: false
           });
+          solcWorker.kill();
         }
       });
       solcWorker.on('error', e => console.error(e));
