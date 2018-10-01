@@ -2568,31 +2568,68 @@ async function handleGithubCall(fullpath, repoPath, path$$1, filename, fileRoot)
   });
 }
 
-async function handleLocalImport(pathString, filename, fileRoot) {
+async function handleNodeModulesImport(pathString, filename, fileRoot) {
   const o = {
     encoding: 'UTF-8'
   };
-  const p = pathString ? path.resolve(fileRoot, pathString, filename) : path.resolve(fileRoot, filename);
-  const content = fs.readFileSync(p, o);
-  fileRoot = pathString ? path.resolve(fileRoot, pathString) : fileRoot;
-  const response = {
-    filename,
-    content,
-    fileRoot
-  };
-  return response;
+  var modulesDir = fileRoot;
+
+  while (true) {
+    var p = path.join(modulesDir, 'node_modules', pathString, filename);
+
+    try {
+      const content = fs.readFileSync(p, o);
+      fileRoot = path.join(modulesDir, 'node_modules', pathString);
+      const response = {
+        filename,
+        content,
+        fileRoot
+      };
+      return response;
+    } catch (err) {
+      console.log(err);
+    } // Recurse outwards until impossible
+
+
+    var oldModulesDir = modulesDir;
+    modulesDir = path.join(modulesDir, '..');
+
+    if (modulesDir === oldModulesDir) {
+      break;
+    }
+  }
+}
+
+async function handleLocalImport(pathString, filename, fileRoot) {
+  // if no relative/absolute path given then search in node_modules folder
+  if (pathString && pathString.indexOf('.') !== 0 && pathString.indexOf('/') !== 0) {
+    return handleNodeModulesImport(pathString, filename, fileRoot);
+  } else {
+    const o = {
+      encoding: 'UTF-8'
+    };
+    const p = pathString ? path.resolve(fileRoot, pathString, filename) : path.resolve(fileRoot, filename);
+    const content = fs.readFileSync(p, o);
+    fileRoot = pathString ? path.resolve(fileRoot, pathString) : fileRoot;
+    const response = {
+      filename,
+      content,
+      fileRoot
+    };
+    return response;
+  }
 }
 
 async function getHandlers() {
   return [{
     type: 'local',
-    match: /(^(?!(?:http:\/\/)|(?:https:\/\/)?(?:www.)?(?:github.com)))(^\/*[\w+-_/]*\/)*?(\w+.sol)/g,
+    match: /(^(?!(?:http:\/\/)|(?:https:\/\/)?(?:www.)?(?:github.com)))(^\/*[\w+-_/]*\/)*?(\w+\.sol)/g,
     handle: async (match, fileRoot) => {
       return await handleLocalImport(match[2], match[3], fileRoot);
     }
   }, {
     type: 'github',
-    match: /^(https?:\/\/)?(www.)?github.com\/([^/]*\/[^/]*)(.*\/(\w+.sol))/g,
+    match: /^(https?:\/\/)?(www.)?github.com\/([^/]*\/[^/]*)(.*\/(\w+\.sol))/g,
     handle: async (match, fileRoot) => {
       return await handleGithubCall(match[0], match[3], match[4], match[5], fileRoot);
     }
