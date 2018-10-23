@@ -93,7 +93,7 @@
     }
   },
   "scripts": {
-    "postinstall": "npm install solc; node ./formatSolc.js",
+    "postinstall": "npm install solc && node ./formatSolc.js",
     "build": "rollup -c"
   },
   "devDependencies": {
