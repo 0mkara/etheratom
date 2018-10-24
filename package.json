@@ -63,7 +63,7 @@
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
     "remix-analyzer": "^0.2.7",
-    "remix-solidity": "0.2.10",
+    "remix-solidity": "0.2.11",
     "remix-tests": "0.0.15",
     "solc": "^0.4.25",
     "valid-url": "^1.0.9",
