@@ -64,7 +64,7 @@
     "redux-thunk": "^2.2.0",
     "remix-analyzer": "^0.2.7",
     "remix-solidity": "0.2.11",
-    "remix-tests": "0.0.15",
+    "remix-tests": "0.0.16",
     "solc": "^0.4.25",
     "valid-url": "^1.0.9",
     "web3": "1.0.0-beta.35"
