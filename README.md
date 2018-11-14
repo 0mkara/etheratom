@@ -18,7 +18,7 @@ You can just download binary from [https://geth.ethereum.org/downloads/](https:/
 #### Run go-ethereum client
 Start geth node on testnet using following command:
 
-    geth --testnet --fast --rpc --rpcapi="eth,web3,personal" --ws --wsorigins="*" --wsapi="eth,web3,personal" console
+    geth --testnet --syncmode "fast" --rpc --rpcapi="eth,web3,personal" --ws --wsorigins="*" --wsapi="eth,web3,personal" console
 
 *Note:* Only solidity compilation is supported. `--wsorigins="*"` or `--wsorigins="file://"`  is necessary to allow Atom to connect to go-ethereum websocket endpoint.
 
@@ -41,7 +41,7 @@ Install as atom package
     apm link .
 
 # Configuration
-**Geth** defaults : **rpc** `http://127.0.0.1:8545/` **websocket** `http://127.0.0.1:8546/`
+**Geth** defaults : **rpc** `http://127.0.0.1:8545/` **websocket** `ws://127.0.0.1:8546/`
 
 **Ganache** defaults : **rpc** `http://127.0.0.1:7545/`
 
