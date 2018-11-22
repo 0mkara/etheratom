@@ -3,6 +3,7 @@
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var atom$1 = require('atom');
+var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
 var axios = _interopDefault(require('axios'));
@@ -935,6 +936,8 @@ class Web3Helpers {
   constructor(web3, store) {
     this.web3 = web3;
     this.store = store;
+    this.jobs = {// fileName: { solcWorker, hash }
+    };
   }
 
   createWorker(fn) {
@@ -943,9 +946,30 @@ class Web3Helpers {
   }
 
   async compileWeb3(sources) {
-    // compile solidity using solcjs
+    let fileName = Object.keys(sources).find(key => {
+      return /\.sol/.test(key);
+    });
+    let hashId = md5(sources[fileName].content);
+
+    if (this.jobs[fileName]) {
+      if (this.jobs[fileName].hashId === hashId || this.jobs[fileName].hashId === undefined) {
+        this.jobs[fileName].wasBusy = true;
+        console.log(hashId);
+        console.error(`Job in progress for ${fileName}`);
+        return;
+      }
+
+      this.jobs[fileName].solcWorker.kill();
+      console.error(`Killing older job for ${fileName}`);
+    } else {
+      this.jobs[fileName] = {
+        hashId
+      };
+    } // compile solidity using solcjs
     // sources have Compiler Input JSON sources format
     // https://solidity.readthedocs.io/en/develop/using-the-compiler.html#compiler-input-and-output-json-description
+
+
     try {
       const outputSelection = {
         // Enable the metadata and bytecode outputs of every single contract.
@@ -968,6 +992,7 @@ class Web3Helpers {
         settings
       };
       const solcWorker = this.createWorker();
+      this.jobs[fileName].solcWorker = solcWorker;
       solcWorker.send({
         command: 'compile',
         payload: input
@@ -982,15 +1007,25 @@ class Web3Helpers {
             type: SET_COMPILING,
             payload: false
           });
+          this.jobs[fileName].successHash = hashId;
           solcWorker.kill();
         }
       });
       solcWorker.on('error', e => console.error(e));
       solcWorker.on('exit', (code, signal) => {
-        this.store.dispatch({
-          type: SET_COMPILING,
-          payload: false
-        });
+        if (this.jobs[fileName].wasBusy && hashId !== this.jobs[fileName].successHash) {
+          this.store.dispatch({
+            type: SET_COMPILING,
+            payload: true
+          });
+        } else {
+          this.store.dispatch({
+            type: SET_COMPILING,
+            payload: false
+          });
+          this.jobs[fileName] = false;
+        }
+
         console.log('%c Compile worker process exited with ' + `code ${code} and signal ${signal}`, 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
       });
     } catch (e) {
