@@ -47,6 +47,7 @@
     "ethereumjs-util": "^6.0.0",
     "ethereumjs-vm": "2.4.0",
     "idempotent-babel-polyfill": "^7.0.0",
+    "md5": "^2.2.1",
     "merkle-patricia-tree": "^2.1.2",
     "prop-types": "^15.6.1",
     "react": "16.6.1",
