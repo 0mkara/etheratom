@@ -1,5 +1,5 @@
 'use babel'
-import { combineSource } from '../lib/helpers/compiler-imports'
+import { Task } from 'atom';
 /* global it, describe, afterEach, expect */
 
 // Use the command `window:run-package-specs` (cmd-alt-ctrl-p) to run specs.
@@ -85,13 +85,19 @@ contract GustavoCoinCrowdsale is TimedCrowdsale, MintedCrowdsale {
 }
 			`
 			const dir = '~/';
-			try {
-				var sources = { 'GustavoCoinCrowdsale.sol': { content: contract } };
-				let source = await combineSource(dir, sources);
-				expect(typeof source).toBe('object');
-			} catch (e) {
-				expect(e).toBeNull();
-			}
+			const sources = { 'GustavoCoinCrowdsale.sol': { content: contract } };
+
+			waitsForPromise({ shouldReject: false, timeout: 60000 }, () =>
+				new Promise((resolve, reject) => {
+					const pkgPath = atom.packages.resolvePackagePath('etheratom');
+					const task = Task.once(`${pkgPath}/lib/helpers/import-task.js`, dir, sources);
+
+					task.on('error', reject);
+					task.on('combinedSources', resolve);
+				}).then(combinedSources => {
+					expect(typeof combinedSources).toBe('object');
+				})
+			);
 		});
 	});
 });
