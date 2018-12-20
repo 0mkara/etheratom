@@ -50,7 +50,7 @@
     "md5": "^2.2.1",
     "merkle-patricia-tree": "^2.1.2",
     "prop-types": "^15.6.1",
-    "react": "16.6.1",
+    "react": "16.7.0",
     "react-addons-update": "^15.4.2",
     "react-checkbox-tree": "1.4.0",
     "react-collapse": "^4.0.3",
