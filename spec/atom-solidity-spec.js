@@ -94,4 +94,71 @@ contract GustavoCoinCrowdsale is TimedCrowdsale, MintedCrowdsale {
 			}
 		});
 	});
+
+	describe('Test vertical-tabs', function() {
+		const workspaceElement = atom.views.getView(atom.workspace);
+		afterEach(async() => {
+			await atom.packages.deactivatePackage('etheratom')
+			atom.packages.unloadPackage('etheratom')
+		});
+
+		it('Expect tab_view to be visiable', async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+
+			// Now that we checked package activation lets do some real tests
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			expect(workspaceElement.querySelector('#tab_view')).toShow();
+		});
+
+		it('Expect .react-tabs__tab to be visiable', async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+
+			// Now that we checked package activation lets do some real tests
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			expect(workspaceElement.querySelector('.react-tabs__tab').length).toBe(7);
+		});
+	});
+
+	describe('Test ReactCollapse', function() {
+		const workspaceElement = atom.views.getView(atom.workspace);
+		afterEach(async() => {
+			await atom.packages.deactivatePackage('etheratom')
+			atom.packages.unloadPackage('etheratom')
+		});
+
+		it('Expect .icon-unfold to be visiable', async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+
+			// Now that we checked package activation lets do some real tests
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			expect(workspaceElement.querySelector('.icon-unfold')).toShow();
+		});
+
+		it('Expect .icon-unfold to show collapseable', async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+
+			// Now that we checked package activation lets do some real tests
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			const collapseButton = workspaceElement.querySelector('.icon-unfold');
+			collapseButton.simulate('click');
+			expect(workspaceElement.querySelector('.ReactCollapse--collapse').offsetHeight).toBe(0);
+		});
+
+		it('Expect .icon-unfold to hide collapseable', async function() {
+			atom.packages.loadPackage('etheratom');
+			await atom.packages.activatePackage('etheratom');
+
+			// Now that we checked package activation lets do some real tests
+			await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+			const collapseButton = workspaceElement.querySelector('.icon-unfold');
+			collapseButton.simulate('click');
+			collapseButton.simulate('click');
+			expect(workspaceElement.querySelector('.ReactCollapse--collapse').offsetHeight).not.toBe(0);
+		});
+	});
+
 });
