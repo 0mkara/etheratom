@@ -2,9 +2,7 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
-var Web3 = _interopDefault(require('web3'));
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
@@ -12,18 +10,20 @@ var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
 var React = _interopDefault(require('react'));
-var ReactDOM = _interopDefault(require('react-dom'));
-var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
-var reactCollapse = require('react-collapse');
 var ReactJson = _interopDefault(require('react-json-view'));
+var reactTabs = require('react-tabs');
+var reactCollapse = require('react-collapse');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
+var Web3 = _interopDefault(require('web3'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
+var ReactDOM = _interopDefault(require('react-dom'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
+require('idempotent-babel-polyfill');
 
 class AtomSolidityView {
   constructor() {
@@ -455,7 +455,9 @@ EventEmitter.init = function() {
   this.domain = null;
   if (EventEmitter.usingDomains) {
     // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) ;
+    if (domain.active && !(this instanceof domain.Domain)) {
+      this.domain = domain.active;
+    }
   }
 
   if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
@@ -1871,7 +1873,7 @@ var url = {
   resolveObject: urlResolveObject,
   format: urlFormat,
   Url: Url
-};
+}
 function Url() {
   this.protocol = null;
   this.slashes = null;
