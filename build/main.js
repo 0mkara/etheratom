@@ -2,7 +2,9 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
+require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
+var Web3 = _interopDefault(require('web3'));
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
@@ -10,20 +12,18 @@ var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
 var React = _interopDefault(require('react'));
+var ReactDOM = _interopDefault(require('react-dom'));
+var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
-var ReactJson = _interopDefault(require('react-json-view'));
-var reactTabs = require('react-tabs');
 var reactCollapse = require('react-collapse');
+var ReactJson = _interopDefault(require('react-json-view'));
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
-var Web3 = _interopDefault(require('web3'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
-var ReactDOM = _interopDefault(require('react-dom'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
-require('idempotent-babel-polyfill');
 
 class AtomSolidityView {
   constructor() {
@@ -455,9 +455,7 @@ EventEmitter.init = function() {
   this.domain = null;
   if (EventEmitter.usingDomains) {
     // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) {
-      this.domain = domain.active;
-    }
+    if (domain.active && !(this instanceof domain.Domain)) ;
   }
 
   if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
@@ -1873,7 +1871,7 @@ var url = {
   resolveObject: urlResolveObject,
   format: urlFormat,
   Url: Url
-}
+};
 function Url() {
   this.protocol = null;
   this.slashes = null;
@@ -3197,7 +3195,10 @@ CreateButton.propTypes = {
   setInstance: PropTypes.func,
   setDeployed: PropTypes.func,
   addNewEvents: PropTypes.func,
-  contractName: PropTypes.string
+  contractName: PropTypes.string,
+  abi: PropTypes.object,
+  bytecode: PropTypes.string,
+  gas: PropTypes.number
 };
 
 const mapStateToProps$2 = ({
@@ -3338,7 +3339,8 @@ ContractCompiled.propTypes = {
   contractName: PropTypes.string,
   addInterface: PropTypes.func,
   bytecode: PropTypes.string,
-  index: PropTypes.number
+  index: PropTypes.number,
+  coinbase: PropTypes.string
 };
 
 const mapStateToProps$3 = ({
@@ -3516,7 +3518,10 @@ FunctionABI.propTypes = {
   helpers: PropTypes.any.isRequired,
   contractName: PropTypes.string,
   interfaces: PropTypes.object,
-  updateInterface: PropTypes.func
+  updateInterface: PropTypes.func,
+  coinbase: PropTypes.string,
+  password: PropTypes.string,
+  instances: PropTypes.object
 };
 
 const mapStateToProps$4 = ({
@@ -4616,7 +4621,8 @@ NodeControl.propTypes = {
   setHashrate: PropTypes.func,
   setMining: PropTypes.func,
   setSyncStatus: PropTypes.func,
-  setAccounts: PropTypes.func
+  setAccounts: PropTypes.func,
+  password: PropTypes.string
 };
 
 const mapStateToProps$b = ({
@@ -4781,7 +4787,8 @@ class StaticAnalysis extends React.Component {
 }
 
 StaticAnalysis.propTypes = {
-  helpers: PropTypes.any.isRequired
+  helpers: PropTypes.any.isRequired,
+  compiled: PropTypes.object
 };
 
 const mapStateToProps$c = ({
