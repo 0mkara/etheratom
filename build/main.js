@@ -2,7 +2,9 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
+require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
+var Web3 = _interopDefault(require('web3'));
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
@@ -10,20 +12,18 @@ var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
 var React = _interopDefault(require('react'));
+var ReactDOM = _interopDefault(require('react-dom'));
+var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
-var ReactJson = _interopDefault(require('react-json-view'));
-var reactTabs = require('react-tabs');
 var reactCollapse = require('react-collapse');
+var ReactJson = _interopDefault(require('react-json-view'));
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
-var Web3 = _interopDefault(require('web3'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
-var ReactDOM = _interopDefault(require('react-dom'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
-require('idempotent-babel-polyfill');
 
 class AtomSolidityView {
   constructor() {
@@ -52,6 +52,11 @@ class AtomSolidityView {
     att.value = 'client-options';
     compilerNode.setAttributeNode(att);
     mainNode.appendChild(compilerNode);
+    let versionNode = document.createElement('div');
+    att = document.createAttribute('id');
+    att.value = 'version_selector';
+    versionNode.setAttributeNode(att);
+    mainNode.appendChild(versionNode);
     let accountsNode = document.createElement('div');
     att = document.createAttribute('id');
     att.value = 'accounts-list';
@@ -455,9 +460,7 @@ EventEmitter.init = function() {
   this.domain = null;
   if (EventEmitter.usingDomains) {
     // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) {
-      this.domain = domain.active;
-    }
+    if (domain.active && !(this instanceof domain.Domain)) ;
   }
 
   if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
@@ -1873,7 +1876,7 @@ var url = {
   resolveObject: urlResolveObject,
   format: urlFormat,
   Url: Url
-}
+};
 function Url() {
   this.protocol = null;
   this.slashes = null;
@@ -5119,6 +5122,40 @@ var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, {
   setPassword
 })(CoinbaseView);
 
+class VersionSelector extends React.Component {
+  constructor(props) {
+    super(props);
+    this._handleVersionSelector = this._handleVersionSelector.bind(this);
+  }
+
+  async _handleVersionSelector() {}
+
+  render() {
+    const {
+      selectedVersion
+    } = this.props;
+    return React.createElement("p", null, "VersionSelector");
+  }
+
+}
+
+VersionSelector.propTypes = {
+  selectedVersion: PropTypes.string
+};
+
+const mapStateToProps$f = ({
+  contract
+}) => {
+  const {
+    selectedVersion
+  } = contract;
+  return {
+    selectedVersion
+  };
+};
+
+var VersionSelector$1 = reactRedux.connect(mapStateToProps$f, {})(VersionSelector);
+
 class CompileBtn extends React.Component {
   constructor(props) {
     super(props);
@@ -5155,7 +5192,7 @@ CompileBtn.propTypes = {
   compiling: PropTypes.bool
 };
 
-const mapStateToProps$f = ({
+const mapStateToProps$g = ({
   contract
 }) => {
   const {
@@ -5166,7 +5203,7 @@ const mapStateToProps$f = ({
   };
 };
 
-var CompileBtn$1 = reactRedux.connect(mapStateToProps$f, {})(CompileBtn);
+var CompileBtn$1 = reactRedux.connect(mapStateToProps$g, {})(CompileBtn);
 
 class View {
   constructor(store, web3) {
@@ -5212,6 +5249,12 @@ class View {
       helpers: this.helpers,
       web3: this.web3
     }), document.getElementById('tab_view'));
+  }
+
+  createVersionSelector() {
+    ReactDOM.render(React.createElement(VersionSelector$1, {
+      store: this.store
+    }), document.getElementById('version_selector'));
   }
 
   createTextareaR(text) {
@@ -5384,6 +5427,7 @@ class Web3Env {
         this.view.createCoinbaseView();
         this.view.createButtonsView();
         this.view.createTabView();
+        this.view.createVersionSelector();
       }
     });
     this.web3Subscriptions.add(atom.workspace.observeTextEditors(editor => {
