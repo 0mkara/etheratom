@@ -78,6 +78,30 @@
 		padding: 5px 0;
 	}
 
+	#version_selector {
+		select {
+			flex-grow: 1;
+			width: 100%;
+			height: 36px;
+			background-color: @color-bg;
+			border: 1px solid @color-br;
+			max-height: @height-max;
+			overflow-y: auto;
+			padding: 0;
+			position: relative;
+
+			option {
+				background-color: @color-bg-child;
+				border: 1px solid @color-br;
+				margin: 10px 0 0 0;
+				max-height: @height-max;
+				overflow-y: auto;
+				padding: 0;
+				position: relative;
+				line-height: 2em;
+			}
+		}
+	}
 	#accounts-list {
 		select {
 			flex-grow: 1;

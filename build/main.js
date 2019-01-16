@@ -996,10 +996,21 @@ class Web3Helpers {
       };
       const solcWorker = this.createWorker();
       this.jobs[fileName].solcWorker = solcWorker;
-      solcWorker.send({
-        command: 'compile',
-        payload: input
-      });
+      console.log(this.web3.eth.selectedVersion);
+
+      if (this.web3.eth.selectedVersion) {
+        solcWorker.send({
+          command: 'compile',
+          payload: input,
+          version: this.web3.eth.selectedVersion
+        });
+      } else {
+        solcWorker.send({
+          command: 'compile',
+          payload: input
+        });
+      }
+
       solcWorker.on('message', m => {
         if (m.compiled) {
           this.store.dispatch({
@@ -5125,16 +5136,50 @@ var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, {
 class VersionSelector extends React.Component {
   constructor(props) {
     super(props);
+    this.web3 = props.web3;
+    this.state = {
+      availableVersions: [],
+      selectedVersion: ''
+    };
     this._handleVersionSelector = this._handleVersionSelector.bind(this);
   }
 
-  async _handleVersionSelector() {}
+  async _handleVersionSelector(event) {
+    const selectedVersion = event.target.value;
+    await this.setState({
+      selectedVersion
+    });
+    this.web3.eth.selectedVersion = selectedVersion;
+  }
+
+  async componentDidMount() {
+    this.fetchVersionList();
+  }
+
+  async fetchVersionList() {
+    const availableVersions = await axios.get('https://ethereum.github.io/solc-bin/bin/list.json');
+    this.setState({
+      availableVersions: availableVersions.data.releases
+    });
+  }
 
   render() {
     const {
-      selectedVersion
-    } = this.props;
-    return React.createElement("p", null, "VersionSelector");
+      availableVersions
+    } = this.state;
+    return React.createElement("div", {
+      className: "content"
+    }, React.createElement("div", {
+      className: "row"
+    }, React.createElement("select", {
+      onChange: this._handleVersionSelector,
+      value: this.state.selectedVersion
+    }, Object.keys(availableVersions).map((key, i) => {
+      return React.createElement("option", {
+        key: i,
+        value: availableVersions[key].split('soljson-')[1].split('.js')[0]
+      }, availableVersions[key]);
+    }))));
   }
 
 }
@@ -5253,7 +5298,8 @@ class View {
 
   createVersionSelector() {
     ReactDOM.render(React.createElement(VersionSelector$1, {
-      store: this.store
+      store: this.store,
+      web3: this.web3
     }), document.getElementById('version_selector'));
   }
 
