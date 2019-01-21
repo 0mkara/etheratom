@@ -92,6 +92,13 @@
       "type": "boolean",
       "default": true,
       "order": 3
+    },
+    "versionSelector": {
+      "title": "Solidity compiler version:",
+      "description": "Selected version of Solidity compiler",
+      "type": "string",
+      "default": "latest",
+      "order": 4
     }
   },
   "scripts": {

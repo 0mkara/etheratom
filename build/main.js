@@ -996,21 +996,12 @@ class Web3Helpers {
       };
       const solcWorker = this.createWorker();
       this.jobs[fileName].solcWorker = solcWorker;
-      console.log(this.web3.eth.selectedVersion);
-
-      if (this.web3.eth.selectedVersion) {
-        solcWorker.send({
-          command: 'compile',
-          payload: input,
-          version: this.web3.eth.selectedVersion
-        });
-      } else {
-        solcWorker.send({
-          command: 'compile',
-          payload: input
-        });
-      }
-
+      const requiredSolcVersion = atom.config.get('etheratom.versionSelector');
+      solcWorker.send({
+        command: 'compile',
+        payload: input,
+        version: requiredSolcVersion
+      });
       solcWorker.on('message', m => {
         if (m.compiled) {
           this.store.dispatch({
@@ -5149,7 +5140,7 @@ class VersionSelector extends React.Component {
     await this.setState({
       selectedVersion
     });
-    this.web3.eth.selectedVersion = selectedVersion;
+    atom.config.set('etheratom.versionSelector', selectedVersion);
   }
 
   async componentDidMount() {
@@ -5159,7 +5150,8 @@ class VersionSelector extends React.Component {
   async fetchVersionList() {
     const availableVersions = await axios.get('https://ethereum.github.io/solc-bin/bin/list.json');
     this.setState({
-      availableVersions: availableVersions.data.releases
+      availableVersions: availableVersions.data.releases,
+      selectedVersion: atom.config.get('etheratom.versionSelector')
     });
   }
 
