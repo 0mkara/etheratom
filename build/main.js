@@ -934,6 +934,7 @@ const SET_SYNC_STATUS = 'set_sync_status';
 const SET_SYNCING = 'set_syncing';
 const SET_MINING = 'set_mining';
 const SET_HASH_RATE = 'set_hash_rate';
+const CACHED_SOLC = 'cached_solc';
 
 class Web3Helpers {
   constructor(web3, store) {
@@ -996,12 +997,47 @@ class Web3Helpers {
       };
       const solcWorker = this.createWorker();
       this.jobs[fileName].solcWorker = solcWorker;
+      const state = this.store.getState();
+      const cachedSolc = state.cachedSolcReducer[CACHED_SOLC];
       const requiredSolcVersion = atom.config.get('etheratom.versionSelector');
-      solcWorker.send({
-        command: 'compile',
-        payload: input,
-        version: requiredSolcVersion
-      });
+      const foundAt = this.checkCachedSolc(cachedSolc, requiredSolcVersion);
+
+      if (foundAt !== undefined) {
+        console.log(foundAt);
+        console.log(cachedSolc[foundAt]);
+        console.log();
+        let s = JSON.parse(cachedSolc[foundAt].snapshot, function (key, value) {
+          var prefix;
+
+          if (typeof value != 'string') {
+            return value;
+          }
+
+          if (value.length < 8) {
+            return value;
+          }
+
+          prefix = value.substring(0, 8);
+
+          if (prefix === 'function') {
+            return eval('(' + value + ')');
+          }
+
+          if (prefix === '_NuFrRa_') {
+            return eval(value.slice(8));
+          }
+        });
+        console.log(s);
+        const output = await s.compile(JSON.stringify(input));
+        console.log(output); // solcWorker.send({ command: 'compile', payload: input, version: requiredSolcVersion, snapshot: s });
+      } else {
+        solcWorker.send({
+          command: 'compile',
+          payload: input,
+          version: requiredSolcVersion
+        });
+      }
+
       solcWorker.on('message', m => {
         if (m.compiled) {
           this.store.dispatch({
@@ -1013,6 +1049,25 @@ class Web3Helpers {
             payload: false
           });
           this.jobs[fileName].successHash = hashId;
+
+          if (m.solc) {
+            console.log(m.solc);
+            console.log(cachedSolc);
+
+            if (cachedSolc.length === 0) {
+              this.store.dispatch({
+                type: CACHED_SOLC,
+                payload: [m.solc]
+              });
+            } else {
+              cachedSolc.push(m.solc);
+              this.store.dispatch({
+                type: CACHED_SOLC,
+                payload: cachedSolc
+              });
+            }
+          }
+
           solcWorker.kill();
         }
       });
@@ -1406,6 +1461,20 @@ class Web3Helpers {
     } catch (e) {
       throw e;
     }
+  }
+
+  checkCachedSolc(cache, version) {
+    let foundAt = undefined;
+    const found = cache.some(function (el, index) {
+      console.log(el);
+
+      if (el.version === version) {
+        foundAt = index;
+      }
+
+      return el.version === version;
+    });
+    return foundAt;
   }
 
 }
@@ -5842,6 +5911,21 @@ var NodeReducer = ((state = INITIAL_STATE$6, action) => {
   }
 });
 
+const INITIAL_STATE$7 = {
+  cached_solc: []
+};
+var CachedSolcReducer = ((state = INITIAL_STATE$7, action) => {
+  switch (action.type) {
+    case CACHED_SOLC:
+      return _objectSpread({}, state, {
+        cached_solc: action.payload
+      });
+
+    default:
+      return state;
+  }
+});
+
 var etheratomReducers = redux.combineReducers({
   files: FilesReducer,
   contract: ContractReducer,
@@ -5849,7 +5933,8 @@ var etheratomReducers = redux.combineReducers({
   errors: ErrorReducer,
   eventReducer: EventReducer,
   clientReducer: ClientReducer,
-  node: NodeReducer
+  node: NodeReducer,
+  cachedSolcReducer: CachedSolcReducer
 });
 
 function configureStore(initialState) {
