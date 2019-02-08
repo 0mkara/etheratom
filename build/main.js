@@ -52,6 +52,11 @@ class AtomSolidityView {
     att.value = 'client-options';
     compilerNode.setAttributeNode(att);
     mainNode.appendChild(compilerNode);
+    let versionNode = document.createElement('div');
+    att = document.createAttribute('id');
+    att.value = 'version_selector';
+    versionNode.setAttributeNode(att);
+    mainNode.appendChild(versionNode);
     let accountsNode = document.createElement('div');
     att = document.createAttribute('id');
     att.value = 'accounts-list';
@@ -455,9 +460,7 @@ EventEmitter.init = function() {
   this.domain = null;
   if (EventEmitter.usingDomains) {
     // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) {
-      this.domain = domain.active;
-    }
+    if (domain.active) ;
   }
 
   if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
@@ -993,9 +996,11 @@ class Web3Helpers {
       };
       const solcWorker = this.createWorker();
       this.jobs[fileName].solcWorker = solcWorker;
+      const requiredSolcVersion = atom.config.get('etheratom.versionSelector');
       solcWorker.send({
         command: 'compile',
-        payload: input
+        payload: input,
+        version: requiredSolcVersion
       });
       solcWorker.on('message', m => {
         if (m.compiled) {
@@ -1873,7 +1878,7 @@ var url = {
   resolveObject: urlResolveObject,
   format: urlFormat,
   Url: Url
-}
+};
 function Url() {
   this.protocol = null;
   this.slashes = null;
@@ -5119,6 +5124,76 @@ var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, {
   setPassword
 })(CoinbaseView);
 
+class VersionSelector extends React.Component {
+  constructor(props) {
+    super(props);
+    this.web3 = props.web3;
+    this.state = {
+      availableVersions: [],
+      selectedVersion: ''
+    };
+    this._handleVersionSelector = this._handleVersionSelector.bind(this);
+  }
+
+  async _handleVersionSelector(event) {
+    const selectedVersion = event.target.value;
+    await this.setState({
+      selectedVersion
+    });
+    atom.config.set('etheratom.versionSelector', selectedVersion);
+  }
+
+  async componentDidMount() {
+    this.fetchVersionList();
+  }
+
+  async fetchVersionList() {
+    const versions = await axios.get('https://ethereum.github.io/solc-bin/bin/list.json');
+    this.setState({
+      availableVersions: versions.data.releases,
+      selectedVersion: atom.config.get('etheratom.versionSelector')
+    });
+  }
+
+  render() {
+    const {
+      availableVersions
+    } = this.state;
+    return React.createElement("div", {
+      className: "content"
+    }, React.createElement("div", {
+      className: "row"
+    }, React.createElement("select", {
+      onChange: this._handleVersionSelector,
+      value: this.state.selectedVersion
+    }, Object.keys(availableVersions).map((key, i) => {
+      return React.createElement("option", {
+        key: i,
+        value: availableVersions[key].split('soljson-')[1].split('.js')[0]
+      }, availableVersions[key]);
+    }))));
+  }
+
+}
+
+VersionSelector.propTypes = {
+  web3: PropTypes.any.isRequired,
+  selectedVersion: PropTypes.string
+};
+
+const mapStateToProps$f = ({
+  contract
+}) => {
+  const {
+    selectedVersion
+  } = contract;
+  return {
+    selectedVersion
+  };
+};
+
+var VersionSelector$1 = reactRedux.connect(mapStateToProps$f, {})(VersionSelector);
+
 class CompileBtn extends React.Component {
   constructor(props) {
     super(props);
@@ -5155,7 +5230,7 @@ CompileBtn.propTypes = {
   compiling: PropTypes.bool
 };
 
-const mapStateToProps$f = ({
+const mapStateToProps$g = ({
   contract
 }) => {
   const {
@@ -5166,7 +5241,7 @@ const mapStateToProps$f = ({
   };
 };
 
-var CompileBtn$1 = reactRedux.connect(mapStateToProps$f, {})(CompileBtn);
+var CompileBtn$1 = reactRedux.connect(mapStateToProps$g, {})(CompileBtn);
 
 class View {
   constructor(store, web3) {
@@ -5212,6 +5287,13 @@ class View {
       helpers: this.helpers,
       web3: this.web3
     }), document.getElementById('tab_view'));
+  }
+
+  createVersionSelector() {
+    ReactDOM.render(React.createElement(VersionSelector$1, {
+      store: this.store,
+      web3: this.web3
+    }), document.getElementById('version_selector'));
   }
 
   createTextareaR(text) {
@@ -5384,6 +5466,7 @@ class Web3Env {
         this.view.createCoinbaseView();
         this.view.createButtonsView();
         this.view.createTabView();
+        this.view.createVersionSelector();
       }
     });
     this.web3Subscriptions.add(atom.workspace.observeTextEditors(editor => {
