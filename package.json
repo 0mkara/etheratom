@@ -67,7 +67,7 @@
     "remix-analyzer": "^0.3.1",
     "remix-solidity": "0.3.1",
     "remix-tests": "0.1.1",
-    "solc": "0.5.3",
+    "solc": "^0.5.3",
     "valid-url": "^1.0.9",
     "web3": "1.0.0-beta.35"
   },
@@ -97,7 +97,7 @@
       "title": "Solidity compiler version:",
       "description": "Selected version of Solidity compiler",
       "type": "string",
-      "default": "v0.5.3+commit.10d17f24",
+      "default": "latest",
       "order": 4
     }
   },
