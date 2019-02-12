@@ -2,7 +2,9 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
+require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
+var Web3 = _interopDefault(require('web3'));
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
@@ -10,20 +12,18 @@ var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
 var React = _interopDefault(require('react'));
+var ReactDOM = _interopDefault(require('react-dom'));
+var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
-var ReactJson = _interopDefault(require('react-json-view'));
-var reactTabs = require('react-tabs');
 var reactCollapse = require('react-collapse');
+var ReactJson = _interopDefault(require('react-json-view'));
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
-var Web3 = _interopDefault(require('web3'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
-var ReactDOM = _interopDefault(require('react-dom'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
-require('idempotent-babel-polyfill');
 
 class AtomSolidityView {
   constructor() {
@@ -460,9 +460,7 @@ EventEmitter.init = function() {
   this.domain = null;
   if (EventEmitter.usingDomains) {
     // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) {
-      this.domain = domain.active;
-    }
+    if (domain.active && !(this instanceof domain.Domain)) ;
   }
 
   if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
@@ -1880,7 +1878,7 @@ var url = {
   resolveObject: urlResolveObject,
   format: urlFormat,
   Url: Url
-}
+};
 function Url() {
   this.protocol = null;
   this.slashes = null;
@@ -3242,10 +3240,12 @@ class ContractCompiled extends React.Component {
     this.helpers = props.helpers;
     this.state = {
       estimatedGas: 9000000,
-      ContractABI: props.interfaces[props.contractName].interface
+      ContractABI: props.interfaces[props.contractName].interface,
+      savePath: 'filename.abi'
     };
     this._handleGasChange = this._handleGasChange.bind(this);
     this._handleInput = this._handleInput.bind(this);
+    this._saveABI = this._saveABI.bind(this);
   }
 
   async componentDidMount() {
@@ -3283,6 +3283,10 @@ class ContractCompiled extends React.Component {
     });
   }
 
+  _saveABI() {
+    console.log('Will save ABI to path');
+  }
+
   render() {
     const {
       contractName,
@@ -3293,6 +3297,7 @@ class ContractCompiled extends React.Component {
       estimatedGas,
       ContractABI
     } = this.state;
+    const savePath = `${contractName}.abi`;
     return React.createElement("div", {
       className: "contract-content",
       key: index
@@ -3310,7 +3315,9 @@ class ContractCompiled extends React.Component {
       className: "btn"
     }, "Interface")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
       className: "btn"
-    }, "Interface Object")))), React.createElement(reactTabs.TabPanel, null, React.createElement("pre", {
+    }, "Interface Object")), React.createElement(reactTabs.Tab, null, React.createElement("button", {
+      className: "btn icon icon-desktop-download inline-block-tight icon-button"
+    })))), React.createElement(reactTabs.TabPanel, null, React.createElement("pre", {
       className: "large-code"
     }, JSON.stringify(ContractABI))), React.createElement(reactTabs.TabPanel, null, React.createElement(ReactJson, {
       src: ContractABI,
@@ -3320,7 +3327,17 @@ class ContractCompiled extends React.Component {
       collapsed: 2,
       collapseStringsAfterLength: 32,
       iconStyle: "triangle"
-    })))), ContractABI.map((abi, i) => {
+    })), React.createElement(reactTabs.TabPanel, null, React.createElement("div", {
+      className: "save-abi"
+    }, React.createElement("button", {
+      className: "btn"
+    }, "Save as:"), React.createElement("input", {
+      className: "inputs",
+      value: savePath
+    }), React.createElement("button", {
+      className: "btn",
+      onClick: this._saveABI
+    }, "Save"))))), ContractABI.map((abi, i) => {
       return React.createElement(InputsForm$1, {
         key: i,
         contractName: contractName,
