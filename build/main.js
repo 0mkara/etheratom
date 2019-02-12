@@ -3234,6 +3234,8 @@ var CreateButton$1 = reactRedux.connect(mapStateToProps$2, {
   addNewEvents
 })(CreateButton);
 
+const Blob = require('blob');
+
 class ContractCompiled extends React.Component {
   constructor(props) {
     super(props);
@@ -3284,7 +3286,23 @@ class ContractCompiled extends React.Component {
   }
 
   _saveABI() {
-    console.log('Will save ABI to path');
+    const {
+      contractName
+    } = this.props;
+    const {
+      ContractABI
+    } = this.state;
+    const savePath = `${contractName}.abi`;
+    console.log('Will save ABI to path', savePath, ContractABI);
+    var a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style = "display: none";
+    var json = JSON.stringify(ContractABI).replace(new RegExp('"', 'g'), '\''); // blob = new Blob([json], {type: "octet/stream"}),
+    // url = window.URL.createObjectURL(blob);
+
+    a.href = `data:application/xml;charset=utf-8,${json}`;
+    a.download = savePath;
+    a.click();
   }
 
   render() {
