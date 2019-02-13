@@ -18,6 +18,7 @@ var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
 var reactCollapse = require('react-collapse');
 var ReactJson = _interopDefault(require('react-json-view'));
+var fileSaver = require('file-saver');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
@@ -3293,16 +3294,11 @@ class ContractCompiled extends React.Component {
       ContractABI
     } = this.state;
     const savePath = `${contractName}.abi`;
-    console.log('Will save ABI to path', savePath, ContractABI);
-    var a = document.createElement("a");
-    document.body.appendChild(a);
-    a.style = "display: none";
-    var json = JSON.stringify(ContractABI).replace(new RegExp('"', 'g'), '\''); // blob = new Blob([json], {type: "octet/stream"}),
-    // url = window.URL.createObjectURL(blob);
-
-    a.href = `data:application/xml;charset=utf-8,${json}`;
-    a.download = savePath;
-    a.click();
+    const json = JSON.stringify(ContractABI).replace(new RegExp('"', 'g'), '\'');
+    const blob = new Blob([json], {
+      type: 'text/plain;charset=utf-8'
+    });
+    fileSaver.saveAs(blob, savePath);
   }
 
   render() {
@@ -3353,7 +3349,7 @@ class ContractCompiled extends React.Component {
       className: "inputs",
       value: savePath
     }), React.createElement("button", {
-      className: "btn",
+      className: "btn btn-primary inline-block-tight",
       onClick: this._saveABI
     }, "Save"))))), ContractABI.map((abi, i) => {
       return React.createElement(InputsForm$1, {
@@ -4446,6 +4442,7 @@ class NodeControl extends React.Component {
     this.props.setAccounts({
       accounts
     });
+    this.props.setCoinbase(accounts[0]);
     this.getNodeInfo();
   }
 
@@ -4666,6 +4663,7 @@ NodeControl.propTypes = {
   setMining: PropTypes.func,
   setSyncStatus: PropTypes.func,
   setAccounts: PropTypes.func,
+  setCoinbase: PropTypes.func,
   password: PropTypes.string
 };
 
@@ -4695,6 +4693,7 @@ const mapStateToProps$b = ({
 
 var NodeControl$1 = reactRedux.connect(mapStateToProps$b, {
   setAccounts,
+  setCoinbase,
   setSyncStatus,
   setMining,
   setHashrate
@@ -5025,10 +5024,19 @@ class CoinbaseView extends React.Component {
     });
   }
 
+  async componentWillReceiveProps() {
+    if (this.props.accounts[0]) {
+      this.setState({
+        coinbase: this.props.accounts[0]
+      });
+    }
+  }
+
   _linkClick(event) {
     const {
       coinbase
     } = this.state;
+    console.log(coinbase);
     atom.clipboard.write(coinbase);
   }
 

@@ -48,6 +48,7 @@
     "ethereumjs-util": "^6.0.0",
     "ethereumjs-vm": "2.5.0",
     "fast-levenshtein": "^2.0.6",
+    "file-saver": "^2.0.0",
     "idempotent-babel-polyfill": "^7.0.0",
     "md5": "^2.2.1",
     "merkle-patricia-tree": "^3.0.0",
