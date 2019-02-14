@@ -3288,12 +3288,14 @@ class ContractCompiled extends React.Component {
 
   _saveABI() {
     const {
-      contractName
+      fileName
     } = this.props;
+    console.log(this.props);
+    console.log(this.state);
     const {
       ContractABI
     } = this.state;
-    const savePath = `${contractName}.abi`;
+    const savePath = `${fileName.split('.sol')[0]}.abi`;
     const json = JSON.stringify(ContractABI).replace(new RegExp('"', 'g'), '\'');
     const blob = new Blob([json], {
       type: 'text/plain;charset=utf-8'
@@ -3369,6 +3371,7 @@ ContractCompiled.propTypes = {
   helpers: PropTypes.any.isRequired,
   interfaces: PropTypes.object,
   contractName: PropTypes.string,
+  fileName: PropTypes.string,
   addInterface: PropTypes.func,
   bytecode: PropTypes.string,
   index: PropTypes.number,
@@ -3790,6 +3793,7 @@ class CollapsedFile extends React.Component {
         key: index
       }, !deployed[contractName] && interfaces !== null && interfaces[contractName] && compiling === false && React.createElement(ContractCompiled$1, {
         contractName: contractName,
+        fileName: fileName,
         bytecode: bytecode,
         index: index,
         helpers: this.helpers
