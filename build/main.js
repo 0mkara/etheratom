@@ -2,7 +2,9 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
+require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
+var Web3 = _interopDefault(require('web3'));
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
@@ -10,20 +12,19 @@ var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
 var React = _interopDefault(require('react'));
+var ReactDOM = _interopDefault(require('react-dom'));
+var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
-var ReactJson = _interopDefault(require('react-json-view'));
-var reactTabs = require('react-tabs');
 var reactCollapse = require('react-collapse');
+var ReactJson = _interopDefault(require('react-json-view'));
+var fileSaver = require('file-saver');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
-var Web3 = _interopDefault(require('web3'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
-var ReactDOM = _interopDefault(require('react-dom'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
-require('idempotent-babel-polyfill');
 
 class AtomSolidityView {
   constructor() {
@@ -460,9 +461,7 @@ EventEmitter.init = function() {
   this.domain = null;
   if (EventEmitter.usingDomains) {
     // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) {
-      this.domain = domain.active;
-    }
+    if (domain.active && !(this instanceof domain.Domain)) ;
   }
 
   if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
@@ -1880,7 +1879,7 @@ var url = {
   resolveObject: urlResolveObject,
   format: urlFormat,
   Url: Url
-}
+};
 function Url() {
   this.protocol = null;
   this.slashes = null;
@@ -3236,16 +3235,20 @@ var CreateButton$1 = reactRedux.connect(mapStateToProps$2, {
   addNewEvents
 })(CreateButton);
 
+const Blob = require('blob');
+
 class ContractCompiled extends React.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
     this.state = {
       estimatedGas: 9000000,
-      ContractABI: props.interfaces[props.contractName].interface
+      ContractABI: props.interfaces[props.contractName].interface,
+      savePath: `${props.contractName}.abi`
     };
     this._handleGasChange = this._handleGasChange.bind(this);
     this._handleInput = this._handleInput.bind(this);
+    this._saveABI = this._saveABI.bind(this);
   }
 
   async componentDidMount() {
@@ -3283,6 +3286,23 @@ class ContractCompiled extends React.Component {
     });
   }
 
+  _saveABI() {
+    const {
+      fileName
+    } = this.props;
+    console.log(this.props);
+    console.log(this.state);
+    const {
+      ContractABI
+    } = this.state;
+    const savePath = `${fileName.split('.sol')[0]}.abi`;
+    const json = JSON.stringify(ContractABI).replace(new RegExp('"', 'g'), '\'');
+    const blob = new Blob([json], {
+      type: 'text/plain;charset=utf-8'
+    });
+    fileSaver.saveAs(blob, savePath);
+  }
+
   render() {
     const {
       contractName,
@@ -3293,6 +3313,7 @@ class ContractCompiled extends React.Component {
       estimatedGas,
       ContractABI
     } = this.state;
+    const savePath = `${contractName}.abi`;
     return React.createElement("div", {
       className: "contract-content",
       key: index
@@ -3310,7 +3331,11 @@ class ContractCompiled extends React.Component {
       className: "btn"
     }, "Interface")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
       className: "btn"
-    }, "Interface Object")))), React.createElement(reactTabs.TabPanel, null, React.createElement("pre", {
+    }, "Interface Object")), React.createElement("button", {
+      className: "btn icon icon-desktop-download inline-block-tight icon-button",
+      title: "Save " + savePath,
+      onClick: this._saveABI
+    }))), React.createElement(reactTabs.TabPanel, null, React.createElement("pre", {
       className: "large-code"
     }, JSON.stringify(ContractABI))), React.createElement(reactTabs.TabPanel, null, React.createElement(ReactJson, {
       src: ContractABI,
@@ -3346,6 +3371,7 @@ ContractCompiled.propTypes = {
   helpers: PropTypes.any.isRequired,
   interfaces: PropTypes.object,
   contractName: PropTypes.string,
+  fileName: PropTypes.string,
   addInterface: PropTypes.func,
   bytecode: PropTypes.string,
   index: PropTypes.number,
@@ -3767,6 +3793,7 @@ class CollapsedFile extends React.Component {
         key: index
       }, !deployed[contractName] && interfaces !== null && interfaces[contractName] && compiling === false && React.createElement(ContractCompiled$1, {
         contractName: contractName,
+        fileName: fileName,
         bytecode: bytecode,
         index: index,
         helpers: this.helpers
@@ -4411,6 +4438,7 @@ class NodeControl extends React.Component {
     this.props.setAccounts({
       accounts
     });
+    this.props.setCoinbase(accounts[0]);
     this.getNodeInfo();
   }
 
@@ -4631,6 +4659,7 @@ NodeControl.propTypes = {
   setMining: PropTypes.func,
   setSyncStatus: PropTypes.func,
   setAccounts: PropTypes.func,
+  setCoinbase: PropTypes.func,
   password: PropTypes.string
 };
 
@@ -4660,6 +4689,7 @@ const mapStateToProps$b = ({
 
 var NodeControl$1 = reactRedux.connect(mapStateToProps$b, {
   setAccounts,
+  setCoinbase,
   setSyncStatus,
   setMining,
   setHashrate
@@ -4988,6 +5018,14 @@ class CoinbaseView extends React.Component {
     this.setState({
       balance
     });
+  }
+
+  async componentWillReceiveProps() {
+    if (this.props.accounts[0]) {
+      this.setState({
+        coinbase: this.props.accounts[0]
+      });
+    }
   }
 
   _linkClick(event) {
