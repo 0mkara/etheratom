@@ -194,17 +194,19 @@
     	}
 
         form {
-			input {
-				background-color: #2c313a;
-				border: solid 1px #181a1f;
-				height: 36px;
-			}
-			input:first-of-type {
-                flex: 1 0 150px;
-                padding-left: 8px;
-				width: 100%;
-				background-color: @color-bg;
-			}
+                input {
+                  background-color: #2c313a;
+                  border: solid 1px #181a1f;
+                }
+                input.smallbtn {
+                  width: auto !important;
+                }
+                input:first-of-type {
+                  flex: 1 0 150px;
+                  padding-left: 8px;
+                  width: 100%;
+                  background-color: @color-bg;
+                }
 		}
 	}
 

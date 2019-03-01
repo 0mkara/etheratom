@@ -4453,8 +4453,9 @@ class NodeControl extends React.Component {
     this._handleSend = this._handleSend.bind(this);
     this._handleAmountChange = this._handleAmountChange.bind(this);
     this._handleWsChange = this._handleWsChange.bind(this);
+    this._handleWsSubmit = this._handleWsSubmit.bind(this);
     this._handleRPCChange = this._handleRPCChange.bind(this);
-    this._reconnect = this._reconnect.bind(this);
+    this._handleRPCSubmit = this._handleRPCSubmit.bind(this);
   }
 
   async componentDidMount() {
@@ -4506,14 +4507,18 @@ class NodeControl extends React.Component {
     });
   }
 
-  _reconnect() {
-    // TODO: set addresses & reconnect web3
+  _handleWsSubmit(event) {
     const {
-      websocketAddress,
+      websocketAddress
+    } = this.state;
+    atom.config.set('etheratom.websocketAddress', websocketAddress);
+  }
+
+  _handleRPCSubmit(event) {
+    const {
       rpcAddress
     } = this.state;
     atom.config.set('etheratom.rpcAddress', rpcAddress);
-    atom.config.set('etheratom.websocketAddress', websocketAddress);
   }
 
   async _handleSend() {
@@ -4560,27 +4565,33 @@ class NodeControl extends React.Component {
       className: "connection-urls list-group"
     }, React.createElement("li", {
       className: "list-item"
-    }, React.createElement("button", {
-      className: wsProvider && connected ? 'btn btn-success' : 'btn btn-error'
-    }, "WS"), React.createElement("input", {
+    }, React.createElement("form", {
+      onSubmit: this._handleWsSubmit
+    }, React.createElement("input", {
+      type: "submit",
+      value: "WS",
+      className: wsProvider && connected ? 'btn btn-success smallbtn' : 'btn btn-error smallbtn'
+    }), React.createElement("input", {
       type: "string",
       placeholder: "Address",
       className: "input-text",
-      value: websocketAddress //disabled
-      ,
+      value: websocketAddress,
       onChange: this._handleWsChange
-    })), React.createElement("li", {
+    }))), React.createElement("li", {
       className: "list-item"
-    }, React.createElement("button", {
-      className: httpProvider && connected ? 'btn btn-success' : 'btn btn-error'
-    }, "RPC"), React.createElement("input", {
+    }, React.createElement("form", {
+      onSubmit: this._handleRPCSubmit
+    }, React.createElement("input", {
+      type: "submit",
+      value: "RPC",
+      className: httpProvider && connected ? 'btn btn-success smallbtn' : 'btn btn-error smallbtn'
+    }), React.createElement("input", {
       type: "string",
       placeholder: "Address",
-      className: "input-text" //disabled
-      ,
+      className: "input-text",
       value: rpcAddress,
       onChange: this._handleRPCChange
-    })), React.createElement("li", {
+    }))), React.createElement("li", {
       className: "list-item"
     }, React.createElement("span", {
       className: "inline-block highlight"
@@ -4661,10 +4672,7 @@ class NodeControl extends React.Component {
     }, hashRate))), React.createElement("button", {
       className: "btn",
       onClick: this._refreshSync
-    }, "Refresh"), React.createElement("button", {
-      className: "btn",
-      onClick: this._reconnect
-    }, "Reconnect"), React.createElement("form", {
+    }, "Refresh"), React.createElement("form", {
       className: "row",
       onSubmit: this._handleSend
     }, React.createElement("input", {
