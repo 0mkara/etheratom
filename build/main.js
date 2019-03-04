@@ -2297,8 +2297,8 @@ const SET_MINING = 'set_mining';
 const SET_HASH_RATE = 'set_hash_rate';
 
 class Web3Helpers {
-  constructor(web3, store) {
-    this.web3 = web3;
+  constructor(store) {
+    this.web3 = getWeb3Conn();
     this.store = store;
     this.jobs = {// fileName: { solcWorker, hash }
     };
@@ -4438,15 +4438,18 @@ class NodeControl extends React.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
+    const web3 = getWeb3Conn();
+    console.log(web3);
     this.state = {
-      wsProvider: Object.is(props.web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
-      httpProvider: Object.is(props.web3.currentProvider.constructor, Web3.providers.HttpProvider),
+      wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
+      httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
       connected: props.web3.currentProvider.connected,
       toAddress: '',
       amount: 0,
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
       websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
+    console.log(this.state);
     this._refreshSync = this._refreshSync.bind(this);
     this.getNodeInfo = this.getNodeInfo.bind(this);
     this._handleToAddrrChange = this._handleToAddrrChange.bind(this);
@@ -4469,6 +4472,11 @@ class NodeControl extends React.Component {
     });
     this.props.setCoinbase(accounts[0]);
     this.getNodeInfo();
+    this.setState({
+      wsProvider: Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
+      httpProvider: Object.is(this.web3.currentProvider.constructor, Web3.providers.HttpProvider),
+      connected: this.props.web3.currentProvider.connected
+    });
   }
 
   async getNodeInfo() {
@@ -5042,7 +5050,7 @@ class CoinbaseView extends React.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
-    this.web3 = props.web3;
+    this.web3 = getWeb3Conn();
     this.state = {
       coinbase: props.accounts[0],
       balance: 0.00,
@@ -5216,7 +5224,7 @@ var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, {
 class VersionSelector extends React.Component {
   constructor(props) {
     super(props);
-    this.web3 = props.web3;
+    this.web3 = getWeb3Conn();
     this.state = {
       availableVersions: [],
       selectedVersion: ''
@@ -5266,7 +5274,6 @@ class VersionSelector extends React.Component {
 }
 
 VersionSelector.propTypes = {
-  web3: PropTypes.any.isRequired,
   selectedVersion: PropTypes.string
 };
 
@@ -5338,7 +5345,7 @@ class View {
     this.coinbase = null;
     this.web3 = getWeb3Conn();
     this.store = store;
-    this.helpers = new Web3Helpers(this.web3);
+    this.helpers = new Web3Helpers();
   }
 
   async createCoinbaseView() {
@@ -5354,8 +5361,7 @@ class View {
       });
       ReactDOM.render(React.createElement(CoinbaseView$1, {
         store: this.store,
-        helpers: this.helpers,
-        web3: this.web3
+        helpers: this.helpers
       }), document.getElementById('accounts-list'));
     } catch (e) {
       console.log(e);
@@ -5380,8 +5386,7 @@ class View {
 
   createVersionSelector() {
     ReactDOM.render(React.createElement(VersionSelector$1, {
-      store: this.store,
-      web3: this.web3
+      store: this.store
     }), document.getElementById('version_selector'));
   }
 
