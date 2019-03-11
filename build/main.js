@@ -2,29 +2,29 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
+require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
+var Web3 = _interopDefault(require('web3'));
+var md5 = _interopDefault(require('md5'));
+var atomMessagePanel = require('atom-message-panel');
+var child_process = require('child_process');
 var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
-var atomMessagePanel = require('atom-message-panel');
-var Web3 = _interopDefault(require('web3'));
-var md5 = _interopDefault(require('md5'));
-var child_process = require('child_process');
 var React = _interopDefault(require('react'));
+var ReactDOM = _interopDefault(require('react-dom'));
+var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
-var ReactJson = _interopDefault(require('react-json-view'));
-var reactTabs = require('react-tabs');
-var fileSaver = require('file-saver');
 var reactCollapse = require('react-collapse');
+var ReactJson = _interopDefault(require('react-json-view'));
+var fileSaver = require('file-saver');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
-var ReactDOM = _interopDefault(require('react-dom'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
-require('idempotent-babel-polyfill');
 
 class AtomSolidityView {
   constructor() {
@@ -378,6 +378,1075 @@ var substr = 'ab'.substr(-1) === 'b' ?
         return str.substr(start, len);
     }
 ;
+
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
+function _extends() {
+  _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  return _extends.apply(this, arguments);
+}
+
+function _objectSpread(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+    var ownKeys = Object.keys(source);
+
+    if (typeof Object.getOwnPropertySymbols === 'function') {
+      ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(source, sym).enumerable;
+      }));
+    }
+
+    ownKeys.forEach(function (key) {
+      _defineProperty(target, key, source[key]);
+    });
+  }
+
+  return target;
+}
+
+var domain;
+
+// This constructor is used to store event handlers. Instantiating this is
+// faster than explicitly calling `Object.create(null)` to get a "clean" empty
+// object (tested with v8 v4.9).
+function EventHandlers() {}
+EventHandlers.prototype = Object.create(null);
+
+function EventEmitter() {
+  EventEmitter.init.call(this);
+}
+
+// nodejs oddity
+// require('events') === require('events').EventEmitter
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.usingDomains = false;
+
+EventEmitter.prototype.domain = undefined;
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+EventEmitter.init = function() {
+  this.domain = null;
+  if (EventEmitter.usingDomains) {
+    // if there is an active domain, then attach to it.
+    if (domain.active && !(this instanceof domain.Domain)) ;
+  }
+
+  if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
+    this._events = new EventHandlers();
+    this._eventsCount = 0;
+  }
+
+  this._maxListeners = this._maxListeners || undefined;
+};
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
+  if (typeof n !== 'number' || n < 0 || isNaN(n))
+    throw new TypeError('"n" argument must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+function $getMaxListeners(that) {
+  if (that._maxListeners === undefined)
+    return EventEmitter.defaultMaxListeners;
+  return that._maxListeners;
+}
+
+EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
+  return $getMaxListeners(this);
+};
+
+// These standalone emit* functions are used to optimize calling of event
+// handlers for fast cases because emit() itself often has a variable number of
+// arguments and can be deoptimized because of that. These functions always have
+// the same number of arguments and thus do not get deoptimized, so the code
+// inside them can execute faster.
+function emitNone(handler, isFn, self) {
+  if (isFn)
+    handler.call(self);
+  else {
+    var len = handler.length;
+    var listeners = arrayClone(handler, len);
+    for (var i = 0; i < len; ++i)
+      listeners[i].call(self);
+  }
+}
+function emitOne(handler, isFn, self, arg1) {
+  if (isFn)
+    handler.call(self, arg1);
+  else {
+    var len = handler.length;
+    var listeners = arrayClone(handler, len);
+    for (var i = 0; i < len; ++i)
+      listeners[i].call(self, arg1);
+  }
+}
+function emitTwo(handler, isFn, self, arg1, arg2) {
+  if (isFn)
+    handler.call(self, arg1, arg2);
+  else {
+    var len = handler.length;
+    var listeners = arrayClone(handler, len);
+    for (var i = 0; i < len; ++i)
+      listeners[i].call(self, arg1, arg2);
+  }
+}
+function emitThree(handler, isFn, self, arg1, arg2, arg3) {
+  if (isFn)
+    handler.call(self, arg1, arg2, arg3);
+  else {
+    var len = handler.length;
+    var listeners = arrayClone(handler, len);
+    for (var i = 0; i < len; ++i)
+      listeners[i].call(self, arg1, arg2, arg3);
+  }
+}
+
+function emitMany(handler, isFn, self, args) {
+  if (isFn)
+    handler.apply(self, args);
+  else {
+    var len = handler.length;
+    var listeners = arrayClone(handler, len);
+    for (var i = 0; i < len; ++i)
+      listeners[i].apply(self, args);
+  }
+}
+
+EventEmitter.prototype.emit = function emit(type) {
+  var er, handler, len, args, i, events, domain;
+  var doError = (type === 'error');
+
+  events = this._events;
+  if (events)
+    doError = (doError && events.error == null);
+  else if (!doError)
+    return false;
+
+  domain = this.domain;
+
+  // If there is no 'error' event listener then throw.
+  if (doError) {
+    er = arguments[1];
+    if (domain) {
+      if (!er)
+        er = new Error('Uncaught, unspecified "error" event');
+      er.domainEmitter = this;
+      er.domain = domain;
+      er.domainThrown = false;
+      domain.emit('error', er);
+    } else if (er instanceof Error) {
+      throw er; // Unhandled 'error' event
+    } else {
+      // At least give some kind of context to the user
+      var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+      err.context = er;
+      throw err;
+    }
+    return false;
+  }
+
+  handler = events[type];
+
+  if (!handler)
+    return false;
+
+  var isFn = typeof handler === 'function';
+  len = arguments.length;
+  switch (len) {
+    // fast cases
+    case 1:
+      emitNone(handler, isFn, this);
+      break;
+    case 2:
+      emitOne(handler, isFn, this, arguments[1]);
+      break;
+    case 3:
+      emitTwo(handler, isFn, this, arguments[1], arguments[2]);
+      break;
+    case 4:
+      emitThree(handler, isFn, this, arguments[1], arguments[2], arguments[3]);
+      break;
+    // slower
+    default:
+      args = new Array(len - 1);
+      for (i = 1; i < len; i++)
+        args[i - 1] = arguments[i];
+      emitMany(handler, isFn, this, args);
+  }
+
+  return true;
+};
+
+function _addListener(target, type, listener, prepend) {
+  var m;
+  var events;
+  var existing;
+
+  if (typeof listener !== 'function')
+    throw new TypeError('"listener" argument must be a function');
+
+  events = target._events;
+  if (!events) {
+    events = target._events = new EventHandlers();
+    target._eventsCount = 0;
+  } else {
+    // To avoid recursion in the case that type === "newListener"! Before
+    // adding it to the listeners, first emit "newListener".
+    if (events.newListener) {
+      target.emit('newListener', type,
+                  listener.listener ? listener.listener : listener);
+
+      // Re-assign `events` because a newListener handler could have caused the
+      // this._events to be assigned to a new object
+      events = target._events;
+    }
+    existing = events[type];
+  }
+
+  if (!existing) {
+    // Optimize the case of one listener. Don't need the extra array object.
+    existing = events[type] = listener;
+    ++target._eventsCount;
+  } else {
+    if (typeof existing === 'function') {
+      // Adding the second element, need to change to array.
+      existing = events[type] = prepend ? [listener, existing] :
+                                          [existing, listener];
+    } else {
+      // If we've already got an array, just append.
+      if (prepend) {
+        existing.unshift(listener);
+      } else {
+        existing.push(listener);
+      }
+    }
+
+    // Check for listener leak
+    if (!existing.warned) {
+      m = $getMaxListeners(target);
+      if (m && m > 0 && existing.length > m) {
+        existing.warned = true;
+        var w = new Error('Possible EventEmitter memory leak detected. ' +
+                            existing.length + ' ' + type + ' listeners added. ' +
+                            'Use emitter.setMaxListeners() to increase limit');
+        w.name = 'MaxListenersExceededWarning';
+        w.emitter = target;
+        w.type = type;
+        w.count = existing.length;
+        emitWarning(w);
+      }
+    }
+  }
+
+  return target;
+}
+function emitWarning(e) {
+  typeof console.warn === 'function' ? console.warn(e) : console.log(e);
+}
+EventEmitter.prototype.addListener = function addListener(type, listener) {
+  return _addListener(this, type, listener, false);
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.prependListener =
+    function prependListener(type, listener) {
+      return _addListener(this, type, listener, true);
+    };
+
+function _onceWrap(target, type, listener) {
+  var fired = false;
+  function g() {
+    target.removeListener(type, g);
+    if (!fired) {
+      fired = true;
+      listener.apply(target, arguments);
+    }
+  }
+  g.listener = listener;
+  return g;
+}
+
+EventEmitter.prototype.once = function once(type, listener) {
+  if (typeof listener !== 'function')
+    throw new TypeError('"listener" argument must be a function');
+  this.on(type, _onceWrap(this, type, listener));
+  return this;
+};
+
+EventEmitter.prototype.prependOnceListener =
+    function prependOnceListener(type, listener) {
+      if (typeof listener !== 'function')
+        throw new TypeError('"listener" argument must be a function');
+      this.prependListener(type, _onceWrap(this, type, listener));
+      return this;
+    };
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener =
+    function removeListener(type, listener) {
+      var list, events, position, i, originalListener;
+
+      if (typeof listener !== 'function')
+        throw new TypeError('"listener" argument must be a function');
+
+      events = this._events;
+      if (!events)
+        return this;
+
+      list = events[type];
+      if (!list)
+        return this;
+
+      if (list === listener || (list.listener && list.listener === listener)) {
+        if (--this._eventsCount === 0)
+          this._events = new EventHandlers();
+        else {
+          delete events[type];
+          if (events.removeListener)
+            this.emit('removeListener', type, list.listener || listener);
+        }
+      } else if (typeof list !== 'function') {
+        position = -1;
+
+        for (i = list.length; i-- > 0;) {
+          if (list[i] === listener ||
+              (list[i].listener && list[i].listener === listener)) {
+            originalListener = list[i].listener;
+            position = i;
+            break;
+          }
+        }
+
+        if (position < 0)
+          return this;
+
+        if (list.length === 1) {
+          list[0] = undefined;
+          if (--this._eventsCount === 0) {
+            this._events = new EventHandlers();
+            return this;
+          } else {
+            delete events[type];
+          }
+        } else {
+          spliceOne(list, position);
+        }
+
+        if (events.removeListener)
+          this.emit('removeListener', type, originalListener || listener);
+      }
+
+      return this;
+    };
+
+EventEmitter.prototype.removeAllListeners =
+    function removeAllListeners(type) {
+      var listeners, events;
+
+      events = this._events;
+      if (!events)
+        return this;
+
+      // not listening for removeListener, no need to emit
+      if (!events.removeListener) {
+        if (arguments.length === 0) {
+          this._events = new EventHandlers();
+          this._eventsCount = 0;
+        } else if (events[type]) {
+          if (--this._eventsCount === 0)
+            this._events = new EventHandlers();
+          else
+            delete events[type];
+        }
+        return this;
+      }
+
+      // emit removeListener for all listeners on all events
+      if (arguments.length === 0) {
+        var keys = Object.keys(events);
+        for (var i = 0, key; i < keys.length; ++i) {
+          key = keys[i];
+          if (key === 'removeListener') continue;
+          this.removeAllListeners(key);
+        }
+        this.removeAllListeners('removeListener');
+        this._events = new EventHandlers();
+        this._eventsCount = 0;
+        return this;
+      }
+
+      listeners = events[type];
+
+      if (typeof listeners === 'function') {
+        this.removeListener(type, listeners);
+      } else if (listeners) {
+        // LIFO order
+        do {
+          this.removeListener(type, listeners[listeners.length - 1]);
+        } while (listeners[0]);
+      }
+
+      return this;
+    };
+
+EventEmitter.prototype.listeners = function listeners(type) {
+  var evlistener;
+  var ret;
+  var events = this._events;
+
+  if (!events)
+    ret = [];
+  else {
+    evlistener = events[type];
+    if (!evlistener)
+      ret = [];
+    else if (typeof evlistener === 'function')
+      ret = [evlistener.listener || evlistener];
+    else
+      ret = unwrapListeners(evlistener);
+  }
+
+  return ret;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  if (typeof emitter.listenerCount === 'function') {
+    return emitter.listenerCount(type);
+  } else {
+    return listenerCount.call(emitter, type);
+  }
+};
+
+EventEmitter.prototype.listenerCount = listenerCount;
+function listenerCount(type) {
+  var events = this._events;
+
+  if (events) {
+    var evlistener = events[type];
+
+    if (typeof evlistener === 'function') {
+      return 1;
+    } else if (evlistener) {
+      return evlistener.length;
+    }
+  }
+
+  return 0;
+}
+
+EventEmitter.prototype.eventNames = function eventNames() {
+  return this._eventsCount > 0 ? Reflect.ownKeys(this._events) : [];
+};
+
+// About 1.5x faster than the two-arg version of Array#splice().
+function spliceOne(list, index) {
+  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1)
+    list[i] = list[k];
+  list.pop();
+}
+
+function arrayClone(arr, i) {
+  var copy = new Array(i);
+  while (i--)
+    copy[i] = arr[i];
+  return copy;
+}
+
+function unwrapListeners(arr) {
+  var ret = new Array(arr.length);
+  for (var i = 0; i < ret.length; ++i) {
+    ret[i] = arr[i].listener || arr[i];
+  }
+  return ret;
+}
+
+function showPanelError(err_message) {
+  let messages;
+  messages = new atomMessagePanel.MessagePanelView({
+    title: 'Etheratom report'
+  });
+  messages.attach();
+  messages.add(new atomMessagePanel.PlainMessageView({
+    message: err_message,
+    className: 'red-message'
+  }));
+}
+
+function getWeb3Conn() {
+  try {
+    const rpcAddress = atom.config.get('etheratom.rpcAddress');
+    const websocketAddress = atom.config.get('etheratom.websocketAddress');
+    const web3 = new Web3(Web3.givenProvider || new Web3.providers.HttpProvider(rpcAddress));
+
+    if (websocketAddress) {
+      web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
+    }
+
+    return web3;
+  } catch (e) {
+    console.error(e);
+    showPanelError(e);
+  }
+}
+
+// This file is part of Etheratom.
+// Etheratom is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// Etheratom is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
+
+const RESET_CONTRACTS = 'reset_contracts';
+const SET_COMPILING = 'set_compiling';
+const SET_COMPILED = 'set_compiled';
+const RESET_COMPILED = 'reset_compiled';
+const SET_PARAMS = 'set_params';
+const ADD_INTERFACE = 'add_interface';
+const UPDATE_INTERFACE = 'update_interface';
+const SET_INSTANCE = 'set_instance';
+const SET_DEPLOYED = 'set_deployed';
+const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
+
+const RESET_SOURCES = 'reset_sources';
+const SET_SOURCES = 'set_sources';
+const SET_COINBASE = 'set_coinbase';
+const SET_PASSWORD = 'set_password';
+const SET_ACCOUNTS = 'set_accounts';
+const SET_ERRORS = 'set_errors';
+const RESET_ERRORS = 'reset_errors'; // Ethereum client events
+
+const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
+const ADD_EVENTS = 'add_logs';
+const SET_EVENTS = 'set_events'; // Node variables
+const SET_SYNC_STATUS = 'set_sync_status';
+const SET_SYNCING = 'set_syncing';
+const SET_MINING = 'set_mining';
+const SET_HASH_RATE = 'set_hash_rate';
+
+class Web3Helpers {
+  constructor(store) {
+    this.web3 = getWeb3Conn();
+    this.store = store;
+    this.jobs = {// fileName: { solcWorker, hash }
+    };
+  }
+
+  createWorker(fn) {
+    const pkgPath = atom.packages.resolvePackagePath('etheratom');
+    return child_process.fork(`${pkgPath}/lib/web3/worker.js`);
+  }
+
+  async compileWeb3(sources) {
+    let fileName = Object.keys(sources).find(key => {
+      return /\.sol/.test(key);
+    });
+    let hashId = md5(sources[fileName].content);
+
+    if (this.jobs[fileName]) {
+      if (this.jobs[fileName].hashId === hashId || this.jobs[fileName].hashId === undefined) {
+        this.jobs[fileName].wasBusy = true;
+        console.log(hashId);
+        console.error(`Job in progress for ${fileName}`);
+        return;
+      }
+
+      this.jobs[fileName].solcWorker.kill();
+      console.error(`Killing older job for ${fileName}`);
+    } else {
+      this.jobs[fileName] = {
+        hashId
+      };
+    } // compile solidity using solcjs
+    // sources have Compiler Input JSON sources format
+    // https://solidity.readthedocs.io/en/develop/using-the-compiler.html#compiler-input-and-output-json-description
+
+
+    try {
+      const outputSelection = {
+        // Enable the metadata and bytecode outputs of every single contract.
+        '*': {
+          '': ['legacyAST'],
+          '*': ['abi', 'evm.bytecode.object', 'devdoc', 'userdoc', 'evm.gasEstimates']
+        }
+      };
+      const settings = {
+        optimizer: {
+          enabled: true,
+          runs: 500
+        },
+        evmVersion: 'byzantium',
+        outputSelection
+      };
+      const input = {
+        language: 'Solidity',
+        sources,
+        settings
+      };
+      const solcWorker = this.createWorker();
+      this.jobs[fileName].solcWorker = solcWorker;
+      const requiredSolcVersion = atom.config.get('etheratom.versionSelector');
+      solcWorker.send({
+        command: 'compile',
+        payload: input,
+        version: requiredSolcVersion
+      });
+      solcWorker.on('message', m => {
+        if (m.compiled) {
+          this.store.dispatch({
+            type: SET_COMPILED,
+            payload: JSON.parse(m.compiled)
+          });
+          this.store.dispatch({
+            type: SET_COMPILING,
+            payload: false
+          });
+          this.jobs[fileName].successHash = hashId;
+          solcWorker.kill();
+        }
+      });
+      solcWorker.on('error', e => console.error(e));
+      solcWorker.on('exit', (code, signal) => {
+        if (this.jobs[fileName].wasBusy && hashId !== this.jobs[fileName].successHash) {
+          this.store.dispatch({
+            type: SET_COMPILING,
+            payload: true
+          });
+        } else {
+          this.store.dispatch({
+            type: SET_COMPILING,
+            payload: false
+          });
+          this.jobs[fileName] = false;
+        }
+
+        console.log('%c Compile worker process exited with ' + `code ${code} and signal ${signal}`, 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      });
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getGasEstimate(coinbase, bytecode) {
+    if (!coinbase) {
+      const error = new Error('No coinbase selected!');
+      throw error;
+    }
+
+    try {
+      this.web3.eth.defaultAccount = coinbase;
+      const gasEstimate = await this.web3.eth.estimateGas({
+        from: this.web3.eth.defaultAccount,
+        data: '0x' + bytecode
+      });
+      return gasEstimate;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async setCoinbase(coinbase) {
+    try {
+      this.web3.eth.defaultAccount = coinbase;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getBalance(coinbase) {
+    if (!coinbase) {
+      const error = new Error('No coinbase selected!');
+      throw error;
+    }
+
+    try {
+      const weiBalance = await this.web3.eth.getBalance(coinbase);
+      const ethBalance = await this.web3.utils.fromWei(weiBalance, 'ether');
+      return ethBalance;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getSyncStat() {
+    try {
+      return this.web3.eth.isSyncing();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async create(_ref) {
+    let args = _extends({}, _ref);
+
+    console.log('%c Creating contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+    const coinbase = args.coinbase;
+    const password = args.password;
+    const abi = args.abi;
+    const code = args.bytecode;
+    const gasSupply = args.gas;
+
+    if (!coinbase) {
+      const error = new Error('No coinbase selected!');
+      throw error;
+    }
+
+    this.web3.eth.defaultAccount = coinbase;
+
+    try {
+      if (password) {
+        await this.web3.eth.personal.unlockAccount(coinbase, password);
+      }
+
+      try {
+        const gasPrice = await this.web3.eth.getGasPrice();
+        const contract = await new this.web3.eth.Contract(abi, {
+          from: this.web3.eth.defaultAccount,
+          data: '0x' + code,
+          gas: this.web3.utils.toHex(gasSupply),
+          gasPrice: this.web3.utils.toHex(gasPrice)
+        });
+        return contract;
+      } catch (e) {
+        console.log(e);
+        throw e;
+      }
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
+  }
+
+  async deploy(contract, params) {
+    console.log('%c Deploying contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+
+    class ContractInstance extends EventEmitter {}
+
+    const contractInstance = new ContractInstance();
+
+    try {
+      params = params.map(param => {
+        return param.type.endsWith('[]') ? param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',') : param.value;
+      });
+      contract.deploy({
+        arguments: params
+      }).send({
+        from: this.web3.eth.defaultAccount
+      }).on('transactionHash', transactionHash => {
+        contractInstance.emit('transactionHash', transactionHash);
+      }).on('receipt', txReceipt => {
+        contractInstance.emit('receipt', txReceipt);
+      }).on('confirmation', confirmationNumber => {
+        contractInstance.emit('confirmation', confirmationNumber);
+      }).on('error', error => {
+        contractInstance.emit('error', error);
+      }).then(instance => {
+        contractInstance.emit('address', instance.options.address);
+        contractInstance.emit('instance', instance);
+      });
+      return contractInstance;
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
+  }
+
+  async call(_ref2) {
+    let args = _extends({}, _ref2);
+
+    console.log('%c Web3 calling functions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+    const coinbase = args.coinbase;
+    const password = args.password;
+    const contract = args.contract;
+    const abiItem = args.abiItem;
+    var params = args.params || [];
+    this.web3.eth.defaultAccount = coinbase;
+
+    try {
+      // Prepare params for call
+      params = params.map(param => {
+        if (param.type.endsWith('[]')) {
+          return param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',');
+        }
+
+        if (param.type.indexOf('int') > -1) {
+          return new this.web3.utils.BN(param.value);
+        }
+
+        return param.value;
+      }); // Handle fallback
+
+      if (abiItem.type === 'fallback') {
+        if (password) {
+          await this.web3.eth.personal.unlockAccount(coinbase, password);
+        }
+
+        const result = await this.web3.eth.sendTransaction({
+          from: coinbase,
+          to: contract.options.address,
+          value: abiItem.payableValue || 0
+        });
+        return result;
+      }
+
+      if (abiItem.constant === false || abiItem.payable === true) {
+        if (password) {
+          await this.web3.eth.personal.unlockAccount(coinbase, password);
+        }
+
+        if (params.length > 0) {
+          const result = await contract.methods[abiItem.name](...params).send({
+            from: coinbase,
+            value: abiItem.payableValue
+          });
+          return result;
+        }
+
+        const result = await contract.methods[abiItem.name]().send({
+          from: coinbase,
+          value: abiItem.payableValue
+        });
+        return result;
+      }
+
+      if (params.length > 0) {
+        const result = await contract.methods[abiItem.name](...params).call({
+          from: coinbase
+        });
+        return result;
+      }
+
+      const result = await contract.methods[abiItem.name]().call({
+        from: coinbase
+      });
+      return result;
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
+  }
+
+  async send(to, amount, password) {
+    return new Promise((resolve, reject) => {
+      try {
+        const coinbase = this.web3.eth.defaultAccount;
+
+        if (password) {
+          this.web3.eth.personal.unlockAccount(coinbase, password);
+        }
+
+        this.web3.eth.sendTransaction({
+          from: coinbase,
+          to: to,
+          value: amount
+        }).on('transactionHash', txHash => {
+          this.showTransaction({
+            head: 'Transaction hash:',
+            data: txHash
+          });
+        }).then(txRecipt => {
+          resolve(txRecipt);
+        }).catch(e => {
+          reject(e);
+        });
+      } catch (e) {
+        console.error(e);
+        reject(e);
+      }
+    });
+  }
+
+  async funcParamsToArray(contractFunction) {
+    if (contractFunction && contractFunction.inputs.length > 0) {
+      const inputElements = await Promise.all(contractFunction.inputs.map(async input => {
+        return [input.type, input.name];
+      }));
+      return inputElements;
+    }
+
+    return [];
+  }
+
+  async inputsToArray(paramObject) {
+    if (paramObject.type.endsWith('[]')) {
+      return paramObject.value.split(',').map(val => this.web3.utils.toHex(val.trim()));
+    }
+
+    return this.web3.utils.toHex(paramObject.value);
+  }
+
+  showPanelError(err_message) {
+    let messages;
+    messages = new atomMessagePanel.MessagePanelView({
+      title: 'Etheratom report'
+    });
+    messages.attach();
+    messages.add(new atomMessagePanel.PlainMessageView({
+      message: err_message,
+      className: 'red-message'
+    }));
+  }
+
+  showOutput(_ref3) {
+    let args = _extends({}, _ref3);
+
+    const address = args.address;
+    const data = args.data;
+    const messages = new atomMessagePanel.MessagePanelView({
+      title: 'Etheratom output'
+    });
+    messages.attach();
+    messages.add(new atomMessagePanel.PlainMessageView({
+      message: 'Contract address: ' + address,
+      className: 'green-message'
+    }));
+
+    if (data instanceof Object) {
+      const rawMessage = `<h6>Contract output:</h6><pre>${JSON.stringify(data, null, 4)}</pre>`;
+      messages.add(new atomMessagePanel.PlainMessageView({
+        message: rawMessage,
+        raw: true,
+        className: 'green-message'
+      }));
+      return;
+    }
+
+    messages.add(new atomMessagePanel.PlainMessageView({
+      message: 'Contract output: ' + data,
+      className: 'green-message'
+    }));
+    return;
+  }
+
+  showTransaction(_ref4) {
+    let args = _extends({}, _ref4);
+
+    const head = args.head;
+    const data = args.data;
+    const messages = new atomMessagePanel.MessagePanelView({
+      title: 'Etheratom output'
+    });
+    messages.attach();
+    messages.add(new atomMessagePanel.PlainMessageView({
+      message: head,
+      className: 'green-message'
+    }));
+
+    if (data instanceof Object) {
+      const rawMessage = `<pre>${JSON.stringify(data, null, 4)}</pre>`;
+      messages.add(new atomMessagePanel.PlainMessageView({
+        message: rawMessage,
+        raw: true,
+        className: 'green-message'
+      }));
+      return;
+    }
+
+    messages.add(new atomMessagePanel.PlainMessageView({
+      message: data,
+      className: 'green-message'
+    }));
+    return;
+  } // Transaction analysis
+
+
+  async getTxAnalysis(txHash) {
+    try {
+      const transaction = await this.web3.eth.getTransaction(txHash);
+      const transactionRecipt = await this.web3.eth.getTransactionReceipt(txHash);
+      return {
+        transaction,
+        transactionRecipt
+      };
+    } catch (e) {
+      throw e;
+    }
+  } // Gas Limit
+
+
+  async getGasLimit() {
+    try {
+      const block = await this.web3.eth.getBlock('latest');
+      return block.gasLimit;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getAccounts() {
+    try {
+      return await this.web3.eth.getAccounts();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getMining() {
+    try {
+      return await this.web3.eth.isMining();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async getHashrate() {
+    try {
+      return await this.web3.eth.getHashrate();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  async updateWeb3() {
+    try {
+      this.web3 = getWeb3Conn();
+    } catch (e) {
+      throw e;
+    }
+  }
+
+}
 
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 
@@ -1708,1067 +2777,6 @@ async function combineSource(fileRoot, sources) {
   }
 
   return sources;
-}
-
-function showPanelError(err_message) {
-  let messages;
-  messages = new atomMessagePanel.MessagePanelView({
-    title: 'Etheratom report'
-  });
-  messages.attach();
-  messages.add(new atomMessagePanel.PlainMessageView({
-    message: err_message,
-    className: 'red-message'
-  }));
-}
-
-function getWeb3Conn() {
-  try {
-    const rpcAddress = atom.config.get('etheratom.rpcAddress');
-    const websocketAddress = atom.config.get('etheratom.websocketAddress');
-    const web3 = new Web3(Web3.givenProvider || new Web3.providers.HttpProvider(rpcAddress));
-
-    if (websocketAddress) {
-      web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
-    }
-
-    return web3;
-  } catch (e) {
-    console.error(e);
-    showPanelError(e);
-  }
-}
-
-function _defineProperty(obj, key, value) {
-  if (key in obj) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
-  }
-
-  return obj;
-}
-
-function _extends() {
-  _extends = Object.assign || function (target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i];
-
-      for (var key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
-          target[key] = source[key];
-        }
-      }
-    }
-
-    return target;
-  };
-
-  return _extends.apply(this, arguments);
-}
-
-function _objectSpread(target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i] != null ? arguments[i] : {};
-    var ownKeys = Object.keys(source);
-
-    if (typeof Object.getOwnPropertySymbols === 'function') {
-      ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(source, sym).enumerable;
-      }));
-    }
-
-    ownKeys.forEach(function (key) {
-      _defineProperty(target, key, source[key]);
-    });
-  }
-
-  return target;
-}
-
-var domain;
-
-// This constructor is used to store event handlers. Instantiating this is
-// faster than explicitly calling `Object.create(null)` to get a "clean" empty
-// object (tested with v8 v4.9).
-function EventHandlers() {}
-EventHandlers.prototype = Object.create(null);
-
-function EventEmitter() {
-  EventEmitter.init.call(this);
-}
-
-// nodejs oddity
-// require('events') === require('events').EventEmitter
-EventEmitter.EventEmitter = EventEmitter;
-
-EventEmitter.usingDomains = false;
-
-EventEmitter.prototype.domain = undefined;
-EventEmitter.prototype._events = undefined;
-EventEmitter.prototype._maxListeners = undefined;
-
-// By default EventEmitters will print a warning if more than 10 listeners are
-// added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
-
-EventEmitter.init = function() {
-  this.domain = null;
-  if (EventEmitter.usingDomains) {
-    // if there is an active domain, then attach to it.
-    if (domain.active) ;
-  }
-
-  if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
-    this._events = new EventHandlers();
-    this._eventsCount = 0;
-  }
-
-  this._maxListeners = this._maxListeners || undefined;
-};
-
-// Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
-  if (typeof n !== 'number' || n < 0 || isNaN(n))
-    throw new TypeError('"n" argument must be a positive number');
-  this._maxListeners = n;
-  return this;
-};
-
-function $getMaxListeners(that) {
-  if (that._maxListeners === undefined)
-    return EventEmitter.defaultMaxListeners;
-  return that._maxListeners;
-}
-
-EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
-  return $getMaxListeners(this);
-};
-
-// These standalone emit* functions are used to optimize calling of event
-// handlers for fast cases because emit() itself often has a variable number of
-// arguments and can be deoptimized because of that. These functions always have
-// the same number of arguments and thus do not get deoptimized, so the code
-// inside them can execute faster.
-function emitNone(handler, isFn, self) {
-  if (isFn)
-    handler.call(self);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self);
-  }
-}
-function emitOne(handler, isFn, self, arg1) {
-  if (isFn)
-    handler.call(self, arg1);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self, arg1);
-  }
-}
-function emitTwo(handler, isFn, self, arg1, arg2) {
-  if (isFn)
-    handler.call(self, arg1, arg2);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self, arg1, arg2);
-  }
-}
-function emitThree(handler, isFn, self, arg1, arg2, arg3) {
-  if (isFn)
-    handler.call(self, arg1, arg2, arg3);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self, arg1, arg2, arg3);
-  }
-}
-
-function emitMany(handler, isFn, self, args) {
-  if (isFn)
-    handler.apply(self, args);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].apply(self, args);
-  }
-}
-
-EventEmitter.prototype.emit = function emit(type) {
-  var er, handler, len, args, i, events, domain;
-  var doError = (type === 'error');
-
-  events = this._events;
-  if (events)
-    doError = (doError && events.error == null);
-  else if (!doError)
-    return false;
-
-  domain = this.domain;
-
-  // If there is no 'error' event listener then throw.
-  if (doError) {
-    er = arguments[1];
-    if (domain) {
-      if (!er)
-        er = new Error('Uncaught, unspecified "error" event');
-      er.domainEmitter = this;
-      er.domain = domain;
-      er.domainThrown = false;
-      domain.emit('error', er);
-    } else if (er instanceof Error) {
-      throw er; // Unhandled 'error' event
-    } else {
-      // At least give some kind of context to the user
-      var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-      err.context = er;
-      throw err;
-    }
-    return false;
-  }
-
-  handler = events[type];
-
-  if (!handler)
-    return false;
-
-  var isFn = typeof handler === 'function';
-  len = arguments.length;
-  switch (len) {
-    // fast cases
-    case 1:
-      emitNone(handler, isFn, this);
-      break;
-    case 2:
-      emitOne(handler, isFn, this, arguments[1]);
-      break;
-    case 3:
-      emitTwo(handler, isFn, this, arguments[1], arguments[2]);
-      break;
-    case 4:
-      emitThree(handler, isFn, this, arguments[1], arguments[2], arguments[3]);
-      break;
-    // slower
-    default:
-      args = new Array(len - 1);
-      for (i = 1; i < len; i++)
-        args[i - 1] = arguments[i];
-      emitMany(handler, isFn, this, args);
-  }
-
-  return true;
-};
-
-function _addListener(target, type, listener, prepend) {
-  var m;
-  var events;
-  var existing;
-
-  if (typeof listener !== 'function')
-    throw new TypeError('"listener" argument must be a function');
-
-  events = target._events;
-  if (!events) {
-    events = target._events = new EventHandlers();
-    target._eventsCount = 0;
-  } else {
-    // To avoid recursion in the case that type === "newListener"! Before
-    // adding it to the listeners, first emit "newListener".
-    if (events.newListener) {
-      target.emit('newListener', type,
-                  listener.listener ? listener.listener : listener);
-
-      // Re-assign `events` because a newListener handler could have caused the
-      // this._events to be assigned to a new object
-      events = target._events;
-    }
-    existing = events[type];
-  }
-
-  if (!existing) {
-    // Optimize the case of one listener. Don't need the extra array object.
-    existing = events[type] = listener;
-    ++target._eventsCount;
-  } else {
-    if (typeof existing === 'function') {
-      // Adding the second element, need to change to array.
-      existing = events[type] = prepend ? [listener, existing] :
-                                          [existing, listener];
-    } else {
-      // If we've already got an array, just append.
-      if (prepend) {
-        existing.unshift(listener);
-      } else {
-        existing.push(listener);
-      }
-    }
-
-    // Check for listener leak
-    if (!existing.warned) {
-      m = $getMaxListeners(target);
-      if (m && m > 0 && existing.length > m) {
-        existing.warned = true;
-        var w = new Error('Possible EventEmitter memory leak detected. ' +
-                            existing.length + ' ' + type + ' listeners added. ' +
-                            'Use emitter.setMaxListeners() to increase limit');
-        w.name = 'MaxListenersExceededWarning';
-        w.emitter = target;
-        w.type = type;
-        w.count = existing.length;
-        emitWarning(w);
-      }
-    }
-  }
-
-  return target;
-}
-function emitWarning(e) {
-  typeof console.warn === 'function' ? console.warn(e) : console.log(e);
-}
-EventEmitter.prototype.addListener = function addListener(type, listener) {
-  return _addListener(this, type, listener, false);
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.prependListener =
-    function prependListener(type, listener) {
-      return _addListener(this, type, listener, true);
-    };
-
-function _onceWrap(target, type, listener) {
-  var fired = false;
-  function g() {
-    target.removeListener(type, g);
-    if (!fired) {
-      fired = true;
-      listener.apply(target, arguments);
-    }
-  }
-  g.listener = listener;
-  return g;
-}
-
-EventEmitter.prototype.once = function once(type, listener) {
-  if (typeof listener !== 'function')
-    throw new TypeError('"listener" argument must be a function');
-  this.on(type, _onceWrap(this, type, listener));
-  return this;
-};
-
-EventEmitter.prototype.prependOnceListener =
-    function prependOnceListener(type, listener) {
-      if (typeof listener !== 'function')
-        throw new TypeError('"listener" argument must be a function');
-      this.prependListener(type, _onceWrap(this, type, listener));
-      return this;
-    };
-
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener =
-    function removeListener(type, listener) {
-      var list, events, position, i, originalListener;
-
-      if (typeof listener !== 'function')
-        throw new TypeError('"listener" argument must be a function');
-
-      events = this._events;
-      if (!events)
-        return this;
-
-      list = events[type];
-      if (!list)
-        return this;
-
-      if (list === listener || (list.listener && list.listener === listener)) {
-        if (--this._eventsCount === 0)
-          this._events = new EventHandlers();
-        else {
-          delete events[type];
-          if (events.removeListener)
-            this.emit('removeListener', type, list.listener || listener);
-        }
-      } else if (typeof list !== 'function') {
-        position = -1;
-
-        for (i = list.length; i-- > 0;) {
-          if (list[i] === listener ||
-              (list[i].listener && list[i].listener === listener)) {
-            originalListener = list[i].listener;
-            position = i;
-            break;
-          }
-        }
-
-        if (position < 0)
-          return this;
-
-        if (list.length === 1) {
-          list[0] = undefined;
-          if (--this._eventsCount === 0) {
-            this._events = new EventHandlers();
-            return this;
-          } else {
-            delete events[type];
-          }
-        } else {
-          spliceOne(list, position);
-        }
-
-        if (events.removeListener)
-          this.emit('removeListener', type, originalListener || listener);
-      }
-
-      return this;
-    };
-
-EventEmitter.prototype.removeAllListeners =
-    function removeAllListeners(type) {
-      var listeners, events;
-
-      events = this._events;
-      if (!events)
-        return this;
-
-      // not listening for removeListener, no need to emit
-      if (!events.removeListener) {
-        if (arguments.length === 0) {
-          this._events = new EventHandlers();
-          this._eventsCount = 0;
-        } else if (events[type]) {
-          if (--this._eventsCount === 0)
-            this._events = new EventHandlers();
-          else
-            delete events[type];
-        }
-        return this;
-      }
-
-      // emit removeListener for all listeners on all events
-      if (arguments.length === 0) {
-        var keys = Object.keys(events);
-        for (var i = 0, key; i < keys.length; ++i) {
-          key = keys[i];
-          if (key === 'removeListener') continue;
-          this.removeAllListeners(key);
-        }
-        this.removeAllListeners('removeListener');
-        this._events = new EventHandlers();
-        this._eventsCount = 0;
-        return this;
-      }
-
-      listeners = events[type];
-
-      if (typeof listeners === 'function') {
-        this.removeListener(type, listeners);
-      } else if (listeners) {
-        // LIFO order
-        do {
-          this.removeListener(type, listeners[listeners.length - 1]);
-        } while (listeners[0]);
-      }
-
-      return this;
-    };
-
-EventEmitter.prototype.listeners = function listeners(type) {
-  var evlistener;
-  var ret;
-  var events = this._events;
-
-  if (!events)
-    ret = [];
-  else {
-    evlistener = events[type];
-    if (!evlistener)
-      ret = [];
-    else if (typeof evlistener === 'function')
-      ret = [evlistener.listener || evlistener];
-    else
-      ret = unwrapListeners(evlistener);
-  }
-
-  return ret;
-};
-
-EventEmitter.listenerCount = function(emitter, type) {
-  if (typeof emitter.listenerCount === 'function') {
-    return emitter.listenerCount(type);
-  } else {
-    return listenerCount.call(emitter, type);
-  }
-};
-
-EventEmitter.prototype.listenerCount = listenerCount;
-function listenerCount(type) {
-  var events = this._events;
-
-  if (events) {
-    var evlistener = events[type];
-
-    if (typeof evlistener === 'function') {
-      return 1;
-    } else if (evlistener) {
-      return evlistener.length;
-    }
-  }
-
-  return 0;
-}
-
-EventEmitter.prototype.eventNames = function eventNames() {
-  return this._eventsCount > 0 ? Reflect.ownKeys(this._events) : [];
-};
-
-// About 1.5x faster than the two-arg version of Array#splice().
-function spliceOne(list, index) {
-  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1)
-    list[i] = list[k];
-  list.pop();
-}
-
-function arrayClone(arr, i) {
-  var copy = new Array(i);
-  while (i--)
-    copy[i] = arr[i];
-  return copy;
-}
-
-function unwrapListeners(arr) {
-  var ret = new Array(arr.length);
-  for (var i = 0; i < ret.length; ++i) {
-    ret[i] = arr[i].listener || arr[i];
-  }
-  return ret;
-}
-
-// This file is part of Etheratom.
-// Etheratom is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// Etheratom is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
-
-const RESET_CONTRACTS = 'reset_contracts';
-const SET_COMPILING = 'set_compiling';
-const SET_COMPILED = 'set_compiled';
-const RESET_COMPILED = 'reset_compiled';
-const SET_PARAMS = 'set_params';
-const ADD_INTERFACE = 'add_interface';
-const UPDATE_INTERFACE = 'update_interface';
-const SET_INSTANCE = 'set_instance';
-const SET_DEPLOYED = 'set_deployed';
-const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
-
-const RESET_SOURCES = 'reset_sources';
-const SET_SOURCES = 'set_sources';
-const SET_COINBASE = 'set_coinbase';
-const SET_PASSWORD = 'set_password';
-const SET_ACCOUNTS = 'set_accounts';
-const SET_ERRORS = 'set_errors';
-const RESET_ERRORS = 'reset_errors'; // Ethereum client events
-
-const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
-const ADD_EVENTS = 'add_logs';
-const SET_EVENTS = 'set_events'; // Node variables
-const SET_SYNC_STATUS = 'set_sync_status';
-const SET_SYNCING = 'set_syncing';
-const SET_MINING = 'set_mining';
-const SET_HASH_RATE = 'set_hash_rate';
-
-class Web3Helpers {
-  constructor(store) {
-    this.web3 = getWeb3Conn();
-    this.store = store;
-    this.jobs = {// fileName: { solcWorker, hash }
-    };
-  }
-
-  createWorker(fn) {
-    const pkgPath = atom.packages.resolvePackagePath('etheratom');
-    return child_process.fork(`${pkgPath}/lib/web3/worker.js`);
-  }
-
-  async compileWeb3(sources) {
-    let fileName = Object.keys(sources).find(key => {
-      return /\.sol/.test(key);
-    });
-    let hashId = md5(sources[fileName].content);
-
-    if (this.jobs[fileName]) {
-      if (this.jobs[fileName].hashId === hashId || this.jobs[fileName].hashId === undefined) {
-        this.jobs[fileName].wasBusy = true;
-        console.log(hashId);
-        console.error(`Job in progress for ${fileName}`);
-        return;
-      }
-
-      this.jobs[fileName].solcWorker.kill();
-      console.error(`Killing older job for ${fileName}`);
-    } else {
-      this.jobs[fileName] = {
-        hashId
-      };
-    } // compile solidity using solcjs
-    // sources have Compiler Input JSON sources format
-    // https://solidity.readthedocs.io/en/develop/using-the-compiler.html#compiler-input-and-output-json-description
-
-
-    try {
-      const outputSelection = {
-        // Enable the metadata and bytecode outputs of every single contract.
-        '*': {
-          '': ['legacyAST'],
-          '*': ['abi', 'evm.bytecode.object', 'devdoc', 'userdoc', 'evm.gasEstimates']
-        }
-      };
-      const settings = {
-        optimizer: {
-          enabled: true,
-          runs: 500
-        },
-        evmVersion: 'byzantium',
-        outputSelection
-      };
-      const input = {
-        language: 'Solidity',
-        sources,
-        settings
-      };
-      const solcWorker = this.createWorker();
-      this.jobs[fileName].solcWorker = solcWorker;
-      const requiredSolcVersion = atom.config.get('etheratom.versionSelector');
-      solcWorker.send({
-        command: 'compile',
-        payload: input,
-        version: requiredSolcVersion
-      });
-      solcWorker.on('message', m => {
-        if (m.compiled) {
-          this.store.dispatch({
-            type: SET_COMPILED,
-            payload: JSON.parse(m.compiled)
-          });
-          this.store.dispatch({
-            type: SET_COMPILING,
-            payload: false
-          });
-          this.jobs[fileName].successHash = hashId;
-          solcWorker.kill();
-        }
-      });
-      solcWorker.on('error', e => console.error(e));
-      solcWorker.on('exit', (code, signal) => {
-        if (this.jobs[fileName].wasBusy && hashId !== this.jobs[fileName].successHash) {
-          this.store.dispatch({
-            type: SET_COMPILING,
-            payload: true
-          });
-        } else {
-          this.store.dispatch({
-            type: SET_COMPILING,
-            payload: false
-          });
-          this.jobs[fileName] = false;
-        }
-
-        console.log('%c Compile worker process exited with ' + `code ${code} and signal ${signal}`, 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-      });
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async getGasEstimate(coinbase, bytecode) {
-    if (!coinbase) {
-      const error = new Error('No coinbase selected!');
-      throw error;
-    }
-
-    try {
-      this.web3.eth.defaultAccount = coinbase;
-      const gasEstimate = await this.web3.eth.estimateGas({
-        from: this.web3.eth.defaultAccount,
-        data: '0x' + bytecode
-      });
-      return gasEstimate;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async setCoinbase(coinbase) {
-    try {
-      this.web3.eth.defaultAccount = coinbase;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async getBalance(coinbase) {
-    if (!coinbase) {
-      const error = new Error('No coinbase selected!');
-      throw error;
-    }
-
-    try {
-      const weiBalance = await this.web3.eth.getBalance(coinbase);
-      const ethBalance = await this.web3.utils.fromWei(weiBalance, 'ether');
-      return ethBalance;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async getSyncStat() {
-    try {
-      return this.web3.eth.isSyncing();
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async create(_ref) {
-    let args = _extends({}, _ref);
-
-    console.log('%c Creating contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-    const coinbase = args.coinbase;
-    const password = args.password;
-    const abi = args.abi;
-    const code = args.bytecode;
-    const gasSupply = args.gas;
-
-    if (!coinbase) {
-      const error = new Error('No coinbase selected!');
-      throw error;
-    }
-
-    this.web3.eth.defaultAccount = coinbase;
-
-    try {
-      if (password) {
-        await this.web3.eth.personal.unlockAccount(coinbase, password);
-      }
-
-      try {
-        const gasPrice = await this.web3.eth.getGasPrice();
-        const contract = await new this.web3.eth.Contract(abi, {
-          from: this.web3.eth.defaultAccount,
-          data: '0x' + code,
-          gas: this.web3.utils.toHex(gasSupply),
-          gasPrice: this.web3.utils.toHex(gasPrice)
-        });
-        return contract;
-      } catch (e) {
-        console.log(e);
-        throw e;
-      }
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-  }
-
-  async deploy(contract, params) {
-    console.log('%c Deploying contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-
-    class ContractInstance extends EventEmitter {}
-
-    const contractInstance = new ContractInstance();
-
-    try {
-      params = params.map(param => {
-        return param.type.endsWith('[]') ? param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',') : param.value;
-      });
-      contract.deploy({
-        arguments: params
-      }).send({
-        from: this.web3.eth.defaultAccount
-      }).on('transactionHash', transactionHash => {
-        contractInstance.emit('transactionHash', transactionHash);
-      }).on('receipt', txReceipt => {
-        contractInstance.emit('receipt', txReceipt);
-      }).on('confirmation', confirmationNumber => {
-        contractInstance.emit('confirmation', confirmationNumber);
-      }).on('error', error => {
-        contractInstance.emit('error', error);
-      }).then(instance => {
-        contractInstance.emit('address', instance.options.address);
-        contractInstance.emit('instance', instance);
-      });
-      return contractInstance;
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-  }
-
-  async call(_ref2) {
-    let args = _extends({}, _ref2);
-
-    console.log('%c Web3 calling functions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-    const coinbase = args.coinbase;
-    const password = args.password;
-    const contract = args.contract;
-    const abiItem = args.abiItem;
-    var params = args.params || [];
-    this.web3.eth.defaultAccount = coinbase;
-
-    try {
-      // Prepare params for call
-      params = params.map(param => {
-        if (param.type.endsWith('[]')) {
-          return param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',');
-        }
-
-        if (param.type.indexOf('int') > -1) {
-          return new this.web3.utils.BN(param.value);
-        }
-
-        return param.value;
-      }); // Handle fallback
-
-      if (abiItem.type === 'fallback') {
-        if (password) {
-          await this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        const result = await this.web3.eth.sendTransaction({
-          from: coinbase,
-          to: contract.options.address,
-          value: abiItem.payableValue || 0
-        });
-        return result;
-      }
-
-      if (abiItem.constant === false || abiItem.payable === true) {
-        if (password) {
-          await this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        if (params.length > 0) {
-          const result = await contract.methods[abiItem.name](...params).send({
-            from: coinbase,
-            value: abiItem.payableValue
-          });
-          return result;
-        }
-
-        const result = await contract.methods[abiItem.name]().send({
-          from: coinbase,
-          value: abiItem.payableValue
-        });
-        return result;
-      }
-
-      if (params.length > 0) {
-        const result = await contract.methods[abiItem.name](...params).call({
-          from: coinbase
-        });
-        return result;
-      }
-
-      const result = await contract.methods[abiItem.name]().call({
-        from: coinbase
-      });
-      return result;
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-  }
-
-  async send(to, amount, password) {
-    return new Promise((resolve, reject) => {
-      try {
-        const coinbase = this.web3.eth.defaultAccount;
-
-        if (password) {
-          this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        this.web3.eth.sendTransaction({
-          from: coinbase,
-          to: to,
-          value: amount
-        }).on('transactionHash', txHash => {
-          this.showTransaction({
-            head: 'Transaction hash:',
-            data: txHash
-          });
-        }).then(txRecipt => {
-          resolve(txRecipt);
-        }).catch(e => {
-          reject(e);
-        });
-      } catch (e) {
-        console.error(e);
-        reject(e);
-      }
-    });
-  }
-
-  async funcParamsToArray(contractFunction) {
-    if (contractFunction && contractFunction.inputs.length > 0) {
-      const inputElements = await Promise.all(contractFunction.inputs.map(async input => {
-        return [input.type, input.name];
-      }));
-      return inputElements;
-    }
-
-    return [];
-  }
-
-  async inputsToArray(paramObject) {
-    if (paramObject.type.endsWith('[]')) {
-      return paramObject.value.split(',').map(val => this.web3.utils.toHex(val.trim()));
-    }
-
-    return this.web3.utils.toHex(paramObject.value);
-  }
-
-  showPanelError(err_message) {
-    let messages;
-    messages = new atomMessagePanel.MessagePanelView({
-      title: 'Etheratom report'
-    });
-    messages.attach();
-    messages.add(new atomMessagePanel.PlainMessageView({
-      message: err_message,
-      className: 'red-message'
-    }));
-  }
-
-  showOutput(_ref3) {
-    let args = _extends({}, _ref3);
-
-    const address = args.address;
-    const data = args.data;
-    const messages = new atomMessagePanel.MessagePanelView({
-      title: 'Etheratom output'
-    });
-    messages.attach();
-    messages.add(new atomMessagePanel.PlainMessageView({
-      message: 'Contract address: ' + address,
-      className: 'green-message'
-    }));
-
-    if (data instanceof Object) {
-      const rawMessage = `<h6>Contract output:</h6><pre>${JSON.stringify(data, null, 4)}</pre>`;
-      messages.add(new atomMessagePanel.PlainMessageView({
-        message: rawMessage,
-        raw: true,
-        className: 'green-message'
-      }));
-      return;
-    }
-
-    messages.add(new atomMessagePanel.PlainMessageView({
-      message: 'Contract output: ' + data,
-      className: 'green-message'
-    }));
-    return;
-  }
-
-  showTransaction(_ref4) {
-    let args = _extends({}, _ref4);
-
-    const head = args.head;
-    const data = args.data;
-    const messages = new atomMessagePanel.MessagePanelView({
-      title: 'Etheratom output'
-    });
-    messages.attach();
-    messages.add(new atomMessagePanel.PlainMessageView({
-      message: head,
-      className: 'green-message'
-    }));
-
-    if (data instanceof Object) {
-      const rawMessage = `<pre>${JSON.stringify(data, null, 4)}</pre>`;
-      messages.add(new atomMessagePanel.PlainMessageView({
-        message: rawMessage,
-        raw: true,
-        className: 'green-message'
-      }));
-      return;
-    }
-
-    messages.add(new atomMessagePanel.PlainMessageView({
-      message: data,
-      className: 'green-message'
-    }));
-    return;
-  } // Transaction analysis
-
-
-  async getTxAnalysis(txHash) {
-    try {
-      const transaction = await this.web3.eth.getTransaction(txHash);
-      const transactionRecipt = await this.web3.eth.getTransactionReceipt(txHash);
-      return {
-        transaction,
-        transactionRecipt
-      };
-    } catch (e) {
-      throw e;
-    }
-  } // Gas Limit
-
-
-  async getGasLimit() {
-    try {
-      const block = await this.web3.eth.getBlock('latest');
-      return block.gasLimit;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async getAccounts() {
-    try {
-      return await this.web3.eth.getAccounts();
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async getMining() {
-    try {
-      return await this.web3.eth.isMining();
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async getHashrate() {
-    try {
-      return await this.web3.eth.getHashrate();
-    } catch (e) {
-      throw e;
-    }
-  }
-
 }
 
 class GasInput extends React.Component {
@@ -4522,11 +4530,27 @@ class NodeControl extends React.Component {
     atom.config.set('etheratom.websocketAddress', websocketAddress);
   }
 
-  _handleRPCSubmit(event) {
+  async _handleRPCSubmit(event) {
     const {
       rpcAddress
     } = this.state;
     atom.config.set('etheratom.rpcAddress', rpcAddress);
+    const web3 = getWeb3Conn();
+    this.state = {
+      wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
+      httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
+      connected: this.props.web3.currentProvider.connected,
+      toAddress: '',
+      amount: 0,
+      rpcAddress: atom.config.get('etheratom.rpcAddress'),
+      websocketAddress: atom.config.get('etheratom.websocketAddress')
+    };
+    this.helpers.updateWeb3();
+    const accounts = await this.helpers.getAccounts();
+    this.props.setAccounts({
+      accounts
+    });
+    this.props.setCoinbase(accounts[0]);
   }
 
   async _handleSend() {
@@ -5480,6 +5504,7 @@ class Web3Env {
     }
 
     this.view = new View(this.store);
+    this.helpers = new Web3Helpers(this.store);
 
     if (Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider)) {
       console.log('%c Provider is websocket. Creating subscriptions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B'); // newBlockHeaders subscriber
@@ -5546,7 +5571,7 @@ class Web3Env {
 
     this.checkConnection((error, connection) => {
       if (error) {
-        this.helpers.showPanelError(error);
+        showPanelError(error);
       } else if (connection) {
         this.view.createCoinbaseView();
         this.view.createButtonsView();
@@ -5639,7 +5664,7 @@ class Web3Env {
         });
       } catch (e) {
         console.error(e);
-        this.helpers.showPanelError(e);
+        showPanelError(e);
       }
     }
   }
@@ -5689,7 +5714,7 @@ class Web3Env {
         });
       } catch (e) {
         console.log(e);
-        this.helpers.showPanelError(e);
+        showPanelError(e);
       }
     } else {
       return;
