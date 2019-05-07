@@ -2,9 +2,7 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
-var Web3 = _interopDefault(require('web3'));
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
@@ -12,19 +10,21 @@ var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
 var React = _interopDefault(require('react'));
-var ReactDOM = _interopDefault(require('react-dom'));
-var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
 var PropTypes = _interopDefault(require('prop-types'));
-var reactCollapse = require('react-collapse');
 var ReactJson = _interopDefault(require('react-json-view'));
+var reactTabs = require('react-tabs');
 var fileSaver = require('file-saver');
+var reactCollapse = require('react-collapse');
 var VirtualList = _interopDefault(require('react-tiny-virtual-list'));
+var Web3 = _interopDefault(require('web3'));
 var remixAnalyzer = require('remix-analyzer');
 var CheckboxTree = _interopDefault(require('react-checkbox-tree'));
+var ReactDOM = _interopDefault(require('react-dom'));
 var redux = require('redux');
 var logger = _interopDefault(require('redux-logger'));
 var ReduxThunk = _interopDefault(require('redux-thunk'));
+require('idempotent-babel-polyfill');
 
 class AtomSolidityView {
   constructor() {
@@ -461,7 +461,9 @@ EventEmitter.init = function() {
   this.domain = null;
   if (EventEmitter.usingDomains) {
     // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) ;
+    if (domain.active && !(this instanceof domain.Domain)) {
+      this.domain = domain.active;
+    }
   }
 
   if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
@@ -1757,10 +1759,10 @@ function isObject(arg) {
 // If obj.hasOwnProperty has been overridden, then calling
 // obj.hasOwnProperty(prop) will break.
 // See: https://github.com/joyent/node/issues/1707
-function hasOwnProperty(obj, prop) {
+function hasOwnProperty$1(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
-var isArray = Array.isArray || function (xs) {
+var isArray$1 = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 function stringifyPrimitive(v) {
@@ -1789,7 +1791,7 @@ function stringify (obj, sep, eq, name) {
   if (typeof obj === 'object') {
     return map$1(objectKeys(obj), function(k) {
       var ks = encodeURIComponent(stringifyPrimitive(k)) + eq;
-      if (isArray(obj[k])) {
+      if (isArray$1(obj[k])) {
         return map$1(obj[k], function(v) {
           return ks + encodeURIComponent(stringifyPrimitive(v));
         }).join(sep);
@@ -1860,9 +1862,9 @@ function parse(qs, sep, eq, options) {
     k = decodeURIComponent(kstr);
     v = decodeURIComponent(vstr);
 
-    if (!hasOwnProperty(obj, k)) {
+    if (!hasOwnProperty$1(obj, k)) {
       obj[k] = v;
-    } else if (isArray(obj[k])) {
+    } else if (isArray$1(obj[k])) {
       obj[k].push(v);
     } else {
       obj[k] = [obj[k], v];
@@ -1879,7 +1881,7 @@ var url = {
   resolveObject: urlResolveObject,
   format: urlFormat,
   Url: Url
-};
+}
 function Url() {
   this.protocol = null;
   this.slashes = null;
@@ -2215,7 +2217,7 @@ function parse$1(self, url, parseQueryString, slashesDenoteHost) {
   }
 
   // finally, reconstruct the href based on what has been validated.
-  self.href = format(self);
+  self.href = format$1(self);
   return self;
 }
 
@@ -2226,10 +2228,10 @@ function urlFormat(obj) {
   // this way, you can call url_format() on strings
   // to clean up potentially wonky urls.
   if (isString(obj)) obj = parse$1({}, obj);
-  return format(obj);
+  return format$1(obj);
 }
 
-function format(self) {
+function format$1(self) {
   var auth = self.auth || '';
   if (auth) {
     auth = encodeURIComponent(auth);
@@ -2286,7 +2288,7 @@ function format(self) {
 }
 
 Url.prototype.format = function() {
-  return format(this);
+  return format$1(this);
 };
 
 function urlResolve(source, relative) {
@@ -2588,10 +2590,10 @@ function parseHost(self) {
   if (host) self.hostname = host;
 }
 
-async function handleGithubCall(fullpath, repoPath, path, filename, fileRoot) {
+async function handleGithubCall(fullpath, repoPath, path$$1, filename, fileRoot) {
   return await axios({
     method: 'get',
-    url: 'https://api.github.com/repos/' + repoPath + '/contents/' + path,
+    url: 'https://api.github.com/repos/' + repoPath + '/contents/' + path$$1,
     responseType: 'json'
   }).then(function (response) {
     if ('content' in response.data) {
@@ -3032,7 +3034,6 @@ class CreateButton extends React.Component {
   }
 
   async componentDidMount() {
-    console.log(this.props);
     const {
       abi
     } = this.props;
@@ -3775,19 +3776,11 @@ class CollapsedFile extends React.Component {
       compiling,
       interfaces
     } = this.props;
-    let filename = fileName;
-
-    if (fileName.length > 15) {
-      filename = fileName.substring(fileName.length - 15);
-      filename = '...' + filename;
-    }
-
     return React.createElement("div", null, React.createElement("label", {
       className: "label file-collapse-label"
     }, React.createElement("h4", {
-      className: "text-success",
-      id: "file_name_"
-    }, filename), React.createElement("div", null, React.createElement("button", {
+      className: "text-success"
+    }, fileName), React.createElement("div", null, React.createElement("button", {
       className: toggleBtnStyle,
       onClick: this._toggleCollapse
     }, toggleBtnTxt))), React.createElement(reactCollapse.Collapse, {
@@ -3860,17 +3853,6 @@ class Contracts extends React.Component {
       compiling,
       interfaces
     } = this.props;
-    let file_name_element = document.getElementById('file_name_');
-
-    if (file_name_element !== null) {
-      file_name_element.removeEventListener('click', () => {});
-      file_name_element.addEventListener('click', e => {
-        let tooltip = document.createElement('div');
-        tooltip.classList.add('tooltip');
-        e.currentTarget.apendChild(tooltip);
-      });
-    }
-
     return React.createElement(reactRedux.Provider, {
       store: this.props.store
     }, React.createElement("div", {
@@ -5265,66 +5247,37 @@ class CompileBtn extends React.Component {
 
   render() {
     const {
-      compiling,
-      compiled,
-      compile_btn_value,
-      compile_btn_class
+      compiling
     } = this.props;
-
-    if (compiled !== null) {
-      return React.createElement("form", {
-        className: "row",
-        onSubmit: this._handleSubmit
-      }, compiling || compiled.errors ? React.createElement("input", {
-        type: "submit",
-        value: compile_btn_value,
-        className: 'btn copy-btn ' + compile_btn_class,
-        disabled: true
-      }) : React.createElement("input", {
-        type: "submit",
-        value: compile_btn_value,
-        className: 'btn copy-btn ' + compile_btn_class
-      }));
-    } else {
-      return React.createElement("form", {
-        className: "row",
-        onSubmit: this._handleSubmit
-      }, compiling && React.createElement("input", {
-        type: "submit",
-        value: compile_btn_value,
-        className: 'btn copy-btn ' + compile_btn_class,
-        disabled: true
-      }), !compiling && React.createElement("input", {
-        type: "submit",
-        value: compile_btn_value,
-        className: 'btn copy-btn ' + compile_btn_class
-      }));
-    }
+    return React.createElement("form", {
+      className: "row",
+      onSubmit: this._handleSubmit
+    }, compiling && React.createElement("input", {
+      type: "submit",
+      value: "Compiling...",
+      className: "btn copy-btn btn-success",
+      disabled: true
+    }), !compiling && React.createElement("input", {
+      type: "submit",
+      value: "Compile",
+      className: "btn copy-btn btn-success"
+    }));
   }
 
 }
 
 CompileBtn.propTypes = {
-  compiling: PropTypes.bool,
-  compiled: PropTypes.any,
-  compile_btn_value: PropTypes.string,
-  compile_btn_class: PropTypes.string
+  compiling: PropTypes.bool
 };
 
 const mapStateToProps$g = ({
   contract
 }) => {
   const {
-    compiling,
-    compiled,
-    compile_btn_value,
-    compile_btn_class
+    compiling
   } = contract;
   return {
-    compiling,
-    compiled,
-    compile_btn_value,
-    compile_btn_class
+    compiling
   };
 };
 
@@ -5721,17 +5674,12 @@ var FilesReducer = ((state = INITIAL_STATE, action) => {
 const INITIAL_STATE$1 = {
   compiled: null,
   compiling: false,
-  compile_btn_value: 'Compile',
-  compile_btn_class: 'btn-success',
   deployed: false,
   interfaces: null,
   instances: null,
   gasLimit: 0
 };
 var ContractReducer = ((state = INITIAL_STATE$1, action) => {
-  let btn_text_value = '';
-  let btn_class_name = '';
-
   switch (action.type) {
     case SET_SOURCES:
       return _objectSpread({}, state, {
@@ -5739,21 +5687,8 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
       });
 
     case SET_COMPILING:
-      if (action.payload) {
-        btn_text_value = 'Compiling';
-        btn_class_name = 'btn-success';
-      } else if (state.compiled.hasOwnProperty('errors')) {
-        btn_text_value = 'Error';
-        btn_class_name = 'btn-error';
-      } else {
-        btn_text_value = 'Compile';
-        btn_class_name = 'btn-success';
-      }
-
       return _objectSpread({}, state, {
-        compiling: action.payload,
-        compile_btn_value: btn_text_value,
-        compile_btn_class: btn_class_name
+        compiling: action.payload
       });
 
     case SET_DEPLOYED:
@@ -5764,18 +5699,8 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
       });
 
     case SET_COMPILED:
-      if (action.payload.hasOwnProperty('errors')) {
-        btn_text_value = 'Error';
-        btn_class_name = 'btn-error';
-      } else {
-        btn_text_value = 'Compile';
-        btn_class_name = 'btn-success';
-      }
-
       return _objectSpread({}, state, {
-        compiled: action.payload,
-        compile_btn_value: btn_text_value,
-        compile_btn_class: btn_class_name
+        compiled: action.payload
       });
 
     case RESET_CONTRACTS:

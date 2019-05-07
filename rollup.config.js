@@ -19,9 +19,8 @@ export default {
     },
     plugins: [
         resolve({
-	    mainFields: ['module', 'main'],
-            //module: true,
-            //main: true,
+            module: true,
+            main: true,
             extensions: [ '.js', '.jsx', '.json' ],
             preferBuiltins: true
         }),
