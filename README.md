@@ -8,6 +8,9 @@ Etheratom is a package for hackable Atom editor. It uses web3js to interact with
 
 ![A screenshot of Etheratom package](https://user-images.githubusercontent.com/13261372/37828365-f43a0c8c-2ec0-11e8-8d09-d1c29d7168d3.png)
 
+# Support
+  You can join our Telegram group for quick help in solving any issues at https://t.me/etheratom  [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom).
+
 # Requirements
 
 #### Use [Ganache](http://truffleframework.com/ganache/) or Install [geth](https://github.com/ethereum/go-ethereum)
