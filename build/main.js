@@ -910,15 +910,26 @@ function showPanelError(err_message) {
 }
 
 function getWeb3Conn() {
+  let web3;
+
+  if (web3) {
+    console.log(web3);
+  }
+
   try {
     const rpcAddress = atom.config.get('etheratom.rpcAddress');
     const websocketAddress = atom.config.get('etheratom.websocketAddress');
-    const web3 = new Web3(Web3.givenProvider || new Web3.providers.HttpProvider(rpcAddress));
+    web3 = new Web3();
+
+    if (rpcAddress && !websocketAddress) {
+      web3.setProvider(new Web3.providers.HttpProvider(rpcAddress));
+    }
 
     if (websocketAddress) {
       web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
     }
 
+    console.log(web3.currentProvider);
     return web3;
   } catch (e) {
     console.error(e);
@@ -1325,6 +1336,18 @@ class Web3Helpers {
     messages.add(new atomMessagePanel.PlainMessageView({
       message: err_message,
       className: 'red-message'
+    }));
+  }
+
+  showPanelSuccess(err_message) {
+    let messages;
+    messages = new atomMessagePanel.MessagePanelView({
+      title: 'Etheratom report'
+    });
+    messages.attach();
+    messages.add(new atomMessagePanel.PlainMessageView({
+      message: err_message,
+      className: 'green-message'
     }));
   }
 
@@ -1794,10 +1817,10 @@ function isObject(arg) {
 // If obj.hasOwnProperty has been overridden, then calling
 // obj.hasOwnProperty(prop) will break.
 // See: https://github.com/joyent/node/issues/1707
-function hasOwnProperty$1(obj, prop) {
+function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
-var isArray$1 = Array.isArray || function (xs) {
+var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 function stringifyPrimitive(v) {
@@ -1826,7 +1849,7 @@ function stringify (obj, sep, eq, name) {
   if (typeof obj === 'object') {
     return map$1(objectKeys(obj), function(k) {
       var ks = encodeURIComponent(stringifyPrimitive(k)) + eq;
-      if (isArray$1(obj[k])) {
+      if (isArray(obj[k])) {
         return map$1(obj[k], function(v) {
           return ks + encodeURIComponent(stringifyPrimitive(v));
         }).join(sep);
@@ -1897,9 +1920,9 @@ function parse(qs, sep, eq, options) {
     k = decodeURIComponent(kstr);
     v = decodeURIComponent(vstr);
 
-    if (!hasOwnProperty$1(obj, k)) {
+    if (!hasOwnProperty(obj, k)) {
       obj[k] = v;
-    } else if (isArray$1(obj[k])) {
+    } else if (isArray(obj[k])) {
       obj[k].push(v);
     } else {
       obj[k] = [obj[k], v];
@@ -2252,7 +2275,7 @@ function parse$1(self, url, parseQueryString, slashesDenoteHost) {
   }
 
   // finally, reconstruct the href based on what has been validated.
-  self.href = format$1(self);
+  self.href = format(self);
   return self;
 }
 
@@ -2263,10 +2286,10 @@ function urlFormat(obj) {
   // this way, you can call url_format() on strings
   // to clean up potentially wonky urls.
   if (isString(obj)) obj = parse$1({}, obj);
-  return format$1(obj);
+  return format(obj);
 }
 
-function format$1(self) {
+function format(self) {
   var auth = self.auth || '';
   if (auth) {
     auth = encodeURIComponent(auth);
@@ -2323,7 +2346,7 @@ function format$1(self) {
 }
 
 Url.prototype.format = function() {
-  return format$1(this);
+  return format(this);
 };
 
 function urlResolve(source, relative) {
@@ -2625,10 +2648,10 @@ function parseHost(self) {
   if (host) self.hostname = host;
 }
 
-async function handleGithubCall(fullpath, repoPath, path$$1, filename, fileRoot) {
+async function handleGithubCall(fullpath, repoPath, path, filename, fileRoot) {
   return await axios({
     method: 'get',
-    url: 'https://api.github.com/repos/' + repoPath + '/contents/' + path$$1,
+    url: 'https://api.github.com/repos/' + repoPath + '/contents/' + path,
     responseType: 'json'
   }).then(function (response) {
     if ('content' in response.data) {
@@ -2934,9 +2957,7 @@ const setPassword = ({
     });
   };
 };
-const setAccounts = ({
-  accounts
-}) => {
+const setAccounts = accounts => {
   return dispatch => {
     dispatch({
       type: SET_ACCOUNTS,
@@ -4457,7 +4478,6 @@ class NodeControl extends React.Component {
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
       websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
-    console.log(this.state);
     this._refreshSync = this._refreshSync.bind(this);
     this.getNodeInfo = this.getNodeInfo.bind(this);
     this._handleToAddrrChange = this._handleToAddrrChange.bind(this);
@@ -4512,31 +4532,27 @@ class NodeControl extends React.Component {
   }
 
   _handleWsChange(event) {
+    atom.config.set('etheratom.websocketAddress', event.target.value);
     this.setState({
       websocketAddress: event.target.value
     });
   }
 
   _handleRPCChange(event) {
+    atom.config.set('etheratom.rpcAddress', event.target.value);
     this.setState({
       rpcAddress: event.target.value
     });
   }
 
-  _handleWsSubmit(event) {
+  async _handleWsSubmit(event) {
+    event.preventDefault();
     const {
       websocketAddress
     } = this.state;
     atom.config.set('etheratom.websocketAddress', websocketAddress);
-  }
-
-  async _handleRPCSubmit(event) {
-    const {
-      rpcAddress
-    } = this.state;
-    atom.config.set('etheratom.rpcAddress', rpcAddress);
     const web3 = getWeb3Conn();
-    this.state = {
+    const newState = {
       wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
       httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
       connected: this.props.web3.currentProvider.connected,
@@ -4545,12 +4561,66 @@ class NodeControl extends React.Component {
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
       websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
+    this.setState(newState);
     this.helpers.updateWeb3();
-    const accounts = await this.helpers.getAccounts();
-    this.props.setAccounts({
-      accounts
-    });
-    this.props.setCoinbase(accounts[0]);
+
+    try {
+      const accounts = await this.helpers.getAccounts();
+      console.log('ACCOUNT =====================================');
+      console.log(accounts);
+      this.helpers.showPanelSuccess('Connection Re-established');
+      this.props.setAccounts(accounts);
+
+      if (accounts.length > 0) {
+        this.props.setCoinbase(accounts[0]);
+      } else {
+        this.props.setCoinbase('0x00');
+      }
+    } catch (e) {
+      this.helpers.showPanelError('Error with Web Socket value. Please check again');
+      this.props.setAccounts([]);
+      this.props.setCoinbase('0x00');
+      this.props.setMining(false);
+    }
+  }
+
+  async _handleRPCSubmit(event) {
+    event.preventDefault();
+    const {
+      rpcAddress
+    } = this.state; // console.log(rpcAddress);
+
+    atom.config.set('etheratom.rpcAddress', rpcAddress);
+    const web3 = getWeb3Conn();
+    const newState = {
+      wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
+      httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
+      connected: this.props.web3.currentProvider.connected,
+      toAddress: '',
+      amount: 0,
+      rpcAddress: atom.config.get('etheratom.rpcAddress'),
+      websocketAddress: atom.config.get('etheratom.websocketAddress')
+    };
+    this.setState(newState);
+    this.helpers.updateWeb3();
+
+    try {
+      const accounts = await this.helpers.getAccounts();
+      console.log(accounts);
+      this.helpers.showPanelSuccess('Connection Re-established with rpc');
+      this.props.setAccounts(accounts);
+
+      if (accounts.length > 0) {
+        this.props.setCoinbase(accounts[0]);
+      } else {
+        this.props.setCoinbase('0x00');
+      }
+    } catch (e) {
+      this.helpers.showPanelError('Error with RPC value. Please check again');
+      this.props.setAccounts([]);
+      this.props.setCoinbase('0x00');
+      this.props.setMining(false);
+    }
   }
 
   async _handleSend() {
@@ -4741,6 +4811,7 @@ NodeControl.propTypes = {
   setSyncStatus: PropTypes.func,
   setAccounts: PropTypes.func,
   setCoinbase: PropTypes.func,
+  setErrors: PropTypes.string,
   password: PropTypes.string
 };
 
@@ -4773,7 +4844,8 @@ var NodeControl$1 = reactRedux.connect(mapStateToProps$b, {
   setCoinbase,
   setSyncStatus,
   setMining,
-  setHashrate
+  setHashrate,
+  setErrors
 })(NodeControl);
 
 class StaticAnalysis extends React.Component {
@@ -5077,10 +5149,10 @@ class CoinbaseView extends React.Component {
     this.web3 = getWeb3Conn();
     this.state = {
       coinbase: props.accounts[0],
-      balance: 0.00,
-      password: '',
-      toAddress: '',
-      unlock_style: 'unlock-default',
+      balance: 0.0,
+      password: "",
+      toAddress: "",
+      unlock_style: "unlock-default",
       amount: 0
     };
     this._handleAccChange = this._handleAccChange.bind(this);
@@ -5091,6 +5163,18 @@ class CoinbaseView extends React.Component {
   }
 
   async componentDidMount() {
+    const {
+      coinbase
+    } = this.state;
+    console.log(coinbase);
+    this.web3.eth.defaultAccount = coinbase;
+    const balance = await this.helpers.getBalance(coinbase);
+    this.setState({
+      balance
+    });
+  }
+
+  async componentDidUpdate() {
     const {
       coinbase
     } = this.state;
@@ -5135,7 +5219,7 @@ class CoinbaseView extends React.Component {
 
     if (!(password.length - 1 > 0)) {
       this.setState({
-        unlock_style: 'unlock-default'
+        unlock_style: "unlock-default"
       });
     }
   }
@@ -5155,7 +5239,7 @@ class CoinbaseView extends React.Component {
 
       this.helpers.setCoinbase(coinbase);
       this.setState({
-        unlock_style: 'unlock-active'
+        unlock_style: "unlock-active"
       });
     }
 
@@ -5182,7 +5266,7 @@ class CoinbaseView extends React.Component {
     } = this.props;
     return React.createElement("div", {
       className: "content"
-    }, React.createElement("div", {
+    }, accounts.length > 0 && React.createElement("div", {
       className: "row"
     }, React.createElement("div", {
       className: "icon icon-link btn copy-btn btn-success",
@@ -5198,7 +5282,7 @@ class CoinbaseView extends React.Component {
     })), React.createElement("button", {
       onClick: this._refreshBal,
       className: "btn"
-    }, balance, " ETH")), React.createElement("form", {
+    }, balance, " ETH")), accounts.length > 0 && React.createElement("form", {
       className: "row",
       onSubmit: this._handleUnlock
     }, React.createElement("div", {
@@ -5390,6 +5474,18 @@ class View {
     } catch (e) {
       console.log(e);
       this.helpers.showPanelError('No account exists! Please create one.');
+      this.store.dispatch({
+        type: SET_ACCOUNTS,
+        payload: []
+      });
+      this.store.dispatch({
+        type: SET_COINBASE,
+        payload: '0x00'
+      });
+      ReactDOM.render(React.createElement(CoinbaseView$1, {
+        store: this.store,
+        helpers: this.helpers
+      }), document.getElementById('accounts-list'));
       throw e;
     }
   }
@@ -5829,7 +5925,7 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
 });
 
 const INITIAL_STATE$2 = {
-  coinbase: null,
+  coinbase: '',
   password: false,
   accounts: []
 };
