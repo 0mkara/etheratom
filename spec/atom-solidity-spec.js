@@ -1,6 +1,6 @@
 'use babel';
 import { combineSource } from '../lib/helpers/compiler-imports';
-/* global it, describe, afterEach, expect */
+/* global it, describe, expect */
 
 // Use the command `window:run-package-specs` (cmd-alt-ctrl-p) to run specs.
 //
