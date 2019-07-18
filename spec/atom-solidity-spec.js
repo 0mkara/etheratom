@@ -37,31 +37,31 @@ describe('Etheratom', async function() {
     //     });
     // });
 
-    describe('Test command eth-interface:toggle', function() {
-        const workspaceElement = atom.views.getView(atom.workspace);
-        afterEach(async() => {
-            await atom.packages.deactivatePackage('etheratom');
-            atom.packages.unloadPackage('etheratom');
-        });
+    // describe('Test command eth-interface:toggle', function() {
+    //     const workspaceElement = atom.views.getView(atom.workspace);
+    //     afterEach(async() => {
+    //         await atom.packages.deactivatePackage('etheratom');
+    //         atom.packages.unloadPackage('etheratom');
+    //     });
 
-        it('Expect .etheratom-panel to be visiable', async function() {
-            atom.packages.loadPackage('etheratom');
-            await atom.packages.activatePackage('etheratom');
+    //     it('Expect .etheratom-panel to be visiable', async function() {
+    //         atom.packages.loadPackage('etheratom');
+    //         await atom.packages.activatePackage('etheratom');
 
-            // Now that we checked package activation lets do some real tests
-            await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
-            expect(workspaceElement.querySelector('.etheratom-panel')).toShow();
-        });
-        it('Expect .etheratom-panel NOT to be visiable', async function() {
-            atom.packages.loadPackage('etheratom');
-            await atom.packages.activatePackage('etheratom');
+    //         // Now that we checked package activation lets do some real tests
+    //         await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+    //         expect(workspaceElement.querySelector('.etheratom-panel')).toShow();
+    //     });
+    //     it('Expect .etheratom-panel NOT to be visiable', async function() {
+    //         atom.packages.loadPackage('etheratom');
+    //         await atom.packages.activatePackage('etheratom');
 
-            // Now that we checked package activation lets do some real tests
-            await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
-            await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
-            expect(workspaceElement.querySelector('.etheratom-panel')).not.toShow();
-        });
-    });
+    //         // Now that we checked package activation lets do some real tests
+    //         await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+    //         await atom.commands.dispatch(workspaceElement, 'eth-interface:toggle');
+    //         expect(workspaceElement.querySelector('.etheratom-panel')).not.toShow();
+    //     });
+    // });
 
     describe('Test github compiler-imports', function() {
         it('Expect combineSource to put all sources in one file', async function() {
