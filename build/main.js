@@ -910,26 +910,17 @@ function showPanelError(err_message) {
 }
 
 function getWeb3Conn() {
-  let web3;
-
-  if (web3) {
-    console.log(web3);
-  }
-
   try {
     const rpcAddress = atom.config.get('etheratom.rpcAddress');
     const websocketAddress = atom.config.get('etheratom.websocketAddress');
-    web3 = new Web3();
+    const web3 = new Web3();
 
     if (rpcAddress && !websocketAddress) {
       web3.setProvider(new Web3.providers.HttpProvider(rpcAddress));
-    }
-
-    if (websocketAddress) {
+    } else if (websocketAddress) {
       web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
     }
 
-    console.log(web3.currentProvider);
     return web3;
   } catch (e) {
     console.error(e);
@@ -4468,7 +4459,6 @@ class NodeControl extends React.Component {
     super(props);
     this.helpers = props.helpers;
     const web3 = getWeb3Conn();
-    console.log(web3);
     this.state = {
       wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
       httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
@@ -4566,8 +4556,6 @@ class NodeControl extends React.Component {
 
     try {
       const accounts = await this.helpers.getAccounts();
-      console.log('ACCOUNT =====================================');
-      console.log(accounts);
       this.helpers.showPanelSuccess('Connection Re-established');
       this.props.setAccounts(accounts);
 
@@ -4588,8 +4576,7 @@ class NodeControl extends React.Component {
     event.preventDefault();
     const {
       rpcAddress
-    } = this.state; // console.log(rpcAddress);
-
+    } = this.state;
     atom.config.set('etheratom.rpcAddress', rpcAddress);
     const web3 = getWeb3Conn();
     const newState = {
@@ -4606,7 +4593,6 @@ class NodeControl extends React.Component {
 
     try {
       const accounts = await this.helpers.getAccounts();
-      console.log(accounts);
       this.helpers.showPanelSuccess('Connection Re-established with rpc');
       this.props.setAccounts(accounts);
 
@@ -6084,6 +6070,8 @@ class Etheratom {
   }
 
   activate() {
+    window.alert();
+
     require('atom-package-deps').install('etheratom', true).then(function () {
       console.log('All dependencies installed, good to go');
     });
