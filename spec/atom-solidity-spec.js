@@ -8,34 +8,34 @@ import { combineSource } from '../lib/helpers/compiler-imports';
 // or `fdescribe`). Remove the `f` to unfocus the block.
 
 describe('Etheratom', async function() {
-    describe('Test command eth-interface:activate', function() {
-        const workspaceElement = atom.views.getView(atom.workspace);
-        afterEach(async() => {
-            await atom.packages.deactivatePackage('etheratom');
-            atom.packages.unloadPackage('etheratom');
-        });
+    // describe('Test command eth-interface:activate', function() {
+    //     const workspaceElement = atom.views.getView(atom.workspace);
+    //     afterEach(async() => {
+    //         await atom.packages.deactivatePackage('etheratom');
+    //         atom.packages.unloadPackage('etheratom');
+    //     });
 
-        it('Expect package etheratom to be activated', async function() {
-            try {
-                await atom.packages.loadPackage('etheratom');
-                await atom.packages.activatePackage('etheratom');
-                expect(atom.packages.isPackageActive('etheratom')).toBe(true);
-            } catch (e) {
-                throw e;
-            }
-        });
-        it('Expect package etheratom de-activated', async function() {
-            atom.packages.loadPackage('etheratom');
-            await atom.packages.activatePackage('etheratom');
-            await atom.packages.deactivatePackage('etheratom');
-            expect(atom.packages.isPackageActive('etheratom')).toBe(false);
-        });
-        it('Expect element with class .etheratom-panel to exist', async function() {
-            atom.packages.loadPackage('etheratom');
-            await atom.packages.activatePackage('etheratom');
-            expect(workspaceElement.getElementsByClassName('etheratom-panel')).toShow();
-        });
-    });
+    //     it('Expect package etheratom to be activated', async function() {
+    //         try {
+    //             await atom.packages.loadPackage('etheratom');
+    //             await atom.packages.activatePackage('etheratom');
+    //             expect(atom.packages.isPackageActive('etheratom')).toBe(true);
+    //         } catch (e) {
+    //             throw e;
+    //         }
+    //     });
+    //     it('Expect package etheratom de-activated', async function() {
+    //         atom.packages.loadPackage('etheratom');
+    //         await atom.packages.activatePackage('etheratom');
+    //         await atom.packages.deactivatePackage('etheratom');
+    //         expect(atom.packages.isPackageActive('etheratom')).toBe(false);
+    //     });
+    //     it('Expect element with class .etheratom-panel to exist', async function() {
+    //         atom.packages.loadPackage('etheratom');
+    //         await atom.packages.activatePackage('etheratom');
+    //         expect(workspaceElement.getElementsByClassName('etheratom-panel')).toShow();
+    //     });
+    // });
 
     describe('Test command eth-interface:toggle', function() {
         const workspaceElement = atom.views.getView(atom.workspace);
