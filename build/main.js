@@ -1027,6 +1027,8 @@ class Web3Helpers {
         settings
       };
       const solcWorker = this.createWorker();
+      console.log('solcWorker ===============================================================');
+      console.log(solcWorker);
       this.jobs[fileName].solcWorker = solcWorker;
       const requiredSolcVersion = atom.config.get('etheratom.versionSelector');
       solcWorker.send({
@@ -2768,7 +2770,7 @@ async function combineSource(fileRoot, sources) {
       const extra = match[1] ? match[1] : '';
 
       if (validUrl.isUri(fileRoot)) {
-        fn = url.resolve(fileRoot, match[2]);
+        fn = url.URL.resolve(fileRoot, match[2]);
       } else {
         fn = match[2];
       }
@@ -5136,9 +5138,9 @@ class CoinbaseView extends React.Component {
     this.state = {
       coinbase: props.accounts[0],
       balance: 0.0,
-      password: "",
-      toAddress: "",
-      unlock_style: "unlock-default",
+      password: '',
+      toAddress: '',
+      unlock_style: 'unlock-default',
       amount: 0
     };
     this._handleAccChange = this._handleAccChange.bind(this);
@@ -5205,7 +5207,7 @@ class CoinbaseView extends React.Component {
 
     if (!(password.length - 1 > 0)) {
       this.setState({
-        unlock_style: "unlock-default"
+        unlock_style: 'unlock-default'
       });
     }
   }
@@ -5225,7 +5227,7 @@ class CoinbaseView extends React.Component {
 
       this.helpers.setCoinbase(coinbase);
       this.setState({
-        unlock_style: "unlock-active"
+        unlock_style: 'unlock-active'
       });
     }
 
@@ -5514,8 +5516,27 @@ class Web3Env {
     this.saveSubscriptions = new atom$1.CompositeDisposable();
     this.compileSubscriptions = new atom$1.CompositeDisposable();
     this.store = store;
+    const pkgPath = atom.packages.resolvePackagePath('etheratom');
+    this.worker = child_process.fork(`${pkgPath}/lib/web3/web3Worker.js`);
+    this.worker.send('start');
+    this.worker.on('message', result => {
+      this.web3Worker(result); // this.worker.kill();
+    });
+    console.log(this.worker);
     this.subscribeToWeb3Commands();
     this.subscribeToWeb3Events();
+  }
+
+  web3Worker(message) {
+    console.log(message);
+
+    if (message.hasOwnProperty('transaction')) {
+      this.store.dispatch({
+        type: ADD_PENDING_TRANSACTION,
+        payload: message.transaction
+      });
+    } // if()
+
   }
 
   dispose() {
@@ -5601,22 +5622,20 @@ class Web3Env {
               console.log(e);
           });*/
       // pendingTransactions subscriber
-
-      this.web3.eth.subscribe('pendingTransactions').on('data', transaction => {
-        /*console.log("%c pendingTransactions:data ", 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(transaction);*/
-        this.store.dispatch({
-          type: ADD_PENDING_TRANSACTION,
-          payload: transaction
-        });
-      }).on('error', e => {
-        console.log('%c pendingTransactions:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(e);
-      }); // syncing subscription
+      //this.web3.eth.subscribe('pendingTransactions')
+      // .on('data', (transaction) => {
+      //     /*console.log("%c pendingTransactions:data ", 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      // 	console.log(transaction);*/
+      //     //this.store.dispatch({ type: ADD_PENDING_TRANSACTION, payload: transaction });
+      // })
+      // .on('error', (e) => {
+      //     console.log('%c pendingTransactions:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      //     console.log(e);
+      // });
+      // syncing subscription
 
       this.web3.eth.subscribe('syncing').on('data', sync => {
-        console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(sync);
+        console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B'); // console.log(sync);
 
         if (typeof sync === 'boolean') {
           this.store.dispatch({
@@ -6070,8 +6089,6 @@ class Etheratom {
   }
 
   activate() {
-    window.alert();
-
     require('atom-package-deps').install('etheratom', true).then(function () {
       console.log('All dependencies installed, good to go');
     });
