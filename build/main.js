@@ -975,6 +975,11 @@ class Web3Helpers {
     };
   }
 
+  createWeb3Connection() {
+    const pkgPath = atom.packages.resolvePackagePath('etheratom');
+    return child_process.fork(`${pkgPath}/lib/web3/web3Worker.js`);
+  }
+
   createWorker(fn) {
     const pkgPath = atom.packages.resolvePackagePath('etheratom');
     return child_process.fork(`${pkgPath}/lib/web3/worker.js`);
@@ -1027,8 +1032,6 @@ class Web3Helpers {
         settings
       };
       const solcWorker = this.createWorker();
-      console.log('solcWorker ===============================================================');
-      console.log(solcWorker);
       this.jobs[fileName].solcWorker = solcWorker;
       const requiredSolcVersion = atom.config.get('etheratom.versionSelector');
       solcWorker.send({
@@ -1073,6 +1076,25 @@ class Web3Helpers {
   }
 
   async getGasEstimate(coinbase, bytecode) {
+    const web3Connection = this.createWeb3Connection();
+    const rpcAddress = atom.config.get('etheratom.rpcAddress');
+    const websocketAddress = atom.config.get('etheratom.websocketAddress');
+    web3Connection.send({
+      action: 'set_rpc_ws',
+      rpcAddress,
+      websocketAddress
+    });
+    web3Connection.on('message', message => {
+      if (message.hasOwnProperty('connected') && message['connected']) {
+        console.log('Connection established flag ======================================');
+        message.send({
+          action: 'set_rpc_ws',
+          coinbase,
+          bytecode
+        });
+      }
+    });
+
     if (!coinbase) {
       const error = new Error('No coinbase selected!');
       throw error;
@@ -5137,7 +5159,7 @@ class CoinbaseView extends React.Component {
     this.web3 = getWeb3Conn();
     this.state = {
       coinbase: props.accounts[0],
-      balance: 0.0,
+      balance: 0.00,
       password: '',
       toAddress: '',
       unlock_style: 'unlock-default',
@@ -5154,7 +5176,6 @@ class CoinbaseView extends React.Component {
     const {
       coinbase
     } = this.state;
-    console.log(coinbase);
     this.web3.eth.defaultAccount = coinbase;
     const balance = await this.helpers.getBalance(coinbase);
     this.setState({
@@ -5252,6 +5273,12 @@ class CoinbaseView extends React.Component {
     const {
       accounts
     } = this.props;
+    const {
+      coinbase
+    } = this.state;
+    const {
+      unlock_style
+    } = this.state;
     return React.createElement("div", {
       className: "content"
     }, accounts.length > 0 && React.createElement("div", {
@@ -5261,7 +5288,7 @@ class CoinbaseView extends React.Component {
       onClick: this._linkClick
     }), React.createElement("select", {
       onChange: this._handleAccChange,
-      value: this.state.coinbase
+      value: coinbase
     }, accounts.map((account, i) => {
       return React.createElement("option", {
         key: i,
@@ -5270,7 +5297,7 @@ class CoinbaseView extends React.Component {
     })), React.createElement("button", {
       onClick: this._refreshBal,
       className: "btn"
-    }, balance, " ETH")), accounts.length > 0 && React.createElement("form", {
+    }, " ", balance, " ETH ")), accounts.length > 0 && React.createElement("form", {
       className: "row",
       onSubmit: this._handleUnlock
     }, React.createElement("div", {
@@ -5282,7 +5309,7 @@ class CoinbaseView extends React.Component {
       onChange: this._handlePasswordChange
     }), React.createElement("input", {
       type: "submit",
-      className: this.state.unlock_style,
+      className: unlock_style,
       value: "Unlock"
     })));
   }
@@ -5518,16 +5545,21 @@ class Web3Env {
     this.store = store;
     const pkgPath = atom.packages.resolvePackagePath('etheratom');
     this.worker = child_process.fork(`${pkgPath}/lib/web3/web3Worker.js`);
-    this.worker.send('start');
-    this.worker.on('message', result => {
-      this.web3Worker(result); // this.worker.kill();
+    const rpcAddress = atom.config.get('etheratom.rpcAddress');
+    const websocketAddress = atom.config.get('etheratom.websocketAddress');
+    this.worker.send({
+      action: 'set_rpc_ws',
+      rpcAddress,
+      websocketAddress
     });
-    console.log(this.worker);
+    this.worker.on('message', result => {
+      this.web3ProcessHandler(result);
+    });
     this.subscribeToWeb3Commands();
     this.subscribeToWeb3Events();
   }
 
-  web3Worker(message) {
+  web3ProcessHandler(message) {
     console.log(message);
 
     if (message.hasOwnProperty('transaction')) {
@@ -5535,8 +5567,36 @@ class Web3Env {
         type: ADD_PENDING_TRANSACTION,
         payload: message.transaction
       });
-    } // if()
-
+    } else if (message.hasOwnProperty('isBooleanSync')) {
+      this.store.dispatch({
+        type: SET_SYNCING,
+        payload: message['isBooleanSync']
+      });
+    } else if (message.hasOwnProperty('isObjectSync')) {
+      const sync = message['isObjectSync'];
+      this.store.dispatch({
+        type: SET_SYNCING,
+        payload: sync.syncing
+      });
+      const status = {
+        currentBlock: sync.status.CurrentBlock,
+        highestBlock: sync.status.HighestBlock,
+        knownStates: sync.status.KnownStates,
+        pulledStates: sync.status.PulledStates,
+        startingBlock: sync.status.StartingBlock
+      };
+      this.store.dispatch({
+        type: SET_SYNC_STATUS,
+        payload: status
+      });
+    } else if (message.hasOwnProperty('syncStarted') && message['syncStarted']) {
+      console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+    } else if (message.hasOwnProperty('isSyncing')) {
+      console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      console.log(message['isSyncing']);
+    } else if (message.hasOwnProperty('error')) {
+      console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+    }
   }
 
   dispose() {
@@ -5608,68 +5668,6 @@ class Web3Env {
 
     this.view = new View(this.store);
     this.helpers = new Web3Helpers(this.store);
-
-    if (Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider)) {
-      console.log('%c Provider is websocket. Creating subscriptions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B'); // newBlockHeaders subscriber
-
-      /*this.web3.eth.subscribe('newBlockHeaders')
-          .on('data', (blocks) => {
-              console.log('%c newBlockHeaders:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-              console.log(blocks);
-          })
-          .on('error', (e) => {
-              console.log('%c newBlockHeaders:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-              console.log(e);
-          });*/
-      // pendingTransactions subscriber
-      //this.web3.eth.subscribe('pendingTransactions')
-      // .on('data', (transaction) => {
-      //     /*console.log("%c pendingTransactions:data ", 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-      // 	console.log(transaction);*/
-      //     //this.store.dispatch({ type: ADD_PENDING_TRANSACTION, payload: transaction });
-      // })
-      // .on('error', (e) => {
-      //     console.log('%c pendingTransactions:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-      //     console.log(e);
-      // });
-      // syncing subscription
-
-      this.web3.eth.subscribe('syncing').on('data', sync => {
-        console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B'); // console.log(sync);
-
-        if (typeof sync === 'boolean') {
-          this.store.dispatch({
-            type: SET_SYNCING,
-            payload: sync
-          });
-        }
-
-        if (typeof sync === 'object') {
-          this.store.dispatch({
-            type: SET_SYNCING,
-            payload: sync.syncing
-          });
-          const status = {
-            currentBlock: sync.status.CurrentBlock,
-            highestBlock: sync.status.HighestBlock,
-            knownStates: sync.status.KnownStates,
-            pulledStates: sync.status.PulledStates,
-            startingBlock: sync.status.StartingBlock
-          };
-          this.store.dispatch({
-            type: SET_SYNC_STATUS,
-            payload: status
-          });
-        }
-      }).on('changed', isSyncing => {
-        console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(isSyncing);
-      }).on('error', e => {
-        console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(e);
-      });
-    }
-
     this.checkConnection((error, connection) => {
       if (error) {
         showPanelError(error);
@@ -5771,7 +5769,8 @@ class Web3Env {
   }
 
   async compile(editor) {
-    const filePath = editor.getPath(); // Reset redux store
+    const filePath = editor.getPath();
+    console.log(filePath); // Reset redux store
     // this.store.dispatch({ type: SET_COMPILED, payload: null });
 
     this.store.dispatch({
@@ -5798,6 +5797,7 @@ class Web3Env {
         const {
           sources
         } = state.files;
+        console.log(sources);
         delete sources['remix_tests.sol'];
         delete sources['tests.sol']; // TODO: delete _test files
 
