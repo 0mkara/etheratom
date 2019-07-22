@@ -973,6 +973,14 @@ class Web3Helpers {
     this.store = store;
     this.jobs = {// fileName: { solcWorker, hash }
     };
+    this.web3Connection = this.createWeb3Connection();
+    const rpcAddress = atom.config.get('etheratom.rpcAddress');
+    const websocketAddress = atom.config.get('etheratom.websocketAddress');
+    this.web3Connection.send({
+      action: 'set_rpc_ws',
+      rpcAddress,
+      websocketAddress
+    });
   }
 
   createWeb3Connection() {
@@ -1121,6 +1129,17 @@ class Web3Helpers {
   }
 
   async getBalance(coinbase) {
+    this.web3Connection.send({
+      action: 'set_rpc_ws',
+      action_2: 'get_balances',
+      coinbase
+    });
+    this.web3Connection.on('message', message => {
+      if (message.balances) {
+        console.log('Hello World');
+      }
+    });
+
     if (!coinbase) {
       const error = new Error('No coinbase selected!');
       throw error;
