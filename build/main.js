@@ -949,7 +949,8 @@ const ADD_INTERFACE = 'add_interface';
 const UPDATE_INTERFACE = 'update_interface';
 const SET_INSTANCE = 'set_instance';
 const SET_DEPLOYED = 'set_deployed';
-const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
+const SET_GAS_LIMIT = 'set_gas_limit';
+const SET_BALANCE = 'set_balance'; // Files action types
 
 const RESET_SOURCES = 'reset_sources';
 const SET_SOURCES = 'set_sources';
@@ -1129,29 +1130,17 @@ class Web3Helpers {
   }
 
   async getBalance(coinbase) {
+    console.log(this.web3Connection);
     this.web3Connection.send({
       action: 'set_rpc_ws',
       action_2: 'get_balances',
       coinbase
-    });
-    this.web3Connection.on('message', message => {
-      if (message.balances) {
-        console.log('Hello World');
-      }
-    });
-
-    if (!coinbase) {
-      const error = new Error('No coinbase selected!');
-      throw error;
-    }
-
-    try {
-      const weiBalance = await this.web3.eth.getBalance(coinbase);
-      const ethBalance = await this.web3.utils.fromWei(weiBalance, 'ether');
-      return ethBalance;
-    } catch (e) {
-      throw e;
-    }
+    }); // this.web3Connection.on('message', (message) => {            
+    //     if(message.hasOwnProperty('ethBalance')){
+    //         console.log({ ethBalance: message['ethBalance'] });
+    //         return message['ethBalance'];
+    //     }
+    // }); 
   }
 
   async getSyncStat() {
@@ -2996,6 +2985,18 @@ const setAccounts = accounts => {
     dispatch({
       type: SET_ACCOUNTS,
       payload: accounts
+    });
+  };
+};
+const setBalance = ({
+  balance
+}) => {
+  return dispatch => {
+    dispatch({
+      type: SET_BALANCE,
+      payload: {
+        balance
+      }
     });
   };
 };
@@ -5171,6 +5172,82 @@ const mapStateToProps$d = ({
 
 var TabView$1 = reactRedux.connect(mapStateToProps$d, {})(TabView);
 
+class web3Instance {
+  constructor(store) {
+    this.store = store;
+    this.createConnection();
+    this.web3Instance.on('message', m => {
+      this.web3ProcessHandler(m);
+    });
+  }
+
+  createConnection() {
+    const rpcAddres = atom.config.get('etheratom.rpcAddress');
+    const websocketAddress = atom.config.get('etheratom.websocketAddress');
+    const pkgPath = atom.packages.resolvePackagePath('etheratom');
+    this.web3Instance = child_process.fork(`${pkgPath}/lib/web3/web3Worker.js`);
+    this.web3Instance.send({
+      action: 'set_rpc_ws',
+      rpcAddres,
+      websocketAddress
+    });
+  }
+
+  web3ProcessHandler(message) {
+    console.log(message);
+
+    if (message.hasOwnProperty('transaction')) {
+      this.store.dispatch({
+        type: ADD_PENDING_TRANSACTION,
+        payload: message.transaction
+      });
+    } else if (message.hasOwnProperty('isBooleanSync')) {
+      this.store.dispatch({
+        type: SET_SYNCING,
+        payload: message['isBooleanSync']
+      });
+    } else if (message.hasOwnProperty('isObjectSync')) {
+      const sync = message['isObjectSync'];
+      this.store.dispatch({
+        type: SET_SYNCING,
+        payload: sync.syncing
+      });
+      const status = {
+        currentBlock: sync.status.CurrentBlock,
+        highestBlock: sync.status.HighestBlock,
+        knownStates: sync.status.KnownStates,
+        pulledStates: sync.status.PulledStates,
+        startingBlock: sync.status.StartingBlock
+      };
+      this.store.dispatch({
+        type: SET_SYNC_STATUS,
+        payload: status
+      });
+    } else if (message.hasOwnProperty('syncStarted') && message['syncStarted']) {
+      console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+    } else if (message.hasOwnProperty('isSyncing')) {
+      console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      console.log(message['isSyncing']);
+    } else if (message.hasOwnProperty('error')) {
+      console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message.error);
+    }
+  }
+
+  async getBalance(coinbase) {
+    this.web3Instance.send({
+      action: 'set_rpc_ws',
+      action_2: 'get_balances',
+      coinbase
+    });
+    this.web3Instance.on('message', m => {
+      if (m.hasOwnProperty('ethBalance')) {
+        return m['ethBalance'];
+      }
+    });
+  }
+
+}
+
 class CoinbaseView extends React.Component {
   constructor(props) {
     super(props);
@@ -5189,27 +5266,38 @@ class CoinbaseView extends React.Component {
     this._handleUnlock = this._handleUnlock.bind(this);
     this._linkClick = this._linkClick.bind(this);
     this._refreshBal = this._refreshBal.bind(this);
+    this._getData = this._getData.bind(this);
+    this.web3Instance = new web3Instance();
+  }
+
+  async _getData(m) {
+    if (m.hasOwnProperty('ethBalance')) {
+      // return message['ethBalance'];
+      console.log(m['ethBalance']);
+      this.props.setBalance(m['ethBalance']); // this.setState({ balance: m['ethBalance'] });
+    }
   }
 
   async componentDidMount() {
     const {
       coinbase
     } = this.state;
-    this.web3.eth.defaultAccount = coinbase;
-    const balance = await this.helpers.getBalance(coinbase);
-    this.setState({
-      balance
-    });
+    this.web3.eth.defaultAccount = coinbase; // await this.helpers.getBalance(coinbase);  
+
+    const balance = await this.web3Instance.getBalance(coinbase);
+    console.log(balance);
   }
 
   async componentDidUpdate() {
     const {
       coinbase
     } = this.state;
-    this.web3.eth.defaultAccount = coinbase;
-    const balance = await this.helpers.getBalance(coinbase);
-    this.setState({
-      balance
+    this.web3.eth.defaultAccount = coinbase; // await this.helpers.getBalance(coinbase);
+
+    this.web3Instances.send({
+      action: 'set_rpc_ws',
+      action_2: 'get_balances',
+      coinbase
     });
   }
 
@@ -5278,7 +5366,7 @@ class CoinbaseView extends React.Component {
     const {
       coinbase
     } = this.state;
-    const balance = await this.helpers.getBalance(coinbase);
+    const balance = await this.web3Instance.getBalance(coinbase);
     this.setState({
       balance
     });
@@ -5340,7 +5428,8 @@ CoinbaseView.propTypes = {
   helpers: PropTypes.any.isRequired,
   accounts: PropTypes.arrayOf(PropTypes.string),
   setCoinbase: PropTypes.any,
-  setPassword: PropTypes.any
+  setPassword: PropTypes.any,
+  setBalance: PropTypes.any
 };
 
 const mapStateToProps$e = ({
@@ -5360,7 +5449,8 @@ const mapStateToProps$e = ({
 
 var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, {
   setCoinbase,
-  setPassword
+  setPassword,
+  setBalance
 })(CoinbaseView);
 
 class VersionSelector extends React.Component {
@@ -5491,6 +5581,8 @@ class View {
   }
 
   async createCoinbaseView() {
+    console.log('CRTEATE COIN BASE');
+
     try {
       const accounts = await this.web3.eth.getAccounts();
       this.store.dispatch({
@@ -5562,60 +5654,9 @@ class Web3Env {
     this.saveSubscriptions = new atom$1.CompositeDisposable();
     this.compileSubscriptions = new atom$1.CompositeDisposable();
     this.store = store;
-    const pkgPath = atom.packages.resolvePackagePath('etheratom');
-    this.worker = child_process.fork(`${pkgPath}/lib/web3/web3Worker.js`);
-    const rpcAddress = atom.config.get('etheratom.rpcAddress');
-    const websocketAddress = atom.config.get('etheratom.websocketAddress');
-    this.worker.send({
-      action: 'set_rpc_ws',
-      rpcAddress,
-      websocketAddress
-    });
-    this.worker.on('message', result => {
-      this.web3ProcessHandler(result);
-    });
+    new web3Instance(this.store);
     this.subscribeToWeb3Commands();
     this.subscribeToWeb3Events();
-  }
-
-  web3ProcessHandler(message) {
-    console.log(message);
-
-    if (message.hasOwnProperty('transaction')) {
-      this.store.dispatch({
-        type: ADD_PENDING_TRANSACTION,
-        payload: message.transaction
-      });
-    } else if (message.hasOwnProperty('isBooleanSync')) {
-      this.store.dispatch({
-        type: SET_SYNCING,
-        payload: message['isBooleanSync']
-      });
-    } else if (message.hasOwnProperty('isObjectSync')) {
-      const sync = message['isObjectSync'];
-      this.store.dispatch({
-        type: SET_SYNCING,
-        payload: sync.syncing
-      });
-      const status = {
-        currentBlock: sync.status.CurrentBlock,
-        highestBlock: sync.status.HighestBlock,
-        knownStates: sync.status.KnownStates,
-        pulledStates: sync.status.PulledStates,
-        startingBlock: sync.status.StartingBlock
-      };
-      this.store.dispatch({
-        type: SET_SYNC_STATUS,
-        payload: status
-      });
-    } else if (message.hasOwnProperty('syncStarted') && message['syncStarted']) {
-      console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-    } else if (message.hasOwnProperty('isSyncing')) {
-      console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-      console.log(message['isSyncing']);
-    } else if (message.hasOwnProperty('error')) {
-      console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-    }
   }
 
   dispose() {
@@ -5951,7 +5992,8 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
 const INITIAL_STATE$2 = {
   coinbase: '',
   password: false,
-  accounts: []
+  accounts: [],
+  balance: 0.00
 };
 var AccountReducer = ((state = INITIAL_STATE$2, action) => {
   switch (action.type) {
@@ -5968,6 +6010,11 @@ var AccountReducer = ((state = INITIAL_STATE$2, action) => {
     case SET_ACCOUNTS:
       return _objectSpread({}, state, {
         accounts: action.payload
+      });
+
+    case SET_BALANCE:
+      return _objectSpread({}, state, {
+        balance: action.payload
       });
 
     default:
