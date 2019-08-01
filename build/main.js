@@ -4,14 +4,14 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 require('idempotent-babel-polyfill');
 var atom$1 = require('atom');
-var Web3 = _interopDefault(require('web3'));
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
 var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
-var React = _interopDefault(require('react'));
+var React = require('react');
+var React__default = _interopDefault(React);
 var ReactDOM = _interopDefault(require('react-dom'));
 var reactTabs = require('react-tabs');
 var reactRedux = require('react-redux');
@@ -63,6 +63,11 @@ class AtomSolidityView {
     att.value = 'accounts-list';
     accountsNode.setAttributeNode(att);
     mainNode.appendChild(accountsNode);
+    let loaderNode = document.createElement('div');
+    att = document.createAttribute('id');
+    att.value = 'loader_';
+    loaderNode.setAttributeNode(att);
+    mainNode.appendChild(loaderNode);
     let buttonNode = document.createElement('div');
     att = document.createAttribute('id');
     att.value = 'common-buttons';
@@ -897,37 +902,6 @@ function unwrapListeners(arr) {
   return ret;
 }
 
-function showPanelError(err_message) {
-  let messages;
-  messages = new atomMessagePanel.MessagePanelView({
-    title: 'Etheratom report'
-  });
-  messages.attach();
-  messages.add(new atomMessagePanel.PlainMessageView({
-    message: err_message,
-    className: 'red-message'
-  }));
-}
-
-function getWeb3Conn() {
-  try {
-    const rpcAddress = atom.config.get('etheratom.rpcAddress');
-    const websocketAddress = atom.config.get('etheratom.websocketAddress');
-    const web3 = new Web3();
-
-    if (rpcAddress && !websocketAddress) {
-      web3.setProvider(new Web3.providers.HttpProvider(rpcAddress));
-    } else if (websocketAddress) {
-      web3.setProvider(new Web3.providers.WebsocketProvider(websocketAddress));
-    }
-
-    return web3;
-  } catch (e) {
-    console.error(e);
-    showPanelError(e);
-  }
-}
-
 // This file is part of Etheratom.
 // Etheratom is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -949,7 +923,8 @@ const ADD_INTERFACE = 'add_interface';
 const UPDATE_INTERFACE = 'update_interface';
 const SET_INSTANCE = 'set_instance';
 const SET_DEPLOYED = 'set_deployed';
-const SET_GAS_LIMIT = 'set_gas_limit'; // Files action types
+const SET_GAS_LIMIT = 'set_gas_limit';
+const SET_BALANCE = 'set_balance'; // Files action types
 
 const RESET_SOURCES = 'reset_sources';
 const SET_SOURCES = 'set_sources';
@@ -965,15 +940,348 @@ const SET_EVENTS = 'set_events'; // Node variables
 const SET_SYNC_STATUS = 'set_sync_status';
 const SET_SYNCING = 'set_syncing';
 const SET_MINING = 'set_mining';
-const SET_HASH_RATE = 'set_hash_rate';
+const SET_HASH_RATE = 'set_hash_rate'; // Client variables
+
+const SET_CONNECTION_STATUS = 'set_connection_status';
+
+const setParamsInput = ({
+  contractName,
+  abi
+}) => {
+  return dispatch => {
+    dispatch({
+      type: SET_PARAMS,
+      payload: {
+        contractName,
+        abi
+      }
+    });
+  };
+};
+const addInterface = ({
+  contractName,
+  ContractABI
+}) => {
+  return dispatch => {
+    dispatch({
+      type: ADD_INTERFACE,
+      payload: {
+        contractName,
+        interface: ContractABI
+      }
+    });
+  };
+};
+const updateInterface = ({
+  contractName,
+  ContractABI
+}) => {
+  return dispatch => {
+    dispatch({
+      type: ADD_INTERFACE,
+      payload: {
+        contractName,
+        interface: ContractABI
+      }
+    });
+  };
+};
+const setInstance = ({
+  contractName,
+  instance
+}) => {
+  return dispatch => {
+    dispatch({
+      type: SET_INSTANCE,
+      payload: {
+        contractName,
+        instance
+      }
+    });
+  };
+};
+const setDeployed = ({
+  contractName,
+  deployed
+}) => {
+  return dispatch => {
+    dispatch({
+      type: SET_DEPLOYED,
+      payload: {
+        contractName,
+        deployed
+      }
+    });
+  };
+};
+
+const setCoinbase = coinbase => {
+  return dispatch => {
+    dispatch({
+      type: SET_COINBASE,
+      payload: coinbase
+    });
+  };
+};
+const setPassword = ({
+  password
+}) => {
+  return dispatch => {
+    dispatch({
+      type: SET_PASSWORD,
+      payload: {
+        password
+      }
+    });
+  };
+};
+const setAccounts = accounts => {
+  return dispatch => {
+    dispatch({
+      type: SET_ACCOUNTS,
+      payload: accounts
+    });
+  };
+};
+
+const addNewEvents = ({
+  payload
+}) => {
+  return dispatch => {
+    dispatch({
+      type: ADD_EVENTS,
+      payload
+    });
+  };
+};
+
+const setSyncStatus = status => {
+  return dispatch => {
+    dispatch({
+      type: SET_SYNC_STATUS,
+      payload: status
+    });
+  };
+};
+const setMining = mining => {
+  return dispatch => {
+    dispatch({
+      type: SET_MINING,
+      payload: mining
+    });
+  };
+};
+const setHashrate = hashrate => {
+  return dispatch => {
+    dispatch({
+      type: SET_HASH_RATE,
+      payload: hashrate
+    });
+  };
+};
+
+const setErrors = payload => {
+  return dispatch => {
+    dispatch({
+      type: SET_ERRORS,
+      payload
+    });
+  };
+};
+const resetErrors = () => {
+  return dispatch => {
+    dispatch({
+      type: RESET_ERRORS
+    });
+  };
+};
 
 class Web3Helpers {
   constructor(store) {
-    this.web3 = getWeb3Conn();
+    // this.web3 = getWeb3Conn();
     this.store = store;
     this.jobs = {// fileName: { solcWorker, hash }
     };
+    this.web3ProcessHandler = this.web3ProcessHandler.bind(this);
+    this.setCoinbase = this.setCoinbase.bind(this);
+    this.getCurrentClients = this.getCurrentClients.bind(this);
+    this.hookWeb3ChildProcess = this.createWeb3Connection(); //sending rpc or ws address to create ethereum connection
+
+    const rpcAddress = atom.config.get('etheratom.rpcAddress');
+    const websocketAddress = atom.config.get('etheratom.websocketAddress');
+    this.hookWeb3ChildProcess.send({
+      action: 'set_rpc_ws',
+      rpcAddress,
+      websocketAddress
+    }); //handle the web3 child process responses
+
+    this.web3ProcessHandler();
+  } // WEB3 JS CHILD PROCESS START ==================================================================
+
+
+  createWeb3Connection() {
+    const pkgPath = atom.packages.resolvePackagePath('etheratom');
+    return child_process.fork(`${pkgPath}/lib/web3/web3Worker.js`);
   }
+
+  killWeb3Connection() {
+    if (this.hookWeb3ChildProcess !== 'undefined') {
+      this.hookWeb3ChildProcess.kill();
+    } else {
+      return;
+    }
+  }
+
+  subscribeTransaction() {
+    this.hookWeb3ChildProcess.send({
+      action: 'subscribeTransaction'
+    });
+  }
+
+  subscribeETHconnection() {
+    this.hookWeb3ChildProcess.send({
+      action: 'ethSubscription'
+    });
+  }
+
+  async getBalance(coinbase) {
+    this.hookWeb3ChildProcess.send({
+      action: 'get_balances',
+      coinbase
+    });
+  }
+
+  async setDefaultAccount(coinbase) {
+    this.hookWeb3ChildProcess.send({
+      action: 'default_account_set',
+      coinbase
+    });
+  }
+
+  async getGasEstimate(coinbase, bytecode) {
+    this.hookWeb3ChildProcess.send({
+      action: 'getGasEstimate',
+      coinbase,
+      bytecode
+    });
+  }
+
+  web3ProcessHandler() {
+    this.hookWeb3ChildProcess.on('message', message => {
+      if (message.hasOwnProperty('transaction')) {
+        this.store.dispatch({
+          type: ADD_PENDING_TRANSACTION,
+          payload: message.transaction
+        });
+      } else if (message.hasOwnProperty('isBooleanSync')) {
+        this.store.dispatch({
+          type: SET_SYNCING,
+          payload: message['isBooleanSync']
+        });
+      } else if (message.hasOwnProperty('isObjectSync')) {
+        const sync = message['isObjectSync'];
+        this.store.dispatch({
+          type: SET_SYNCING,
+          payload: sync.syncing
+        });
+        const status = {
+          currentBlock: sync.status.CurrentBlock,
+          highestBlock: sync.status.HighestBlock,
+          knownStates: sync.status.KnownStates,
+          pulledStates: sync.status.PulledStates,
+          startingBlock: sync.status.StartingBlock
+        };
+        this.store.dispatch({
+          type: SET_SYNC_STATUS,
+          payload: status
+        });
+      } else if (message.hasOwnProperty('syncStarted') && message['syncStarted']) {
+        console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      } else if (message.hasOwnProperty('isSyncing')) {
+        console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+        this.store.dispatch({
+          type: SET_SYNC_STATUS,
+          payload: message['isSyncing']
+        });
+      } else if (message.hasOwnProperty('ethBalance')) {
+        this.store.dispatch({
+          type: SET_BALANCE,
+          payload: message['ethBalance']
+        });
+      } else if (message.hasOwnProperty('error')) {
+        console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message.error);
+      } else if (message.hasOwnProperty('hasConnection')) {
+        let clients = this.getCurrentClients();
+        clients[0].hasConnection = message['hasConnection'];
+        this.store.dispatch({
+          type: SET_CONNECTION_STATUS,
+          payload: clients
+        });
+        clients[0].firstTimeCheck = false;
+        this.store.dispatch({
+          type: 'first_time_check_enable',
+          payload: clients
+        }); // set_connection_status(message['hasConnection']);                
+      } else if (message.hasOwnProperty('isWsProvider')) {
+        let clients = this.getCurrentClients();
+        clients[0].isWsProvider = message['isWsProvider'];
+        this.store.dispatch({
+          type: 'is_ws_provider',
+          payload: clients
+        });
+      } else if (message.hasOwnProperty('isHttpProvider')) {
+        let clients = this.getCurrentClients();
+        clients[0].isHttpProvider = message['isHttpProvider'];
+        this.store.dispatch({
+          type: 'is_http_provider',
+          payload: clients
+        });
+      } else if (message.hasOwnProperty('accounts')) {
+        this.store.dispatch({
+          type: SET_ACCOUNTS,
+          payload: message.accounts
+        });
+        this.store.dispatch({
+          type: SET_COINBASE,
+          payload: message.accounts[0]
+        });
+      } else if (message.hasOwnProperty('contract')) {
+        console.log('HHHHpei');
+        console.log(message.contract);
+      }
+    });
+  }
+
+  getCurrentClients() {
+    let clients = [{
+      provider: this.store.getState().clientReducer.clients[0].provider,
+      desc: this.store.getState().clientReducer.clients[0].desc,
+      hasConnection: this.store.getState().clientReducer.clients[0].hasConnection,
+      firstTimeCheck: this.store.getState().clientReducer.clients[0].firstTimeCheck,
+      isWsProvider: this.store.getState().clientReducer.clients[0].isWsProvider,
+      isHttpProvider: this.store.getState().clientReducer.clients[0].isHttpProvider
+    }];
+    return clients;
+  }
+
+  async checkConnection() {
+    this.hookWeb3ChildProcess.send({
+      action: 'check_connection'
+    });
+  }
+
+  async isWsProvider() {
+    this.hookWeb3ChildProcess.send({
+      action: 'isWsProvider'
+    });
+  }
+
+  async isHttpProvider() {
+    this.hookWeb3ChildProcess.send({
+      action: 'isHttpProvider'
+    });
+  } // WEB3 JS CHILD PROCESS END ==========================================================================================
+
 
   createWorker(fn) {
     const pkgPath = atom.packages.resolvePackagePath('etheratom');
@@ -1070,129 +1378,94 @@ class Web3Helpers {
     }
   }
 
-  async getGasEstimate(coinbase, bytecode) {
-    if (!coinbase) {
-      const error = new Error('No coinbase selected!');
-      throw error;
-    }
-
-    try {
-      this.web3.eth.defaultAccount = coinbase;
-      const gasEstimate = await this.web3.eth.estimateGas({
-        from: this.web3.eth.defaultAccount,
-        data: '0x' + bytecode
-      });
-      return gasEstimate;
-    } catch (e) {
-      throw e;
-    }
-  }
-
   async setCoinbase(coinbase) {
-    try {
-      this.web3.eth.defaultAccount = coinbase;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async getBalance(coinbase) {
-    if (!coinbase) {
-      const error = new Error('No coinbase selected!');
-      throw error;
-    }
-
-    try {
-      const weiBalance = await this.web3.eth.getBalance(coinbase);
-      const ethBalance = await this.web3.utils.fromWei(weiBalance, 'ether');
-      return ethBalance;
-    } catch (e) {
-      throw e;
-    }
+    this.hookWeb3ChildProcess({
+      action: 'set_coinbase',
+      coinbase
+    });
   }
 
   async getSyncStat() {
-    try {
-      return this.web3.eth.isSyncing();
-    } catch (e) {
-      throw e;
-    }
+    this.hookWeb3ChildProcess.send({
+      action: 'sync_stat'
+    });
   }
 
   async create(_ref) {
     let args = _extends({}, _ref);
 
     console.log('%c Creating contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-    const coinbase = args.coinbase;
-    const password = args.password;
-    const abi = args.abi;
-    const code = args.bytecode;
-    const gasSupply = args.gas;
+    this.hookWeb3ChildProcess.send({
+      action: 'create',
+      argumentsForCreate: _objectSpread({}, args)
+    }); // const coinbase = args.coinbase;
+    // const password = args.password;
+    // const abi = args.abi;
+    // const code = args.bytecode;
+    // const gasSupply = args.gas;
+    // if (!coinbase) {
+    //     const error = new Error('No coinbase selected!');
+    //     throw error;
+    // }
+    // this.web3.eth.defaultAccount = coinbase;
+    // try {
+    //     if (password) {
+    //         await this.web3.eth.personal.unlockAccount(coinbase, password);
+    //     }
+    //     try {
+    //         const gasPrice = await this.web3.eth.getGasPrice();
+    //         const contract = await new this.web3.eth.Contract(abi, {
+    //             from: this.web3.eth.defaultAccount,
+    //             data: '0x' + code,
+    //             gas: this.web3.utils.toHex(gasSupply),
+    //             gasPrice: this.web3.utils.toHex(gasPrice)
+    //         });
+    //         return contract;
+    //     } catch (e) {
+    //         console.log(e);
+    //         throw e;
+    //     }
+    // } catch (e) {
+    //     console.log(e);
+    //     throw e;
+    // }
+  } // async deploy(contract, params) {
+  //     console.log('%c Deploying contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+  //     class ContractInstance extends EventEmitter { }
+  //     const contractInstance = new ContractInstance();
+  //     try {
+  //         params = params.map(param => {
+  //             return param.type.endsWith('[]') ? param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',') : param.value;
+  //         });
+  //         contract.deploy({
+  //             arguments: params
+  //         })
+  //             .send({
+  //                 from: this.web3.eth.defaultAccount
+  //             })
+  //             .on('transactionHash', transactionHash => {
+  //                 contractInstance.emit('transactionHash', transactionHash);
+  //             })
+  //             .on('receipt', txReceipt => {
+  //                 contractInstance.emit('receipt', txReceipt);
+  //             })
+  //             .on('confirmation', confirmationNumber => {
+  //                 contractInstance.emit('confirmation', confirmationNumber);
+  //             })
+  //             .on('error', error => {
+  //                 contractInstance.emit('error', error);
+  //             })
+  //             .then(instance => {
+  //                 contractInstance.emit('address', instance.options.address);
+  //                 contractInstance.emit('instance', instance);
+  //             });
+  //         return contractInstance;
+  //     } catch (e) {
+  //         console.log(e);
+  //         throw e;
+  //     }
+  // }
 
-    if (!coinbase) {
-      const error = new Error('No coinbase selected!');
-      throw error;
-    }
-
-    this.web3.eth.defaultAccount = coinbase;
-
-    try {
-      if (password) {
-        await this.web3.eth.personal.unlockAccount(coinbase, password);
-      }
-
-      try {
-        const gasPrice = await this.web3.eth.getGasPrice();
-        const contract = await new this.web3.eth.Contract(abi, {
-          from: this.web3.eth.defaultAccount,
-          data: '0x' + code,
-          gas: this.web3.utils.toHex(gasSupply),
-          gasPrice: this.web3.utils.toHex(gasPrice)
-        });
-        return contract;
-      } catch (e) {
-        console.log(e);
-        throw e;
-      }
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-  }
-
-  async deploy(contract, params) {
-    console.log('%c Deploying contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-
-    class ContractInstance extends EventEmitter {}
-
-    const contractInstance = new ContractInstance();
-
-    try {
-      params = params.map(param => {
-        return param.type.endsWith('[]') ? param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',') : param.value;
-      });
-      contract.deploy({
-        arguments: params
-      }).send({
-        from: this.web3.eth.defaultAccount
-      }).on('transactionHash', transactionHash => {
-        contractInstance.emit('transactionHash', transactionHash);
-      }).on('receipt', txReceipt => {
-        contractInstance.emit('receipt', txReceipt);
-      }).on('confirmation', confirmationNumber => {
-        contractInstance.emit('confirmation', confirmationNumber);
-      }).on('error', error => {
-        contractInstance.emit('error', error);
-      }).then(instance => {
-        contractInstance.emit('address', instance.options.address);
-        contractInstance.emit('instance', instance);
-      });
-      return contractInstance;
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
-  }
 
   async call(_ref2) {
     let args = _extends({}, _ref2);
@@ -1429,14 +1702,14 @@ class Web3Helpers {
   }
 
   async getAccounts() {
-    try {
-      return await this.web3.eth.getAccounts();
-    } catch (e) {
-      throw e;
-    }
+    this.hookWeb3ChildProcess.send({
+      action: 'getAccounts'
+    });
   }
 
   async getMining() {
+    alert();
+
     try {
       return await this.web3.eth.isMining();
     } catch (e) {
@@ -1452,12 +1725,11 @@ class Web3Helpers {
     }
   }
 
-  async updateWeb3() {
-    try {
-      this.web3 = getWeb3Conn();
-    } catch (e) {
-      throw e;
-    }
+  async updateWeb3() {// try {
+    //     this.web3 = getWeb3Conn();
+    // } catch (e) {
+    //     throw e;
+    // }
   }
 
 }
@@ -2763,12 +3035,14 @@ async function combineSource(fileRoot, sources) {
       matches.push(match);
     }
 
+    console.log(matches);
+
     for (let match of matches) {
       importLine = match[0];
       const extra = match[1] ? match[1] : '';
 
       if (validUrl.isUri(fileRoot)) {
-        fn = url.resolve(fileRoot, match[2]);
+        fn = url.URL.resolve(fileRoot, match[2]);
       } else {
         fn = match[2];
       }
@@ -2793,7 +3067,19 @@ async function combineSource(fileRoot, sources) {
   return sources;
 }
 
-class GasInput extends React.Component {
+function showPanelError(err_message) {
+  let messages;
+  messages = new atomMessagePanel.MessagePanelView({
+    title: 'Etheratom report'
+  });
+  messages.attach();
+  messages.add(new atomMessagePanel.PlainMessageView({
+    message: err_message,
+    className: 'red-message'
+  }));
+}
+
+class GasInput extends React__default.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -2817,17 +3103,17 @@ class GasInput extends React.Component {
     const {
       contractName
     } = this.props;
-    return React.createElement("form", {
+    return React__default.createElement("form", {
       className: "gas-estimate-form"
-    }, React.createElement("button", {
+    }, React__default.createElement("button", {
       className: "input text-subtle"
-    }, "Gas supply"), React.createElement("input", {
+    }, "Gas supply"), React__default.createElement("input", {
       id: contractName + '_gas',
       type: "number",
       className: "inputs",
       value: this.state.gas,
       onChange: this.props.onChange
-    }), React.createElement("button", {
+    }), React__default.createElement("button", {
       className: "btn btn-primary"
     }, "Gas Limit : ", gasLimit));
   }
@@ -2857,159 +3143,7 @@ const mapStateToProps = ({
 
 var GasInput$1 = reactRedux.connect(mapStateToProps, {})(GasInput);
 
-const setParamsInput = ({
-  contractName,
-  abi
-}) => {
-  return dispatch => {
-    dispatch({
-      type: SET_PARAMS,
-      payload: {
-        contractName,
-        abi
-      }
-    });
-  };
-};
-const addInterface = ({
-  contractName,
-  ContractABI
-}) => {
-  return dispatch => {
-    dispatch({
-      type: ADD_INTERFACE,
-      payload: {
-        contractName,
-        interface: ContractABI
-      }
-    });
-  };
-};
-const updateInterface = ({
-  contractName,
-  ContractABI
-}) => {
-  return dispatch => {
-    dispatch({
-      type: ADD_INTERFACE,
-      payload: {
-        contractName,
-        interface: ContractABI
-      }
-    });
-  };
-};
-const setInstance = ({
-  contractName,
-  instance
-}) => {
-  return dispatch => {
-    dispatch({
-      type: SET_INSTANCE,
-      payload: {
-        contractName,
-        instance
-      }
-    });
-  };
-};
-const setDeployed = ({
-  contractName,
-  deployed
-}) => {
-  return dispatch => {
-    dispatch({
-      type: SET_DEPLOYED,
-      payload: {
-        contractName,
-        deployed
-      }
-    });
-  };
-};
-
-const setCoinbase = coinbase => {
-  return dispatch => {
-    dispatch({
-      type: SET_COINBASE,
-      payload: coinbase
-    });
-  };
-};
-const setPassword = ({
-  password
-}) => {
-  return dispatch => {
-    dispatch({
-      type: SET_PASSWORD,
-      payload: {
-        password
-      }
-    });
-  };
-};
-const setAccounts = accounts => {
-  return dispatch => {
-    dispatch({
-      type: SET_ACCOUNTS,
-      payload: accounts
-    });
-  };
-};
-
-const addNewEvents = ({
-  payload
-}) => {
-  return dispatch => {
-    dispatch({
-      type: ADD_EVENTS,
-      payload
-    });
-  };
-};
-
-const setSyncStatus = status => {
-  return dispatch => {
-    dispatch({
-      type: SET_SYNC_STATUS,
-      payload: status
-    });
-  };
-};
-const setMining = mining => {
-  return dispatch => {
-    dispatch({
-      type: SET_MINING,
-      payload: mining
-    });
-  };
-};
-const setHashrate = hashrate => {
-  return dispatch => {
-    dispatch({
-      type: SET_HASH_RATE,
-      payload: hashrate
-    });
-  };
-};
-
-const setErrors = payload => {
-  return dispatch => {
-    dispatch({
-      type: SET_ERRORS,
-      payload
-    });
-  };
-};
-const resetErrors = () => {
-  return dispatch => {
-    dispatch({
-      type: RESET_ERRORS
-    });
-  };
-};
-
-class InputsForm extends React.Component {
+class InputsForm extends React__default.Component {
   constructor(props) {
     super(props);
     this._handleChange = this._handleChange.bind(this);
@@ -3024,15 +3158,15 @@ class InputsForm extends React.Component {
       contractName,
       abi
     } = this.props;
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       id: contractName + '_inputs'
     }, abi.type === 'constructor' && abi.inputs.map((input, i) => {
-      return React.createElement("form", {
+      return React__default.createElement("form", {
         key: i,
         onSubmit: this.props.onSubmit
-      }, React.createElement("button", {
+      }, React__default.createElement("button", {
         className: "input text-subtle"
-      }, input.name), React.createElement("input", {
+      }, input.name), React__default.createElement("input", {
         id: i,
         type: "text",
         className: "inputs",
@@ -3066,7 +3200,7 @@ var InputsForm$1 = reactRedux.connect(mapStateToProps$1, {
   setParamsInput
 })(InputsForm);
 
-class CreateButton extends React.Component {
+class CreateButton extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -3101,144 +3235,99 @@ class CreateButton extends React.Component {
     this.setState({
       atAddress: event.target.value
     });
-  }
+  } // async _handleSubmit() {
+  //     try {
+  //         const { abi, bytecode, contractName, gas, coinbase, password } = this.props;
+  //         const { atAddress } = this.state;
+  //         const contractInterface = this.props.interfaces[contractName].interface;
+  //         const constructor = contractInterface.find(interfaceItem => interfaceItem.type === 'constructor');
+  //         const params = [];
+  //         if (constructor) {
+  //             for (let input of constructor.inputs) {
+  //                 if (input.value) {
+  //                     params.push(input);
+  //                 }
+  //             }
+  //         }
+  //         const contract = await this.helpers.create({ coinbase, password, atAddress, abi, bytecode, contractName, gas });
+  //         console.log('CREATE CONTRACTS ===========================================================================');
+  //         console.log(contract);
+  //         // this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+  //         // if (!atAddress) {
+  //         //     const contractInstance = await this.helpers.deploy(contract, params);
+  //         //     this.props.setDeployed({ contractName, deployed: true });
+  //         //     contractInstance.on('address', address => {
+  //         //         contract.options.address = address;
+  //         //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+  //         //     });
+  //         //     contractInstance.on('transactionHash', transactionHash => {
+  //         //         contract.transactionHash = transactionHash;
+  //         //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+  //         //     });
+  //         //     contractInstance.on('error', error => {
+  //         //         this.helpers.showPanelError(error);
+  //         //     });
+  //         //     contractInstance.on('instance', instance => {
+  //         //         instance.events.allEvents({ fromBlock: 'latest' })
+  //         //             .on('logs', (logs) => {
+  //         //                 this.props.addNewEvents({ payload: logs });
+  //         //             })
+  //         //             .on('data', (data) => {
+  //         //                 this.props.addNewEvents({ payload: data });
+  //         //             })
+  //         //             .on('changed', (changed) => {
+  //         //                 this.props.addNewEvents({ payload: changed });
+  //         //             })
+  //         //             .on('error', (error) => {
+  //         //                 console.log(error);
+  //         //             });
+  //         //     });
+  //         //     contractInstance.on('error', error => {
+  //         //         this.helpers.showPanelError(error);
+  //         //     });
+  //         // } else {
+  //         //     contract.options.address = atAddress;
+  //         //     this.props.setDeployed({ contractName, deployed: true });
+  //         //     this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+  //         //     contract.events.allEvents({ fromBlock: 'latest' })
+  //         //         .on('logs', (logs) => {
+  //         //             this.props.addNewEvents({ payload: logs });
+  //         //         })
+  //         //         .on('data', (data) => {
+  //         //             this.props.addNewEvents({ payload: data });
+  //         //         })
+  //         //         .on('changed', (changed) => {
+  //         //             this.props.addNewEvents({ payload: changed });
+  //         //         })
+  //         //         .on('error', (error) => {
+  //         //             console.log(error);
+  //         //         });
+  //         // }
+  //     } catch (e) {
+  //         console.log(e);
+  //         this.helpers.showPanelError(e);
+  //     }
+  // }
 
-  async _handleSubmit() {
-    try {
-      const {
-        abi,
-        bytecode,
-        contractName,
-        gas,
-        coinbase,
-        password
-      } = this.props;
-      const {
-        atAddress
-      } = this.state;
-      const contractInterface = this.props.interfaces[contractName].interface;
-      const constructor = contractInterface.find(interfaceItem => interfaceItem.type === 'constructor');
-      const params = [];
-
-      if (constructor) {
-        for (let input of constructor.inputs) {
-          if (input.value) {
-            params.push(input);
-          }
-        }
-      }
-
-      const contract = await this.helpers.create({
-        coinbase,
-        password,
-        atAddress,
-        abi,
-        bytecode,
-        contractName,
-        gas
-      });
-      this.props.setInstance({
-        contractName,
-        instance: Object.assign({}, contract)
-      });
-
-      if (!atAddress) {
-        const contractInstance = await this.helpers.deploy(contract, params);
-        this.props.setDeployed({
-          contractName,
-          deployed: true
-        });
-        contractInstance.on('address', address => {
-          contract.options.address = address;
-          this.props.setInstance({
-            contractName,
-            instance: Object.assign({}, contract)
-          });
-        });
-        contractInstance.on('transactionHash', transactionHash => {
-          contract.transactionHash = transactionHash;
-          this.props.setInstance({
-            contractName,
-            instance: Object.assign({}, contract)
-          });
-        });
-        contractInstance.on('error', error => {
-          this.helpers.showPanelError(error);
-        });
-        contractInstance.on('instance', instance => {
-          instance.events.allEvents({
-            fromBlock: 'latest'
-          }).on('logs', logs => {
-            this.props.addNewEvents({
-              payload: logs
-            });
-          }).on('data', data => {
-            this.props.addNewEvents({
-              payload: data
-            });
-          }).on('changed', changed => {
-            this.props.addNewEvents({
-              payload: changed
-            });
-          }).on('error', error => {
-            console.log(error);
-          });
-        });
-        contractInstance.on('error', error => {
-          this.helpers.showPanelError(error);
-        });
-      } else {
-        contract.options.address = atAddress;
-        this.props.setDeployed({
-          contractName,
-          deployed: true
-        });
-        this.props.setInstance({
-          contractName,
-          instance: Object.assign({}, contract)
-        });
-        contract.events.allEvents({
-          fromBlock: 'latest'
-        }).on('logs', logs => {
-          this.props.addNewEvents({
-            payload: logs
-          });
-        }).on('data', data => {
-          this.props.addNewEvents({
-            payload: data
-          });
-        }).on('changed', changed => {
-          this.props.addNewEvents({
-            payload: changed
-          });
-        }).on('error', error => {
-          console.log(error);
-        });
-      }
-    } catch (e) {
-      console.log(e);
-      this.helpers.showPanelError(e);
-    }
-  }
 
   render() {
     const {
       contractName
     } = this.props;
-    return React.createElement("form", {
+    return React__default.createElement("form", {
       onSubmit: this._handleSubmit,
       className: "padded"
-    }, React.createElement("input", {
+    }, React__default.createElement("input", {
       type: "submit",
       value: "Deploy to blockchain",
       ref: contractName,
       className: "btn btn-primary inline-block-tight"
-    }), React.createElement("input", {
+    }), React__default.createElement("input", {
       type: "text",
       placeholder: "at:",
       className: "inputs",
-      value: this.state.atAddress,
-      onChange: this._handleAtAddressChange
+      value: this.state.atAddress // onChange={this._handleAtAddressChange}
+
     }));
   }
 
@@ -3286,7 +3375,7 @@ var CreateButton$1 = reactRedux.connect(mapStateToProps$2, {
 
 const Blob = require('blob');
 
-class ContractCompiled extends React.Component {
+class ContractCompiled extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -3361,30 +3450,30 @@ class ContractCompiled extends React.Component {
       ContractABI
     } = this.state;
     const savePath = `${contractName}.abi`;
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       className: "contract-content",
       key: index
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "contract-name inline-block highlight-success"
-    }, contractName), React.createElement("div", {
+    }, contractName), React__default.createElement("div", {
       className: "byte-code"
-    }, React.createElement("pre", {
+    }, React__default.createElement("pre", {
       className: "large-code"
-    }, JSON.stringify(bytecode))), React.createElement("div", {
+    }, JSON.stringify(bytecode))), React__default.createElement("div", {
       className: "abi-definition"
-    }, React.createElement(reactTabs.Tabs, null, React.createElement(reactTabs.TabList, null, React.createElement("div", {
+    }, React__default.createElement(reactTabs.Tabs, null, React__default.createElement(reactTabs.TabList, null, React__default.createElement("div", {
       className: "tab_btns"
-    }, React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Interface")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, "Interface")), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Interface Object")), React.createElement("button", {
+    }, "Interface Object")), React__default.createElement("button", {
       className: "btn icon icon-desktop-download inline-block-tight icon-button",
       title: 'Save ' + savePath,
       onClick: this._saveABI
-    }))), React.createElement(reactTabs.TabPanel, null, React.createElement("pre", {
+    }))), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement("pre", {
       className: "large-code"
-    }, JSON.stringify(ContractABI))), React.createElement(reactTabs.TabPanel, null, React.createElement(ReactJson, {
+    }, JSON.stringify(ContractABI))), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(ReactJson, {
       src: ContractABI,
       theme: "chalk",
       displayDataTypes: false,
@@ -3393,17 +3482,17 @@ class ContractCompiled extends React.Component {
       collapseStringsAfterLength: 32,
       iconStyle: "triangle"
     })))), ContractABI.map((abi, i) => {
-      return React.createElement(InputsForm$1, {
+      return React__default.createElement(InputsForm$1, {
         key: i,
         contractName: contractName,
         abi: abi,
         onSubmit: this._handleInput
       });
-    }), React.createElement(GasInput$1, {
+    }), React__default.createElement(GasInput$1, {
       contractName: contractName,
       gas: estimatedGas,
       onChange: this._handleGasChange
-    }), React.createElement(CreateButton$1, {
+    }), React__default.createElement(CreateButton$1, {
       contractName: contractName,
       bytecode: bytecode,
       abi: ContractABI,
@@ -3447,7 +3536,7 @@ var ContractCompiled$1 = reactRedux.connect(mapStateToProps$3, {
   addInterface
 })(ContractCompiled);
 
-class FunctionABI extends React.Component {
+class FunctionABI extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -3542,23 +3631,23 @@ class FunctionABI extends React.Component {
       interfaces
     } = this.props;
     const ContractABI = interfaces[contractName].interface;
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       className: "abi-container"
     }, ContractABI.map((abi, i) => {
       if (abi.type === 'function') {
-        return React.createElement("div", {
+        return React__default.createElement("div", {
           key: i,
           className: "function-container"
-        }, React.createElement("form", {
+        }, React__default.createElement("form", {
           key: i,
           onSubmit: () => this._handleSubmit(abi)
-        }, React.createElement("input", {
+        }, React__default.createElement("input", {
           key: i,
           type: "submit",
           value: abi.name,
           className: "text-subtle call-button"
         }), abi.inputs.map((input, j) => {
-          return React.createElement("input", {
+          return React__default.createElement("input", {
             type: "text",
             className: "call-button-values",
             placeholder: input.name + ' ' + input.type,
@@ -3566,7 +3655,7 @@ class FunctionABI extends React.Component {
             onChange: event => this._handleChange(i, j, event),
             key: j
           });
-        }), abi.payable === true && React.createElement("input", {
+        }), abi.payable === true && React__default.createElement("input", {
           className: "call-button-values",
           type: "number",
           placeholder: "payable value in wei",
@@ -3575,16 +3664,16 @@ class FunctionABI extends React.Component {
       }
 
       if (abi.type === 'fallback') {
-        return React.createElement("div", {
+        return React__default.createElement("div", {
           className: "fallback-container"
-        }, React.createElement("form", {
+        }, React__default.createElement("form", {
           key: i,
           onSubmit: () => {
             this._handleFallback(abi);
           }
-        }, React.createElement("button", {
+        }, React__default.createElement("button", {
           className: "btn"
-        }, "fallback"), abi.payable === true && React.createElement("input", {
+        }, "fallback"), abi.payable === true && React__default.createElement("input", {
           className: "call-button-values",
           type: "number",
           placeholder: "send wei to contract",
@@ -3632,7 +3721,7 @@ var FunctionABI$1 = reactRedux.connect(mapStateToProps$4, {
   updateInterface
 })(FunctionABI);
 
-class ContractExecution extends React.Component {
+class ContractExecution extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -3648,56 +3737,56 @@ class ContractExecution extends React.Component {
     } = this.props;
     const contract = instances[contractName];
     const ContractABI = interfaces[contractName].interface;
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       className: "contract-content",
       key: index
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "contract-name inline-block highlight-success"
-    }, contractName), React.createElement("div", {
+    }, contractName), React__default.createElement("div", {
       className: "byte-code"
-    }, React.createElement("pre", {
+    }, React__default.createElement("pre", {
       className: "large-code"
-    }, JSON.stringify(bytecode))), React.createElement("div", {
+    }, JSON.stringify(bytecode))), React__default.createElement("div", {
       className: "abi-definition"
-    }, React.createElement(reactTabs.Tabs, null, React.createElement(reactTabs.TabList, null, React.createElement("div", {
+    }, React__default.createElement(reactTabs.Tabs, null, React__default.createElement(reactTabs.TabList, null, React__default.createElement("div", {
       className: "tab_btns"
-    }, React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Interface")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, "Interface")), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Interface Object")))), React.createElement(reactTabs.TabPanel, null, React.createElement("pre", {
+    }, "Interface Object")))), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement("pre", {
       className: "large-code"
-    }, JSON.stringify(ContractABI))), React.createElement(reactTabs.TabPanel, null, React.createElement(ReactJson, {
+    }, JSON.stringify(ContractABI))), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(ReactJson, {
       src: ContractABI,
       theme: "ocean",
       displayDataTypes: false,
       name: false,
       collapsed: 2
-    })))), contract.transactionHash && React.createElement("div", {
+    })))), contract.transactionHash && React__default.createElement("div", {
       id: contractName + '_txHash'
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Transaction hash:"), React.createElement("pre", {
+    }, "Transaction hash:"), React__default.createElement("pre", {
       className: "large-code"
-    }, contract.transactionHash)), !contract.options.address && React.createElement("div", {
+    }, contract.transactionHash)), !contract.options.address && React__default.createElement("div", {
       id: contractName + '_stat'
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "stat-mining stat-mining-align"
-    }, "waiting to be mined"), React.createElement("span", {
+    }, "waiting to be mined"), React__default.createElement("span", {
       className: "loading loading-spinner-tiny inline-block stat-mining-align"
-    })), contract.options.address && React.createElement("div", {
+    })), contract.options.address && React__default.createElement("div", {
       id: contractName + '_stat'
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Mined at:"), React.createElement("pre", {
+    }, "Mined at:"), React__default.createElement("pre", {
       className: "large-code"
     }, contract.options.address)), ContractABI.map((abi, i) => {
-      return React.createElement(InputsForm$1, {
+      return React__default.createElement(InputsForm$1, {
         contractName: contractName,
         abi: abi,
         key: i
       });
-    }), React.createElement(FunctionABI$1, {
+    }), React__default.createElement(FunctionABI$1, {
       contractName: contractName,
       helpers: this.helpers
     }));
@@ -3729,7 +3818,7 @@ const mapStateToProps$5 = ({
 
 var ContractExecution$1 = reactRedux.connect(mapStateToProps$5, {})(ContractExecution);
 
-class ErrorView extends React.Component {
+class ErrorView extends React__default.Component {
   constructor(props) {
     super(props);
   }
@@ -3738,17 +3827,17 @@ class ErrorView extends React.Component {
     const {
       errormsg
     } = this.props;
-    return React.createElement("ul", {
+    return React__default.createElement("ul", {
       className: "error-list block"
     }, errormsg.length > 0 && errormsg.map((msg, i) => {
-      return React.createElement("li", {
+      return React__default.createElement("li", {
         key: i,
         className: "list-item"
-      }, msg.severity === 'warning' && React.createElement("span", {
+      }, msg.severity === 'warning' && React__default.createElement("span", {
         className: "icon icon-alert text-warning"
-      }, msg.formattedMessage || msg.message), msg.severity === 'error' && React.createElement("span", {
+      }, msg.formattedMessage || msg.message), msg.severity === 'error' && React__default.createElement("span", {
         className: "icon icon-bug text-error"
-      }, msg.formattedMessage || msg.message), !msg.severity && React.createElement("span", {
+      }, msg.formattedMessage || msg.message), !msg.severity && React__default.createElement("span", {
         className: "icon icon-bug text-error"
       }, msg.message));
     }));
@@ -3773,7 +3862,7 @@ const mapStateToProps$6 = ({
 
 var ErrorView$1 = reactRedux.connect(mapStateToProps$6, {})(ErrorView);
 
-class CollapsedFile extends React.Component {
+class CollapsedFile extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -3823,28 +3912,28 @@ class CollapsedFile extends React.Component {
       compiling,
       interfaces
     } = this.props;
-    return React.createElement("div", null, React.createElement("label", {
+    return React__default.createElement("div", null, React__default.createElement("label", {
       className: "label file-collapse-label"
-    }, React.createElement("h4", {
+    }, React__default.createElement("h4", {
       className: "text-success"
-    }, fileName), React.createElement("div", null, React.createElement("button", {
+    }, fileName), React__default.createElement("div", null, React__default.createElement("button", {
       className: toggleBtnStyle,
       onClick: this._toggleCollapse
-    }, toggleBtnTxt))), React.createElement(reactCollapse.Collapse, {
+    }, toggleBtnTxt))), React__default.createElement(reactCollapse.Collapse, {
       isOpened: isOpened
     }, Object.keys(compiled.contracts[fileName]).map((contractName, index) => {
       const bytecode = compiled.contracts[fileName][contractName].evm.bytecode.object;
-      return React.createElement("div", {
+      return React__default.createElement("div", {
         id: contractName,
         className: "contract-container",
         key: index
-      }, !deployed[contractName] && interfaces !== null && interfaces[contractName] && compiling === false && React.createElement(ContractCompiled$1, {
+      }, !deployed[contractName] && interfaces !== null && interfaces[contractName] && compiling === false && React__default.createElement(ContractCompiled$1, {
         contractName: contractName,
         fileName: fileName,
         bytecode: bytecode,
         index: index,
         helpers: this.helpers
-      }), deployed[contractName] && React.createElement(ContractExecution$1, {
+      }), deployed[contractName] && React__default.createElement(ContractExecution$1, {
         contractName: contractName,
         bytecode: bytecode,
         index: index,
@@ -3855,7 +3944,7 @@ class CollapsedFile extends React.Component {
 
 }
 
-class Contracts extends React.Component {
+class Contracts extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -3900,13 +3989,13 @@ class Contracts extends React.Component {
       compiling,
       interfaces
     } = this.props;
-    return React.createElement(reactRedux.Provider, {
+    return React__default.createElement(reactRedux.Provider, {
       store: this.props.store
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       id: "compiled-code",
       className: "compiled-code"
     }, compiled && compiled.contracts && Object.keys(compiled.contracts).map((fileName, index) => {
-      return React.createElement(CollapsedFile, {
+      return React__default.createElement(CollapsedFile, {
         fileName: fileName,
         compiled: compiled,
         deployed: deployed,
@@ -3915,12 +4004,12 @@ class Contracts extends React.Component {
         helpers: this.helpers,
         key: index
       });
-    }), !compiled && React.createElement("h2", {
+    }), !compiled && React__default.createElement("h2", {
       className: "text-warning no-header"
-    }, "No compiled contract!"), React.createElement("div", {
+    }, "No compiled contract!"), React__default.createElement("div", {
       id: "compiled-error",
       className: "error-container"
-    }, React.createElement(ErrorView$1, null))));
+    }, React__default.createElement(ErrorView$1, null))));
   }
 
 }
@@ -3973,7 +4062,7 @@ var Contracts$1 = reactRedux.connect(mapStateToProps$7, {
   setErrors
 })(Contracts);
 
-class TxAnalyzer extends React.Component {
+class TxAnalyzer extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -4053,61 +4142,61 @@ class TxAnalyzer extends React.Component {
     } = this.props;
     const transactions = pendingTransactions.slice();
     transactions.reverse();
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       className: "tx-analyzer"
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       className: "flex-row"
-    }, React.createElement("form", {
+    }, React__default.createElement("form", {
       className: "flex-row",
       onSubmit: this._handleTxHashSubmit
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       className: "inline-block"
-    }, React.createElement("input", {
+    }, React__default.createElement("input", {
       type: "text",
       name: "txhash",
       value: this.state.txHash,
       onChange: this._handleTxHashChange,
       placeholder: "Transaction hash",
       className: "input-search"
-    })), React.createElement("div", {
+    })), React__default.createElement("div", {
       className: "inline-block"
-    }, React.createElement("input", {
+    }, React__default.createElement("input", {
       type: "submit",
       value: "Analyze",
       className: "btn"
-    }))), React.createElement("button", {
+    }))), React__default.createElement("button", {
       className: toggleBtnStyle,
       onClick: this._toggleCollapse
-    }, "Transaction List")), React.createElement(reactCollapse.Collapse, {
+    }, "Transaction List")), React__default.createElement(reactCollapse.Collapse, {
       isOpened: isOpened
-    }, transactions.length > 0 && React.createElement(VirtualList, {
+    }, transactions.length > 0 && React__default.createElement(VirtualList, {
       itemCount: transactions.length,
       itemSize: 30,
       class: "tx-list-container",
       overscanCount: 10,
       renderItem: ({
         index
-      }) => React.createElement("div", {
+      }) => React__default.createElement("div", {
         className: "tx-list-item"
-      }, React.createElement("span", {
+      }, React__default.createElement("span", {
         className: "padded text-warning"
       }, transactions[index]))
-    })), this.state.txAnalysis && this.state.txAnalysis.transaction && React.createElement("div", {
+    })), this.state.txAnalysis && this.state.txAnalysis.transaction && React__default.createElement("div", {
       className: "block"
-    }, React.createElement("h2", {
+    }, React__default.createElement("h2", {
       className: "block highlight-info tx-header"
-    }, "Transaction"), React.createElement(ReactJson, {
+    }, "Transaction"), React__default.createElement(ReactJson, {
       src: this.state.txAnalysis.transaction,
       theme: "chalk",
       displayDataTypes: false,
       name: false,
       collapseStringsAfterLength: 64,
       iconStyle: "triangle"
-    })), this.state.txAnalysis && this.state.txAnalysis.transactionRecipt && React.createElement("div", {
+    })), this.state.txAnalysis && this.state.txAnalysis.transactionRecipt && React__default.createElement("div", {
       className: "block"
-    }, React.createElement("h2", {
+    }, React__default.createElement("h2", {
       className: "block highlight-info tx-header"
-    }, "Transaction receipt"), React.createElement(ReactJson, {
+    }, "Transaction receipt"), React__default.createElement(ReactJson, {
       src: this.state.txAnalysis.transactionRecipt,
       theme: "chalk",
       displayDataTypes: false,
@@ -4137,7 +4226,7 @@ const mapStateToProps$8 = ({
 
 var TxAnalyzer$1 = reactRedux.connect(mapStateToProps$8, {})(TxAnalyzer);
 
-class EventItem extends React.Component {
+class EventItem extends React__default.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -4178,18 +4267,18 @@ class EventItem extends React.Component {
       toggleBtnStyle,
       toggleBtnTxt
     } = this.state;
-    return React.createElement("li", {
+    return React__default.createElement("li", {
       className: "event-list-item"
-    }, React.createElement("label", {
+    }, React__default.createElement("label", {
       className: "label event-collapse-label"
-    }, React.createElement("h4", {
+    }, React__default.createElement("h4", {
       className: "padded text-warning"
-    }, event.id, " : ", event.event), React.createElement("button", {
+    }, event.id, " : ", event.event), React__default.createElement("button", {
       className: toggleBtnStyle,
       onClick: this._toggleCollapse
-    }, toggleBtnTxt)), React.createElement(reactCollapse.Collapse, {
+    }, toggleBtnTxt)), React__default.createElement(reactCollapse.Collapse, {
       isOpened: isOpened
-    }, React.createElement(ReactJson, {
+    }, React__default.createElement(ReactJson, {
       src: event,
       theme: "chalk",
       displayDataTypes: false,
@@ -4205,7 +4294,7 @@ EventItem.propTypes = {
   event: PropTypes.object
 };
 
-class Events extends React.Component {
+class Events extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -4217,16 +4306,16 @@ class Events extends React.Component {
     } = this.props;
     const events_ = events.slice();
     events_.reverse();
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       className: "events-container select-list"
-    }, React.createElement("ul", {
+    }, React__default.createElement("ul", {
       className: "list-group"
     }, events_.length > 0 && events_.map((event, i) => {
-      return React.createElement(EventItem, {
+      return React__default.createElement(EventItem, {
         key: i,
         event: event
       });
-    }), !(events_.length > 0) && React.createElement("h2", {
+    }), !(events_.length > 0) && React__default.createElement("h2", {
       className: "text-warning no-header"
     }, "No events found!")));
   }
@@ -4259,7 +4348,7 @@ Object.defineProperty(String.prototype, 'regexIndexOf', {
 
 });
 
-class RemixTest extends React.Component {
+class RemixTest extends React__default.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -4380,28 +4469,28 @@ class RemixTest extends React.Component {
       testResult,
       running
     } = this.state;
-    return React.createElement(reactRedux.Provider, {
+    return React__default.createElement(reactRedux.Provider, {
       store: this.props.store
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       id: "remix-tests"
-    }, React.createElement("h3", {
+    }, React__default.createElement("h3", {
       className: "block test-header"
-    }, "Test files should have [foo]_test.sol suffix"), React.createElement("div", {
+    }, "Test files should have [foo]_test.sol suffix"), React__default.createElement("div", {
       className: "test-selector"
-    }, React.createElement("button", {
+    }, React__default.createElement("button", {
       className: "btn btn-primary inline-block-tight",
       onClick: this._runRemixTests
-    }, "Run tests"), running && React.createElement("span", {
+    }, "Run tests"), running && React__default.createElement("span", {
       className: "loading loading-spinner-tiny inline-block"
-    }), testResult && React.createElement("div", {
+    }), testResult && React__default.createElement("div", {
       className: "test-result"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "text-error"
-    }, "Total failing: ", testResult.totalFailing, " "), React.createElement("span", {
+    }, "Total failing: ", testResult.totalFailing, " "), React__default.createElement("span", {
       className: "text-success"
-    }, "Total passing: ", testResult.totalPassing, " "), React.createElement("span", {
+    }, "Total passing: ", testResult.totalPassing, " "), React__default.createElement("span", {
       className: "text-info"
-    }, "Time: ", testResult.totalTime))), React.createElement(VirtualList, {
+    }, "Time: ", testResult.totalTime))), React__default.createElement(VirtualList, {
       height: "50vh",
       itemCount: testResults.length,
       itemSize: 30,
@@ -4409,22 +4498,22 @@ class RemixTest extends React.Component {
       overscanCount: 10,
       renderItem: ({
         index
-      }) => React.createElement("div", {
+      }) => React__default.createElement("div", {
         key: index,
         className: "test-result-list-item"
-      }, testResults[index].type === 'contract' && React.createElement("span", {
+      }, testResults[index].type === 'contract' && React__default.createElement("span", {
         className: "status-renamed icon icon-checklist"
-      }), testResults[index].type === 'testPass' && React.createElement("span", {
+      }), testResults[index].type === 'testPass' && React__default.createElement("span", {
         className: "status-added icon icon-check"
-      }), testResults[index].type === 'testFailure' && React.createElement("span", {
+      }), testResults[index].type === 'testFailure' && React__default.createElement("span", {
         className: "status-removed icon icon-x"
-      }), React.createElement("span", {
+      }), React__default.createElement("span", {
         className: "padded text-warning"
       }, testResults[index].value))
-    }), React.createElement("div", {
+    }), React__default.createElement("div", {
       id: "test-error",
       className: "error-container"
-    }, React.createElement(ErrorView$1, null))));
+    }, React__default.createElement(ErrorView$1, null))));
   }
 
 }
@@ -4454,20 +4543,25 @@ var RemixTest$1 = reactRedux.connect(mapStateToProps$a, {
   resetErrors
 })(RemixTest);
 
-class NodeControl extends React.Component {
+class NodeControl extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
-    const web3 = getWeb3Conn();
+    this.helpers.isWsProvider();
+    this.helpers.isHttpProvider();
     this.state = {
-      wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
-      httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
-      connected: props.web3.currentProvider.connected,
+      wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider,
+      httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider,
+      connected: this.props.store.getState().clientReducer.clients[0].hasConnection,
       toAddress: '',
       amount: 0,
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
-      websocketAddress: atom.config.get('etheratom.websocketAddress')
+      websocketAddress: atom.config.get('etheratom.websocketAddress'),
+      status: this.props.store.getState().node.status
     };
+    console.log('==========================================================================');
+    console.log(this.props.store.getState());
+    console.log('==========================================================================');
     this._refreshSync = this._refreshSync.bind(this);
     this.getNodeInfo = this.getNodeInfo.bind(this);
     this._handleToAddrrChange = this._handleToAddrrChange.bind(this);
@@ -4483,24 +4577,37 @@ class NodeControl extends React.Component {
     this.getNodeInfo();
   }
 
+  async componentDidUpdate(_, prevState) {
+    if (this.state.httpProvider !== this.props.store.getState().clientReducer.clients[0].isHttpProvider) {
+      this.setState({
+        httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider
+      });
+    }
+
+    if (this.state.wsProvider !== this.props.store.getState().clientReducer.clients[0].isWsProvider) {
+      this.setState({
+        wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider
+      });
+    }
+  }
+
   async _refreshSync() {
-    const accounts = await this.helpers.getAccounts();
-    this.props.setAccounts({
-      accounts
-    });
-    this.props.setCoinbase(accounts[0]);
+    await this.helpers.getAccounts();
     this.getNodeInfo();
     this.setState({
-      wsProvider: Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
-      httpProvider: Object.is(this.web3.currentProvider.constructor, Web3.providers.HttpProvider),
-      connected: this.props.web3.currentProvider.connected
+      wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider,
+      httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider,
+      connected: this.props.store.getState().clientReducer.clients[0].hasConnection
     });
   }
 
   async getNodeInfo() {
     // get sync status
-    const syncStat = await this.helpers.getSyncStat();
-    this.props.setSyncStatus(syncStat); // get mining status
+    await this.helpers.getSyncStat();
+    this.setState({
+      status: this.props.store.getState().node.status
+    });
+    this.props.setSyncStatus(this.state.status); // get mining status
 
     const mining = await this.helpers.getMining();
     this.props.setMining(mining); // get hashrate
@@ -4541,11 +4648,10 @@ class NodeControl extends React.Component {
       websocketAddress
     } = this.state;
     atom.config.set('etheratom.websocketAddress', websocketAddress);
-    const web3 = getWeb3Conn();
     const newState = {
-      wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
-      httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
-      connected: this.props.web3.currentProvider.connected,
+      wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider,
+      httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider,
+      connected: this.props.store.getState().clientReducer.clients[0].hasConnection,
       toAddress: '',
       amount: 0,
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
@@ -4578,11 +4684,10 @@ class NodeControl extends React.Component {
       rpcAddress
     } = this.state;
     atom.config.set('etheratom.rpcAddress', rpcAddress);
-    const web3 = getWeb3Conn();
     const newState = {
-      wsProvider: Object.is(web3.currentProvider.constructor, Web3.providers.WebsocketProvider),
-      httpProvider: Object.is(web3.currentProvider.constructor, Web3.providers.HttpProvider),
-      connected: this.props.web3.currentProvider.connected,
+      wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider,
+      httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider,
+      connected: this.props.store.getState().clientReducer.clients[0].hasConnection,
       toAddress: '',
       amount: 0,
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
@@ -4645,137 +4750,137 @@ class NodeControl extends React.Component {
       rpcAddress,
       websocketAddress
     } = this.state;
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       id: "NodeControl"
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       id: "connections"
-    }, React.createElement("ul", {
+    }, React__default.createElement("ul", {
       className: "connection-urls list-group"
-    }, React.createElement("li", {
+    }, React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("form", {
+    }, React__default.createElement("form", {
       onSubmit: this._handleWsSubmit
-    }, React.createElement("input", {
+    }, React__default.createElement("input", {
       type: "submit",
       value: "WS",
       className: wsProvider && connected ? 'btn btn-success smallbtn' : 'btn btn-error smallbtn'
-    }), React.createElement("input", {
+    }), React__default.createElement("input", {
       type: "string",
       placeholder: "Address",
       className: "input-text",
       value: websocketAddress,
       onChange: this._handleWsChange
-    }))), React.createElement("li", {
+    }))), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("form", {
+    }, React__default.createElement("form", {
       onSubmit: this._handleRPCSubmit
-    }, React.createElement("input", {
+    }, React__default.createElement("input", {
       type: "submit",
       value: "RPC",
       className: httpProvider && connected ? 'btn btn-success smallbtn' : 'btn btn-error smallbtn'
-    }), React.createElement("input", {
+    }), React__default.createElement("input", {
       type: "string",
       placeholder: "Address",
       className: "input-text",
       value: rpcAddress,
       onChange: this._handleRPCChange
-    }))), React.createElement("li", {
+    }))), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Connected:"), React.createElement("span", {
+    }, "Connected:"), React__default.createElement("span", {
       className: "inline-block"
-    }, `${connected}`)))), React.createElement("ul", {
+    }, `${connected}`)))), React__default.createElement("ul", {
       className: "list-group"
-    }, React.createElement("li", {
+    }, React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Coinbase:"), React.createElement("span", {
+    }, "Coinbase:"), React__default.createElement("span", {
       className: "inline-block"
-    }, coinbase))), Object.keys(status).length > 0 && status instanceof Object && React.createElement("ul", {
+    }, coinbase))), Object.keys(status).length > 0 && status instanceof Object && React__default.createElement("ul", {
       className: "list-group"
-    }, React.createElement("li", {
+    }, React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Sync progress:"), React.createElement("progress", {
+    }, "Sync progress:"), React__default.createElement("progress", {
       className: "inline-block",
       max: "100",
       value: (100 * (status.currentBlock / status.highestBlock)).toFixed(2)
-    }), React.createElement("span", {
+    }), React__default.createElement("span", {
       className: "inline-block"
-    }, (100 * (status.currentBlock / status.highestBlock)).toFixed(2), "%")), React.createElement("li", {
+    }, (100 * (status.currentBlock / status.highestBlock)).toFixed(2), "%")), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Current Block:"), React.createElement("span", {
+    }, "Current Block:"), React__default.createElement("span", {
       className: "inline-block"
-    }, status.currentBlock)), React.createElement("li", {
+    }, status.currentBlock)), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Highest Block:"), React.createElement("span", {
+    }, "Highest Block:"), React__default.createElement("span", {
       className: "inline-block"
-    }, status.highestBlock)), React.createElement("li", {
+    }, status.highestBlock)), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Known States:"), React.createElement("span", {
+    }, "Known States:"), React__default.createElement("span", {
       className: "inline-block"
-    }, status.knownStates)), React.createElement("li", {
+    }, status.knownStates)), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Pulled States"), React.createElement("span", {
+    }, "Pulled States"), React__default.createElement("span", {
       className: "inline-block"
-    }, status.pulledStates)), React.createElement("li", {
+    }, status.pulledStates)), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Starting Block:"), React.createElement("span", {
+    }, "Starting Block:"), React__default.createElement("span", {
       className: "inline-block"
-    }, status.startingBlock))), !syncing && React.createElement("ul", {
+    }, status.startingBlock))), !syncing && React__default.createElement("ul", {
       className: "list-group"
-    }, React.createElement("li", {
+    }, React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Syncing:"), React.createElement("span", {
+    }, "Syncing:"), React__default.createElement("span", {
       className: "inline-block"
-    }, `${syncing}`))), React.createElement("ul", {
+    }, `${syncing}`))), React__default.createElement("ul", {
       className: "list-group"
-    }, React.createElement("li", {
+    }, React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Mining:"), React.createElement("span", {
+    }, "Mining:"), React__default.createElement("span", {
       className: "inline-block"
-    }, `${mining}`)), React.createElement("li", {
+    }, `${mining}`)), React__default.createElement("li", {
       className: "list-item"
-    }, React.createElement("span", {
+    }, React__default.createElement("span", {
       className: "inline-block highlight"
-    }, "Hashrate:"), React.createElement("span", {
+    }, "Hashrate:"), React__default.createElement("span", {
       className: "inline-block"
-    }, hashRate))), React.createElement("button", {
+    }, hashRate))), React__default.createElement("button", {
       className: "btn",
       onClick: this._refreshSync
-    }, "Refresh"), React.createElement("form", {
+    }, "Refresh"), React__default.createElement("form", {
       className: "row",
       onSubmit: this._handleSend
-    }, React.createElement("input", {
+    }, React__default.createElement("input", {
       type: "string",
       placeholder: "To address",
       className: "input-text",
       value: toAddress,
       onChange: this._handleToAddrrChange
-    }), React.createElement("input", {
+    }), React__default.createElement("input", {
       type: "number",
       placeholder: "Amount",
       className: "input-text",
       value: amount,
       onChange: this._handleAmountChange
-    }), React.createElement("input", {
+    }), React__default.createElement("input", {
       className: "btn inline-block-tight",
       type: "submit",
       value: "Send"
@@ -4785,7 +4890,6 @@ class NodeControl extends React.Component {
 }
 
 NodeControl.propTypes = {
-  web3: PropTypes.any.isRequired,
   helpers: PropTypes.any.isRequired,
   syncing: PropTypes.bool,
   status: PropTypes.object,
@@ -4803,7 +4907,8 @@ NodeControl.propTypes = {
 
 const mapStateToProps$b = ({
   account,
-  node
+  node,
+  clientReducer
 }) => {
   const {
     coinbase,
@@ -4815,13 +4920,17 @@ const mapStateToProps$b = ({
     mining,
     hashRate
   } = node;
+  const {
+    clients
+  } = clientReducer;
   return {
     coinbase,
     password,
     status,
     syncing,
     mining,
-    hashRate
+    hashRate,
+    clients
   };
 };
 
@@ -4834,7 +4943,7 @@ var NodeControl$1 = reactRedux.connect(mapStateToProps$b, {
   setErrors
 })(NodeControl);
 
-class StaticAnalysis extends React.Component {
+class StaticAnalysis extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
@@ -4922,9 +5031,9 @@ class StaticAnalysis extends React.Component {
       analysis,
       running
     } = this.state;
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       className: "static-analyzer"
-    }, React.createElement(CheckboxTree, {
+    }, React__default.createElement(CheckboxTree, {
       nodes: nodes,
       checked: this.state.checked,
       expanded: this.state.expanded,
@@ -4932,26 +5041,26 @@ class StaticAnalysis extends React.Component {
         checked
       }),
       showNodeIcon: false
-    }), React.createElement("button", {
+    }), React__default.createElement("button", {
       className: "btn btn-primary inline-block-tight",
       onClick: this._runAnalysis
-    }, "Run analysis"), running && React.createElement("span", {
+    }, "Run analysis"), running && React__default.createElement("span", {
       className: "loading loading-spinner-tiny inline-block"
     }), analysis.length > 0 && analysis.map(a => {
       if (a.report.length > 0) {
-        return React.createElement("div", {
+        return React__default.createElement("div", {
           className: "padded"
         }, a.report.map((report, i) => {
-          return React.createElement("div", {
+          return React__default.createElement("div", {
             key: i
-          }, report.location && React.createElement("span", {
+          }, report.location && React__default.createElement("span", {
             className: "text-info"
-          }, report.location, ' '), report.warning && React.createElement("span", {
+          }, report.location, ' '), report.warning && React__default.createElement("span", {
             className: "text-warning",
             dangerouslySetInnerHTML: {
               __html: report.warning
             }
-          }), report.more && React.createElement("p", null, React.createElement("a", {
+          }), report.more && React__default.createElement("p", null, React__default.createElement("a", {
             className: "text-info",
             href: report.more
           }, report.more)));
@@ -4982,11 +5091,10 @@ const mapStateToProps$c = ({
 
 var StaticAnalysis$1 = reactRedux.connect(mapStateToProps$c, {})(StaticAnalysis);
 
-class TabView extends React.Component {
+class TabView extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
-    this.web3 = props.web3;
     this.state = {
       txBtnStyle: 'btn',
       eventBtnStyle: 'btn',
@@ -5040,59 +5148,58 @@ class TabView extends React.Component {
       newTxCounter,
       newEventCounter
     } = this.state;
-    return React.createElement(reactTabs.Tabs, {
+    return React__default.createElement(reactTabs.Tabs, {
       onSelect: index => this._handleTabSelect(index),
       className: "react-tabs vertical-tabs"
-    }, React.createElement(reactTabs.TabList, {
+    }, React__default.createElement(reactTabs.TabList, {
       className: "react-tabs__tab-list vertical tablist"
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       className: "tab_btns"
-    }, React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Contract")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, "Contract")), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Tests")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, "Tests")), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Analysis")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, "Analysis")), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: txBtnStyle
-    }, "Transaction analyzer", newTxCounter > 0 && React.createElement("span", {
+    }, "Transaction analyzer", newTxCounter > 0 && React__default.createElement("span", {
       className: "badge badge-small badge-error notify-badge"
-    }, newTxCounter))), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, newTxCounter))), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: eventBtnStyle
-    }, "Events", newEventCounter > 0 && React.createElement("span", {
+    }, "Events", newEventCounter > 0 && React__default.createElement("span", {
       className: "badge badge-small badge-error notify-badge"
-    }, newEventCounter))), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, newEventCounter))), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn"
-    }, "Node")), React.createElement(reactTabs.Tab, null, React.createElement("div", {
+    }, "Node")), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: "btn btn-warning"
-    }, "Help")))), React.createElement(reactTabs.TabPanel, null, React.createElement(Contracts$1, {
+    }, "Help")))), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(Contracts$1, {
       store: this.props.store,
       helpers: this.helpers
-    })), React.createElement(reactTabs.TabPanel, null, React.createElement(RemixTest$1, {
+    })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(RemixTest$1, {
       store: this.props.store,
       helpers: this.helpers
-    })), React.createElement(reactTabs.TabPanel, null, React.createElement(StaticAnalysis$1, {
+    })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(StaticAnalysis$1, {
       store: this.props.store,
       helpers: this.helpers
-    })), React.createElement(reactTabs.TabPanel, null, React.createElement(TxAnalyzer$1, {
+    })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(TxAnalyzer$1, {
       store: this.props.store,
       helpers: this.helpers
-    })), React.createElement(reactTabs.TabPanel, null, React.createElement(Events$1, {
+    })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(Events$1, {
       store: this.props.store,
       helpers: this.helpers
-    })), React.createElement(reactTabs.TabPanel, null, React.createElement(NodeControl$1, {
+    })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(NodeControl$1, {
       store: this.props.store,
-      helpers: this.helpers,
-      web3: this.web3
-    })), React.createElement(reactTabs.TabPanel, null, React.createElement("h2", {
+      helpers: this.helpers
+    })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement("h2", {
       className: "text-warning"
-    }, "Help Etheratom to keep solidity development interactive."), React.createElement("h4", {
+    }, "Help Etheratom to keep solidity development interactive."), React__default.createElement("h4", {
       className: "text-success"
-    }, "Donate Ethereum: 0xd22fE4aEFed0A984B1165dc24095728EE7005a36"), React.createElement("p", null, React.createElement("span", null, "Etheratom news "), React.createElement("a", {
+    }, "Donate Ethereum: 0xd22fE4aEFed0A984B1165dc24095728EE7005a36"), React__default.createElement("p", null, React__default.createElement("span", null, "Etheratom news "), React__default.createElement("a", {
       href: "https://twitter.com/hashtag/Etheratom"
-    }, "#Etheratom")), React.createElement("p", null, React.createElement("span", null, "Etheratom support "), React.createElement("a", {
+    }, "#Etheratom")), React__default.createElement("p", null, React__default.createElement("span", null, "Etheratom support "), React__default.createElement("a", {
       href: "https://t.me/etheratom"
-    }, "t.me/etheratom")), React.createElement("p", null, "Contact: ", React.createElement("a", {
+    }, "t.me/etheratom")), React__default.createElement("p", null, "Contact: ", React__default.createElement("a", {
       href: "mailto:0mkar@protonmail.com",
       target: "_top"
     }, "0mkar@protonmail.com"))));
@@ -5101,7 +5208,6 @@ class TabView extends React.Component {
 }
 
 TabView.propTypes = {
-  web3: PropTypes.any.isRequired,
   helpers: PropTypes.any.isRequired,
   store: PropTypes.any.isRequired,
   pendingTransactions: PropTypes.array,
@@ -5128,17 +5234,16 @@ const mapStateToProps$d = ({
 
 var TabView$1 = reactRedux.connect(mapStateToProps$d, {})(TabView);
 
-class CoinbaseView extends React.Component {
+class CoinbaseView extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
-    this.web3 = getWeb3Conn();
     this.state = {
       coinbase: props.accounts[0],
-      balance: 0.0,
-      password: "",
-      toAddress: "",
-      unlock_style: "unlock-default",
+      balance: this.props.store.getState().account.balance,
+      password: '',
+      toAddress: '',
+      unlock_style: 'unlock-default',
       amount: 0
     };
     this._handleAccChange = this._handleAccChange.bind(this);
@@ -5152,23 +5257,15 @@ class CoinbaseView extends React.Component {
     const {
       coinbase
     } = this.state;
-    console.log(coinbase);
-    this.web3.eth.defaultAccount = coinbase;
-    const balance = await this.helpers.getBalance(coinbase);
-    this.setState({
-      balance
-    });
+    await this.helpers.setDefaultAccount(coinbase);
+    await this.helpers.getBalance(coinbase);
   }
 
-  async componentDidUpdate() {
+  async componentDidUpdate(prevProps, prevState) {
     const {
       coinbase
     } = this.state;
-    this.web3.eth.defaultAccount = coinbase;
-    const balance = await this.helpers.getBalance(coinbase);
-    this.setState({
-      balance
-    });
+    await this.helpers.setDefaultAccount(coinbase);
   }
 
   async componentWillReceiveProps() {
@@ -5177,6 +5274,10 @@ class CoinbaseView extends React.Component {
         coinbase: this.props.accounts[0]
       });
     }
+
+    this.setState({
+      balance: this.props.store.getState().account.balance
+    });
   }
 
   _linkClick(event) {
@@ -5188,7 +5289,7 @@ class CoinbaseView extends React.Component {
 
   async _handleAccChange(event) {
     const coinbase = event.target.value;
-    this.web3.eth.defaultAccount = coinbase;
+    await this.helpers.setDefaultAccount(coinbase);
     const balance = await this.helpers.getBalance(coinbase);
     this.props.setCoinbase(coinbase);
     this.setState({
@@ -5205,7 +5306,7 @@ class CoinbaseView extends React.Component {
 
     if (!(password.length - 1 > 0)) {
       this.setState({
-        unlock_style: "unlock-default"
+        unlock_style: 'unlock-default'
       });
     }
   }
@@ -5225,7 +5326,7 @@ class CoinbaseView extends React.Component {
 
       this.helpers.setCoinbase(coinbase);
       this.setState({
-        unlock_style: "unlock-active"
+        unlock_style: 'unlock-active'
       });
     }
 
@@ -5236,9 +5337,9 @@ class CoinbaseView extends React.Component {
     const {
       coinbase
     } = this.state;
-    const balance = await this.helpers.getBalance(coinbase);
+    await this.helpers.getBalance(coinbase);
     this.setState({
-      balance
+      balance: this.props.store.getState().account.balance
     });
   }
 
@@ -5250,37 +5351,43 @@ class CoinbaseView extends React.Component {
     const {
       accounts
     } = this.props;
-    return React.createElement("div", {
+    const {
+      coinbase
+    } = this.state;
+    const {
+      unlock_style
+    } = this.state;
+    return React__default.createElement("div", {
       className: "content"
-    }, accounts.length > 0 && React.createElement("div", {
+    }, accounts.length > 0 && React__default.createElement("div", {
       className: "row"
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       className: "icon icon-link btn copy-btn btn-success",
       onClick: this._linkClick
-    }), React.createElement("select", {
+    }), React__default.createElement("select", {
       onChange: this._handleAccChange,
-      value: this.state.coinbase
+      value: coinbase
     }, accounts.map((account, i) => {
-      return React.createElement("option", {
+      return React__default.createElement("option", {
         key: i,
         value: account
       }, account);
-    })), React.createElement("button", {
+    })), React__default.createElement("button", {
       onClick: this._refreshBal,
       className: "btn"
-    }, balance, " ETH")), accounts.length > 0 && React.createElement("form", {
+    }, " ", balance, " ETH ")), accounts.length > 0 && React__default.createElement("form", {
       className: "row",
       onSubmit: this._handleUnlock
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       className: "icon icon-lock"
-    }), React.createElement("input", {
+    }), React__default.createElement("input", {
       type: "password",
       placeholder: "Password",
       value: password,
       onChange: this._handlePasswordChange
-    }), React.createElement("input", {
+    }), React__default.createElement("input", {
       type: "submit",
-      className: this.state.unlock_style,
+      className: unlock_style,
       value: "Unlock"
     })));
   }
@@ -5288,7 +5395,6 @@ class CoinbaseView extends React.Component {
 }
 
 CoinbaseView.propTypes = {
-  web3: PropTypes.any.isRequired,
   helpers: PropTypes.any.isRequired,
   accounts: PropTypes.arrayOf(PropTypes.string),
   setCoinbase: PropTypes.any,
@@ -5301,12 +5407,14 @@ const mapStateToProps$e = ({
   const {
     coinbase,
     password,
-    accounts
+    accounts,
+    balance
   } = account;
   return {
     coinbase,
     password,
-    accounts
+    accounts,
+    balance
   };
 };
 
@@ -5315,10 +5423,9 @@ var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, {
   setPassword
 })(CoinbaseView);
 
-class VersionSelector extends React.Component {
+class VersionSelector extends React__default.Component {
   constructor(props) {
     super(props);
-    this.web3 = getWeb3Conn();
     this.state = {
       availableVersions: [],
       selectedVersion: ''
@@ -5350,15 +5457,15 @@ class VersionSelector extends React.Component {
     const {
       availableVersions
     } = this.state;
-    return React.createElement("div", {
+    return React__default.createElement("div", {
       className: "content"
-    }, React.createElement("div", {
+    }, React__default.createElement("div", {
       className: "row"
-    }, React.createElement("select", {
+    }, React__default.createElement("select", {
       onChange: this._handleVersionSelector,
       value: this.state.selectedVersion
     }, Object.keys(availableVersions).map((key, i) => {
-      return React.createElement("option", {
+      return React__default.createElement("option", {
         key: i,
         value: availableVersions[key].split('soljson-')[1].split('.js')[0]
       }, availableVersions[key]);
@@ -5384,7 +5491,7 @@ const mapStateToProps$f = ({
 
 var VersionSelector$1 = reactRedux.connect(mapStateToProps$f, {})(VersionSelector);
 
-class CompileBtn extends React.Component {
+class CompileBtn extends React__default.Component {
   constructor(props) {
     super(props);
     this._handleSubmit = this._handleSubmit.bind(this);
@@ -5399,15 +5506,15 @@ class CompileBtn extends React.Component {
     const {
       compiling
     } = this.props;
-    return React.createElement("form", {
+    return React__default.createElement("form", {
       className: "row",
       onSubmit: this._handleSubmit
-    }, compiling && React.createElement("input", {
+    }, compiling && React__default.createElement("input", {
       type: "submit",
       value: "Compiling...",
       className: "btn copy-btn btn-success",
       disabled: true
-    }), !compiling && React.createElement("input", {
+    }), !compiling && React__default.createElement("input", {
       type: "submit",
       value: "Compile",
       className: "btn copy-btn btn-success"
@@ -5433,27 +5540,2692 @@ const mapStateToProps$g = ({
 
 var CompileBtn$1 = reactRedux.connect(mapStateToProps$g, {})(CompileBtn);
 
+function unwrapExports (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x.default : x;
+}
+
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+/* eslint-disable */
+// murmurhash2 via https://github.com/garycourt/murmurhash-js/blob/master/murmurhash2_gc.js
+function murmurhash2_32_gc(str) {
+  var l = str.length,
+      h = l ^ l,
+      i = 0,
+      k;
+
+  while (l >= 4) {
+    k = str.charCodeAt(i) & 0xff | (str.charCodeAt(++i) & 0xff) << 8 | (str.charCodeAt(++i) & 0xff) << 16 | (str.charCodeAt(++i) & 0xff) << 24;
+    k = (k & 0xffff) * 0x5bd1e995 + (((k >>> 16) * 0x5bd1e995 & 0xffff) << 16);
+    k ^= k >>> 24;
+    k = (k & 0xffff) * 0x5bd1e995 + (((k >>> 16) * 0x5bd1e995 & 0xffff) << 16);
+    h = (h & 0xffff) * 0x5bd1e995 + (((h >>> 16) * 0x5bd1e995 & 0xffff) << 16) ^ k;
+    l -= 4;
+    ++i;
+  }
+
+  switch (l) {
+    case 3:
+      h ^= (str.charCodeAt(i + 2) & 0xff) << 16;
+
+    case 2:
+      h ^= (str.charCodeAt(i + 1) & 0xff) << 8;
+
+    case 1:
+      h ^= str.charCodeAt(i) & 0xff;
+      h = (h & 0xffff) * 0x5bd1e995 + (((h >>> 16) * 0x5bd1e995 & 0xffff) << 16);
+  }
+
+  h ^= h >>> 13;
+  h = (h & 0xffff) * 0x5bd1e995 + (((h >>> 16) * 0x5bd1e995 & 0xffff) << 16);
+  h ^= h >>> 15;
+  return (h >>> 0).toString(36);
+}
+
+var unitlessKeys = {
+  animationIterationCount: 1,
+  borderImageOutset: 1,
+  borderImageSlice: 1,
+  borderImageWidth: 1,
+  boxFlex: 1,
+  boxFlexGroup: 1,
+  boxOrdinalGroup: 1,
+  columnCount: 1,
+  columns: 1,
+  flex: 1,
+  flexGrow: 1,
+  flexPositive: 1,
+  flexShrink: 1,
+  flexNegative: 1,
+  flexOrder: 1,
+  gridRow: 1,
+  gridRowEnd: 1,
+  gridRowSpan: 1,
+  gridRowStart: 1,
+  gridColumn: 1,
+  gridColumnEnd: 1,
+  gridColumnSpan: 1,
+  gridColumnStart: 1,
+  msGridRow: 1,
+  msGridRowSpan: 1,
+  msGridColumn: 1,
+  msGridColumnSpan: 1,
+  fontWeight: 1,
+  lineHeight: 1,
+  opacity: 1,
+  order: 1,
+  orphans: 1,
+  tabSize: 1,
+  widows: 1,
+  zIndex: 1,
+  zoom: 1,
+  WebkitLineClamp: 1,
+  // SVG-related properties
+  fillOpacity: 1,
+  floodOpacity: 1,
+  stopOpacity: 1,
+  strokeDasharray: 1,
+  strokeDashoffset: 1,
+  strokeMiterlimit: 1,
+  strokeOpacity: 1,
+  strokeWidth: 1
+};
+
+function memoize(fn) {
+  var cache = {};
+  return function (arg) {
+    if (cache[arg] === undefined) cache[arg] = fn(arg);
+    return cache[arg];
+  };
+}
+
+var hyphenateRegex = /[A-Z]|^ms/g;
+var animationRegex = /_EMO_([^_]+?)_([^]*?)_EMO_/g;
+
+var isCustomProperty = function isCustomProperty(property) {
+  return property.charCodeAt(1) === 45;
+};
+
+var processStyleName = memoize(function (styleName) {
+  return isCustomProperty(styleName) ? styleName : styleName.replace(hyphenateRegex, '-$&').toLowerCase();
+});
+
+var processStyleValue = function processStyleValue(key, value) {
+  if (value == null || typeof value === 'boolean') {
+    return '';
+  }
+
+  switch (key) {
+    case 'animation':
+    case 'animationName':
+      {
+        if (typeof value === 'string') {
+          value = value.replace(animationRegex, function (match, p1, p2) {
+            cursor = {
+              name: p1,
+              styles: p2,
+              next: cursor
+            };
+            return p1;
+          });
+        }
+      }
+  }
+
+  if (unitlessKeys[key] !== 1 && !isCustomProperty(key) && typeof value === 'number' && value !== 0) {
+    return value + 'px';
+  }
+
+  return value;
+};
+
+if (process.env.NODE_ENV !== 'production') {
+  var contentValuePattern = /(attr|calc|counters?|url)\(/;
+  var contentValues = ['normal', 'none', 'counter', 'open-quote', 'close-quote', 'no-open-quote', 'no-close-quote', 'initial', 'inherit', 'unset'];
+  var oldProcessStyleValue = processStyleValue;
+  var msPattern = /^-ms-/;
+  var hyphenPattern = /-(.)/g;
+  var hyphenatedCache = {};
+
+  processStyleValue = function processStyleValue(key, value) {
+    if (key === 'content') {
+      if (typeof value !== 'string' || contentValues.indexOf(value) === -1 && !contentValuePattern.test(value) && (value.charAt(0) !== value.charAt(value.length - 1) || value.charAt(0) !== '"' && value.charAt(0) !== "'")) {
+        console.error("You seem to be using a value for 'content' without quotes, try replacing it with `content: '\"" + value + "\"'`");
+      }
+    }
+
+    var processed = oldProcessStyleValue(key, value);
+
+    if (processed !== '' && !isCustomProperty(key) && key.indexOf('-') !== -1 && hyphenatedCache[key] === undefined) {
+      hyphenatedCache[key] = true;
+      console.error("Using kebab-case for css properties in objects is not supported. Did you mean " + key.replace(msPattern, 'ms-').replace(hyphenPattern, function (str, char) {
+        return char.toUpperCase();
+      }) + "?");
+    }
+
+    return processed;
+  };
+}
+
+var shouldWarnAboutInterpolatingClassNameFromCss = true;
+
+function handleInterpolation(mergedProps, registered, interpolation, couldBeSelectorInterpolation) {
+  if (interpolation == null) {
+    return '';
+  }
+
+  if (interpolation.__emotion_styles !== undefined) {
+    if (process.env.NODE_ENV !== 'production' && interpolation.toString() === 'NO_COMPONENT_SELECTOR') {
+      throw new Error('Component selectors can only be used in conjunction with babel-plugin-emotion.');
+    }
+
+    return interpolation;
+  }
+
+  switch (typeof interpolation) {
+    case 'boolean':
+      {
+        return '';
+      }
+
+    case 'object':
+      {
+        if (interpolation.anim === 1) {
+          cursor = {
+            name: interpolation.name,
+            styles: interpolation.styles,
+            next: cursor
+          };
+          return interpolation.name;
+        }
+
+        if (interpolation.styles !== undefined) {
+          var next = interpolation.next;
+
+          if (next !== undefined) {
+            // not the most efficient thing ever but this is a pretty rare case
+            // and there will be very few iterations of this generally
+            while (next !== undefined) {
+              cursor = {
+                name: next.name,
+                styles: next.styles,
+                next: cursor
+              };
+              next = next.next;
+            }
+          }
+
+          var styles = interpolation.styles;
+
+          if (process.env.NODE_ENV !== 'production' && interpolation.map !== undefined) {
+            styles += interpolation.map;
+          }
+
+          return styles;
+        }
+
+        return createStringFromObject(mergedProps, registered, interpolation);
+      }
+
+    case 'function':
+      {
+        if (mergedProps !== undefined) {
+          var previousCursor = cursor;
+          var result = interpolation(mergedProps);
+          cursor = previousCursor;
+          return handleInterpolation(mergedProps, registered, result, couldBeSelectorInterpolation);
+        } else if (process.env.NODE_ENV !== 'production') {
+          console.error('Functions that are interpolated in css calls will be stringified.\n' + 'If you want to have a css call based on props, create a function that returns a css call like this\n' + 'let dynamicStyle = (props) => css`color: ${props.color}`\n' + 'It can be called directly with props or interpolated in a styled call like this\n' + "let SomeComponent = styled('div')`${dynamicStyle}`");
+        }
+      }
+    // eslint-disable-next-line no-fallthrough
+
+    default:
+      {
+        if (registered == null) {
+          return interpolation;
+        }
+
+        var cached = registered[interpolation];
+
+        if (process.env.NODE_ENV !== 'production' && couldBeSelectorInterpolation && shouldWarnAboutInterpolatingClassNameFromCss && cached !== undefined) {
+          console.error('Interpolating a className from css`` is not recommended and will cause problems with composition.\n' + 'Interpolating a className from css`` will be completely unsupported in a future major version of Emotion');
+          shouldWarnAboutInterpolatingClassNameFromCss = false;
+        }
+
+        return cached !== undefined && !couldBeSelectorInterpolation ? cached : interpolation;
+      }
+  }
+}
+
+function createStringFromObject(mergedProps, registered, obj) {
+  var string = '';
+
+  if (Array.isArray(obj)) {
+    for (var i = 0; i < obj.length; i++) {
+      string += handleInterpolation(mergedProps, registered, obj[i], false);
+    }
+  } else {
+    for (var _key in obj) {
+      var value = obj[_key];
+
+      if (typeof value !== 'object') {
+        if (registered != null && registered[value] !== undefined) {
+          string += _key + "{" + registered[value] + "}";
+        } else {
+          string += processStyleName(_key) + ":" + processStyleValue(_key, value) + ";";
+        }
+      } else {
+        if (_key === 'NO_COMPONENT_SELECTOR' && process.env.NODE_ENV !== 'production') {
+          throw new Error('Component selectors can only be used in conjunction with babel-plugin-emotion.');
+        }
+
+        if (Array.isArray(value) && typeof value[0] === 'string' && (registered == null || registered[value[0]] === undefined)) {
+          for (var _i = 0; _i < value.length; _i++) {
+            string += processStyleName(_key) + ":" + processStyleValue(_key, value[_i]) + ";";
+          }
+        } else {
+          string += _key + "{" + handleInterpolation(mergedProps, registered, value, false) + "}";
+        }
+      }
+    }
+  }
+
+  return string;
+}
+
+var labelPattern = /label:\s*([^\s;\n{]+)\s*;/g;
+var sourceMapPattern;
+
+if (process.env.NODE_ENV !== 'production') {
+  sourceMapPattern = /\/\*#\ssourceMappingURL=data:application\/json;\S+\s+\*\//;
+} // this is the cursor for keyframes
+// keyframes are stored on the SerializedStyles object as a linked list
+
+
+var cursor;
+var serializeStyles = function serializeStyles(args, registered, mergedProps) {
+  if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null && args[0].styles !== undefined) {
+    return args[0];
+  }
+
+  var stringMode = true;
+  var styles = '';
+  cursor = undefined;
+  var strings = args[0];
+
+  if (strings == null || strings.raw === undefined) {
+    stringMode = false;
+    styles += handleInterpolation(mergedProps, registered, strings, false);
+  } else {
+    styles += strings[0];
+  } // we start at 1 since we've already handled the first arg
+
+
+  for (var i = 1; i < args.length; i++) {
+    styles += handleInterpolation(mergedProps, registered, args[i], styles.charCodeAt(styles.length - 1) === 46);
+
+    if (stringMode) {
+      styles += strings[i];
+    }
+  }
+
+  var sourceMap;
+
+  if (process.env.NODE_ENV !== 'production') {
+    styles = styles.replace(sourceMapPattern, function (match) {
+      sourceMap = match;
+      return '';
+    });
+  } // using a global regex with .exec is stateful so lastIndex has to be reset each time
+
+
+  labelPattern.lastIndex = 0;
+  var identifierName = '';
+  var match; // https://esbench.com/bench/5b809c2cf2949800a0f61fb5
+
+  while ((match = labelPattern.exec(styles)) !== null) {
+    identifierName += '-' + // $FlowFixMe we know it's not null
+    match[1];
+  }
+
+  var name = murmurhash2_32_gc(styles) + identifierName;
+
+  if (process.env.NODE_ENV !== 'production') {
+    return {
+      name: name,
+      styles: styles,
+      map: sourceMap,
+      next: cursor
+    };
+  }
+
+  return {
+    name: name,
+    styles: styles,
+    next: cursor
+  };
+};
+
+function css() {
+  for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  return serializeStyles(args);
+}
+
+function _inheritsLoose(subClass, superClass) {
+  subClass.prototype = Object.create(superClass.prototype);
+  subClass.prototype.constructor = subClass;
+  subClass.__proto__ = superClass;
+}
+
+var inheritsLoose = _inheritsLoose;
+
+/*
+
+Based off glamor's StyleSheet, thanks Sunil ❤️
+
+high performance StyleSheet for css-in-js systems
+
+- uses multiple style tags behind the scenes for millions of rules
+- uses `insertRule` for appending in production for *much* faster performance
+
+// usage
+
+import { StyleSheet } from '@emotion/sheet'
+
+let styleSheet = new StyleSheet({ key: '', container: document.head })
+
+styleSheet.insert('#box { border: 1px solid red; }')
+- appends a css rule into the stylesheet
+
+styleSheet.flush()
+- empties the stylesheet of all its contents
+
+*/
+// $FlowFixMe
+function sheetForTag(tag) {
+  if (tag.sheet) {
+    // $FlowFixMe
+    return tag.sheet;
+  } // this weirdness brought to you by firefox
+
+  /* istanbul ignore next */
+
+
+  for (var i = 0; i < document.styleSheets.length; i++) {
+    if (document.styleSheets[i].ownerNode === tag) {
+      // $FlowFixMe
+      return document.styleSheets[i];
+    }
+  }
+}
+
+function createStyleElement(options) {
+  var tag = document.createElement('style');
+  tag.setAttribute('data-emotion', options.key);
+
+  if (options.nonce !== undefined) {
+    tag.setAttribute('nonce', options.nonce);
+  }
+
+  tag.appendChild(document.createTextNode(''));
+  return tag;
+}
+
+var StyleSheet =
+/*#__PURE__*/
+function () {
+  function StyleSheet(options) {
+    this.isSpeedy = options.speedy === undefined ? process.env.NODE_ENV === 'production' : options.speedy;
+    this.tags = [];
+    this.ctr = 0;
+    this.nonce = options.nonce; // key is the value of the data-emotion attribute, it's used to identify different sheets
+
+    this.key = options.key;
+    this.container = options.container;
+    this.before = null;
+  }
+
+  var _proto = StyleSheet.prototype;
+
+  _proto.insert = function insert(rule) {
+    // the max length is how many rules we have per style tag, it's 65000 in speedy mode
+    // it's 1 in dev because we insert source maps that map a single rule to a location
+    // and you can only have one source map per style tag
+    if (this.ctr % (this.isSpeedy ? 65000 : 1) === 0) {
+      var _tag = createStyleElement(this);
+
+      var before;
+
+      if (this.tags.length === 0) {
+        before = this.before;
+      } else {
+        before = this.tags[this.tags.length - 1].nextSibling;
+      }
+
+      this.container.insertBefore(_tag, before);
+      this.tags.push(_tag);
+    }
+
+    var tag = this.tags[this.tags.length - 1];
+
+    if (this.isSpeedy) {
+      var sheet = sheetForTag(tag);
+
+      try {
+        // this is a really hot path
+        // we check the second character first because having "i"
+        // as the second character will happen less often than
+        // having "@" as the first character
+        var isImportRule = rule.charCodeAt(1) === 105 && rule.charCodeAt(0) === 64; // this is the ultrafast version, works across browsers
+        // the big drawback is that the css won't be editable in devtools
+
+        sheet.insertRule(rule, // we need to insert @import rules before anything else
+        // otherwise there will be an error
+        // technically this means that the @import rules will
+        // _usually_(not always since there could be multiple style tags)
+        // be the first ones in prod and generally later in dev
+        // this shouldn't really matter in the real world though
+        // @import is generally only used for font faces from google fonts and etc.
+        // so while this could be technically correct then it would be slower and larger
+        // for a tiny bit of correctness that won't matter in the real world
+        isImportRule ? 0 : sheet.cssRules.length);
+      } catch (e) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn("There was a problem inserting the following rule: \"" + rule + "\"", e);
+        }
+      }
+    } else {
+      tag.appendChild(document.createTextNode(rule));
+    }
+
+    this.ctr++;
+  };
+
+  _proto.flush = function flush() {
+    // $FlowFixMe
+    this.tags.forEach(function (tag) {
+      return tag.parentNode.removeChild(tag);
+    });
+    this.tags = [];
+    this.ctr = 0;
+  };
+
+  return StyleSheet;
+}();
+
+function stylis_min (W) {
+  function M(d, c, e, h, a) {
+    for (var m = 0, b = 0, v = 0, n = 0, q, g, x = 0, K = 0, k, u = k = q = 0, l = 0, r = 0, I = 0, t = 0, B = e.length, J = B - 1, y, f = '', p = '', F = '', G = '', C; l < B;) {
+      g = e.charCodeAt(l);
+      l === J && 0 !== b + n + v + m && (0 !== b && (g = 47 === b ? 10 : 47), n = v = m = 0, B++, J++);
+
+      if (0 === b + n + v + m) {
+        if (l === J && (0 < r && (f = f.replace(N, '')), 0 < f.trim().length)) {
+          switch (g) {
+            case 32:
+            case 9:
+            case 59:
+            case 13:
+            case 10:
+              break;
+
+            default:
+              f += e.charAt(l);
+          }
+
+          g = 59;
+        }
+
+        switch (g) {
+          case 123:
+            f = f.trim();
+            q = f.charCodeAt(0);
+            k = 1;
+
+            for (t = ++l; l < B;) {
+              switch (g = e.charCodeAt(l)) {
+                case 123:
+                  k++;
+                  break;
+
+                case 125:
+                  k--;
+                  break;
+
+                case 47:
+                  switch (g = e.charCodeAt(l + 1)) {
+                    case 42:
+                    case 47:
+                      a: {
+                        for (u = l + 1; u < J; ++u) {
+                          switch (e.charCodeAt(u)) {
+                            case 47:
+                              if (42 === g && 42 === e.charCodeAt(u - 1) && l + 2 !== u) {
+                                l = u + 1;
+                                break a;
+                              }
+
+                              break;
+
+                            case 10:
+                              if (47 === g) {
+                                l = u + 1;
+                                break a;
+                              }
+
+                          }
+                        }
+
+                        l = u;
+                      }
+
+                  }
+
+                  break;
+
+                case 91:
+                  g++;
+
+                case 40:
+                  g++;
+
+                case 34:
+                case 39:
+                  for (; l++ < J && e.charCodeAt(l) !== g;) {
+                  }
+
+              }
+
+              if (0 === k) break;
+              l++;
+            }
+
+            k = e.substring(t, l);
+            0 === q && (q = (f = f.replace(ca, '').trim()).charCodeAt(0));
+
+            switch (q) {
+              case 64:
+                0 < r && (f = f.replace(N, ''));
+                g = f.charCodeAt(1);
+
+                switch (g) {
+                  case 100:
+                  case 109:
+                  case 115:
+                  case 45:
+                    r = c;
+                    break;
+
+                  default:
+                    r = O;
+                }
+
+                k = M(c, r, k, g, a + 1);
+                t = k.length;
+                0 < A && (r = X(O, f, I), C = H(3, k, r, c, D, z, t, g, a, h), f = r.join(''), void 0 !== C && 0 === (t = (k = C.trim()).length) && (g = 0, k = ''));
+                if (0 < t) switch (g) {
+                  case 115:
+                    f = f.replace(da, ea);
+
+                  case 100:
+                  case 109:
+                  case 45:
+                    k = f + '{' + k + '}';
+                    break;
+
+                  case 107:
+                    f = f.replace(fa, '$1 $2');
+                    k = f + '{' + k + '}';
+                    k = 1 === w || 2 === w && L('@' + k, 3) ? '@-webkit-' + k + '@' + k : '@' + k;
+                    break;
+
+                  default:
+                    k = f + k, 112 === h && (k = (p += k, ''));
+                } else k = '';
+                break;
+
+              default:
+                k = M(c, X(c, f, I), k, h, a + 1);
+            }
+
+            F += k;
+            k = I = r = u = q = 0;
+            f = '';
+            g = e.charCodeAt(++l);
+            break;
+
+          case 125:
+          case 59:
+            f = (0 < r ? f.replace(N, '') : f).trim();
+            if (1 < (t = f.length)) switch (0 === u && (q = f.charCodeAt(0), 45 === q || 96 < q && 123 > q) && (t = (f = f.replace(' ', ':')).length), 0 < A && void 0 !== (C = H(1, f, c, d, D, z, p.length, h, a, h)) && 0 === (t = (f = C.trim()).length) && (f = '\x00\x00'), q = f.charCodeAt(0), g = f.charCodeAt(1), q) {
+              case 0:
+                break;
+
+              case 64:
+                if (105 === g || 99 === g) {
+                  G += f + e.charAt(l);
+                  break;
+                }
+
+              default:
+                58 !== f.charCodeAt(t - 1) && (p += P(f, q, g, f.charCodeAt(2)));
+            }
+            I = r = u = q = 0;
+            f = '';
+            g = e.charCodeAt(++l);
+        }
+      }
+
+      switch (g) {
+        case 13:
+        case 10:
+          47 === b ? b = 0 : 0 === 1 + q && 107 !== h && 0 < f.length && (r = 1, f += '\x00');
+          0 < A * Y && H(0, f, c, d, D, z, p.length, h, a, h);
+          z = 1;
+          D++;
+          break;
+
+        case 59:
+        case 125:
+          if (0 === b + n + v + m) {
+            z++;
+            break;
+          }
+
+        default:
+          z++;
+          y = e.charAt(l);
+
+          switch (g) {
+            case 9:
+            case 32:
+              if (0 === n + m + b) switch (x) {
+                case 44:
+                case 58:
+                case 9:
+                case 32:
+                  y = '';
+                  break;
+
+                default:
+                  32 !== g && (y = ' ');
+              }
+              break;
+
+            case 0:
+              y = '\\0';
+              break;
+
+            case 12:
+              y = '\\f';
+              break;
+
+            case 11:
+              y = '\\v';
+              break;
+
+            case 38:
+              0 === n + b + m && (r = I = 1, y = '\f' + y);
+              break;
+
+            case 108:
+              if (0 === n + b + m + E && 0 < u) switch (l - u) {
+                case 2:
+                  112 === x && 58 === e.charCodeAt(l - 3) && (E = x);
+
+                case 8:
+                  111 === K && (E = K);
+              }
+              break;
+
+            case 58:
+              0 === n + b + m && (u = l);
+              break;
+
+            case 44:
+              0 === b + v + n + m && (r = 1, y += '\r');
+              break;
+
+            case 34:
+            case 39:
+              0 === b && (n = n === g ? 0 : 0 === n ? g : n);
+              break;
+
+            case 91:
+              0 === n + b + v && m++;
+              break;
+
+            case 93:
+              0 === n + b + v && m--;
+              break;
+
+            case 41:
+              0 === n + b + m && v--;
+              break;
+
+            case 40:
+              if (0 === n + b + m) {
+                if (0 === q) switch (2 * x + 3 * K) {
+                  case 533:
+                    break;
+
+                  default:
+                    q = 1;
+                }
+                v++;
+              }
+
+              break;
+
+            case 64:
+              0 === b + v + n + m + u + k && (k = 1);
+              break;
+
+            case 42:
+            case 47:
+              if (!(0 < n + m + v)) switch (b) {
+                case 0:
+                  switch (2 * g + 3 * e.charCodeAt(l + 1)) {
+                    case 235:
+                      b = 47;
+                      break;
+
+                    case 220:
+                      t = l, b = 42;
+                  }
+
+                  break;
+
+                case 42:
+                  47 === g && 42 === x && t + 2 !== l && (33 === e.charCodeAt(t + 2) && (p += e.substring(t, l + 1)), y = '', b = 0);
+              }
+          }
+
+          0 === b && (f += y);
+      }
+
+      K = x;
+      x = g;
+      l++;
+    }
+
+    t = p.length;
+
+    if (0 < t) {
+      r = c;
+      if (0 < A && (C = H(2, p, r, d, D, z, t, h, a, h), void 0 !== C && 0 === (p = C).length)) return G + p + F;
+      p = r.join(',') + '{' + p + '}';
+
+      if (0 !== w * E) {
+        2 !== w || L(p, 2) || (E = 0);
+
+        switch (E) {
+          case 111:
+            p = p.replace(ha, ':-moz-$1') + p;
+            break;
+
+          case 112:
+            p = p.replace(Q, '::-webkit-input-$1') + p.replace(Q, '::-moz-$1') + p.replace(Q, ':-ms-input-$1') + p;
+        }
+
+        E = 0;
+      }
+    }
+
+    return G + p + F;
+  }
+
+  function X(d, c, e) {
+    var h = c.trim().split(ia);
+    c = h;
+    var a = h.length,
+        m = d.length;
+
+    switch (m) {
+      case 0:
+      case 1:
+        var b = 0;
+
+        for (d = 0 === m ? '' : d[0] + ' '; b < a; ++b) {
+          c[b] = Z(d, c[b], e).trim();
+        }
+
+        break;
+
+      default:
+        var v = b = 0;
+
+        for (c = []; b < a; ++b) {
+          for (var n = 0; n < m; ++n) {
+            c[v++] = Z(d[n] + ' ', h[b], e).trim();
+          }
+        }
+
+    }
+
+    return c;
+  }
+
+  function Z(d, c, e) {
+    var h = c.charCodeAt(0);
+    33 > h && (h = (c = c.trim()).charCodeAt(0));
+
+    switch (h) {
+      case 38:
+        return c.replace(F, '$1' + d.trim());
+
+      case 58:
+        return d.trim() + c.replace(F, '$1' + d.trim());
+
+      default:
+        if (0 < 1 * e && 0 < c.indexOf('\f')) return c.replace(F, (58 === d.charCodeAt(0) ? '' : '$1') + d.trim());
+    }
+
+    return d + c;
+  }
+
+  function P(d, c, e, h) {
+    var a = d + ';',
+        m = 2 * c + 3 * e + 4 * h;
+
+    if (944 === m) {
+      d = a.indexOf(':', 9) + 1;
+      var b = a.substring(d, a.length - 1).trim();
+      b = a.substring(0, d).trim() + b + ';';
+      return 1 === w || 2 === w && L(b, 1) ? '-webkit-' + b + b : b;
+    }
+
+    if (0 === w || 2 === w && !L(a, 1)) return a;
+
+    switch (m) {
+      case 1015:
+        return 97 === a.charCodeAt(10) ? '-webkit-' + a + a : a;
+
+      case 951:
+        return 116 === a.charCodeAt(3) ? '-webkit-' + a + a : a;
+
+      case 963:
+        return 110 === a.charCodeAt(5) ? '-webkit-' + a + a : a;
+
+      case 1009:
+        if (100 !== a.charCodeAt(4)) break;
+
+      case 969:
+      case 942:
+        return '-webkit-' + a + a;
+
+      case 978:
+        return '-webkit-' + a + '-moz-' + a + a;
+
+      case 1019:
+      case 983:
+        return '-webkit-' + a + '-moz-' + a + '-ms-' + a + a;
+
+      case 883:
+        if (45 === a.charCodeAt(8)) return '-webkit-' + a + a;
+        if (0 < a.indexOf('image-set(', 11)) return a.replace(ja, '$1-webkit-$2') + a;
+        break;
+
+      case 932:
+        if (45 === a.charCodeAt(4)) switch (a.charCodeAt(5)) {
+          case 103:
+            return '-webkit-box-' + a.replace('-grow', '') + '-webkit-' + a + '-ms-' + a.replace('grow', 'positive') + a;
+
+          case 115:
+            return '-webkit-' + a + '-ms-' + a.replace('shrink', 'negative') + a;
+
+          case 98:
+            return '-webkit-' + a + '-ms-' + a.replace('basis', 'preferred-size') + a;
+        }
+        return '-webkit-' + a + '-ms-' + a + a;
+
+      case 964:
+        return '-webkit-' + a + '-ms-flex-' + a + a;
+
+      case 1023:
+        if (99 !== a.charCodeAt(8)) break;
+        b = a.substring(a.indexOf(':', 15)).replace('flex-', '').replace('space-between', 'justify');
+        return '-webkit-box-pack' + b + '-webkit-' + a + '-ms-flex-pack' + b + a;
+
+      case 1005:
+        return ka.test(a) ? a.replace(aa, ':-webkit-') + a.replace(aa, ':-moz-') + a : a;
+
+      case 1e3:
+        b = a.substring(13).trim();
+        c = b.indexOf('-') + 1;
+
+        switch (b.charCodeAt(0) + b.charCodeAt(c)) {
+          case 226:
+            b = a.replace(G, 'tb');
+            break;
+
+          case 232:
+            b = a.replace(G, 'tb-rl');
+            break;
+
+          case 220:
+            b = a.replace(G, 'lr');
+            break;
+
+          default:
+            return a;
+        }
+
+        return '-webkit-' + a + '-ms-' + b + a;
+
+      case 1017:
+        if (-1 === a.indexOf('sticky', 9)) break;
+
+      case 975:
+        c = (a = d).length - 10;
+        b = (33 === a.charCodeAt(c) ? a.substring(0, c) : a).substring(d.indexOf(':', 7) + 1).trim();
+
+        switch (m = b.charCodeAt(0) + (b.charCodeAt(7) | 0)) {
+          case 203:
+            if (111 > b.charCodeAt(8)) break;
+
+          case 115:
+            a = a.replace(b, '-webkit-' + b) + ';' + a;
+            break;
+
+          case 207:
+          case 102:
+            a = a.replace(b, '-webkit-' + (102 < m ? 'inline-' : '') + 'box') + ';' + a.replace(b, '-webkit-' + b) + ';' + a.replace(b, '-ms-' + b + 'box') + ';' + a;
+        }
+
+        return a + ';';
+
+      case 938:
+        if (45 === a.charCodeAt(5)) switch (a.charCodeAt(6)) {
+          case 105:
+            return b = a.replace('-items', ''), '-webkit-' + a + '-webkit-box-' + b + '-ms-flex-' + b + a;
+
+          case 115:
+            return '-webkit-' + a + '-ms-flex-item-' + a.replace(ba, '') + a;
+
+          default:
+            return '-webkit-' + a + '-ms-flex-line-pack' + a.replace('align-content', '').replace(ba, '') + a;
+        }
+        break;
+
+      case 973:
+      case 989:
+        if (45 !== a.charCodeAt(3) || 122 === a.charCodeAt(4)) break;
+
+      case 931:
+      case 953:
+        if (!0 === la.test(d)) return 115 === (b = d.substring(d.indexOf(':') + 1)).charCodeAt(0) ? P(d.replace('stretch', 'fill-available'), c, e, h).replace(':fill-available', ':stretch') : a.replace(b, '-webkit-' + b) + a.replace(b, '-moz-' + b.replace('fill-', '')) + a;
+        break;
+
+      case 962:
+        if (a = '-webkit-' + a + (102 === a.charCodeAt(5) ? '-ms-' + a : '') + a, 211 === e + h && 105 === a.charCodeAt(13) && 0 < a.indexOf('transform', 10)) return a.substring(0, a.indexOf(';', 27) + 1).replace(ma, '$1-webkit-$2') + a;
+    }
+
+    return a;
+  }
+
+  function L(d, c) {
+    var e = d.indexOf(1 === c ? ':' : '{'),
+        h = d.substring(0, 3 !== c ? e : 10);
+    e = d.substring(e + 1, d.length - 1);
+    return R(2 !== c ? h : h.replace(na, '$1'), e, c);
+  }
+
+  function ea(d, c) {
+    var e = P(c, c.charCodeAt(0), c.charCodeAt(1), c.charCodeAt(2));
+    return e !== c + ';' ? e.replace(oa, ' or ($1)').substring(4) : '(' + c + ')';
+  }
+
+  function H(d, c, e, h, a, m, b, v, n, q) {
+    for (var g = 0, x = c, w; g < A; ++g) {
+      switch (w = S[g].call(B, d, x, e, h, a, m, b, v, n, q)) {
+        case void 0:
+        case !1:
+        case !0:
+        case null:
+          break;
+
+        default:
+          x = w;
+      }
+    }
+
+    if (x !== c) return x;
+  }
+
+  function T(d) {
+    switch (d) {
+      case void 0:
+      case null:
+        A = S.length = 0;
+        break;
+
+      default:
+        if ('function' === typeof d) S[A++] = d;else if ('object' === typeof d) for (var c = 0, e = d.length; c < e; ++c) {
+          T(d[c]);
+        } else Y = !!d | 0;
+    }
+
+    return T;
+  }
+
+  function U(d) {
+    d = d.prefix;
+    void 0 !== d && (R = null, d ? 'function' !== typeof d ? w = 1 : (w = 2, R = d) : w = 0);
+    return U;
+  }
+
+  function B(d, c) {
+    var e = d;
+    33 > e.charCodeAt(0) && (e = e.trim());
+    V = e;
+    e = [V];
+
+    if (0 < A) {
+      var h = H(-1, c, e, e, D, z, 0, 0, 0, 0);
+      void 0 !== h && 'string' === typeof h && (c = h);
+    }
+
+    var a = M(O, e, c, 0, 0);
+    0 < A && (h = H(-2, a, e, e, D, z, a.length, 0, 0, 0), void 0 !== h && (a = h));
+    V = '';
+    E = 0;
+    z = D = 1;
+    return a;
+  }
+
+  var ca = /^\0+/g,
+      N = /[\0\r\f]/g,
+      aa = /: */g,
+      ka = /zoo|gra/,
+      ma = /([,: ])(transform)/g,
+      ia = /,\r+?/g,
+      F = /([\t\r\n ])*\f?&/g,
+      fa = /@(k\w+)\s*(\S*)\s*/,
+      Q = /::(place)/g,
+      ha = /:(read-only)/g,
+      G = /[svh]\w+-[tblr]{2}/,
+      da = /\(\s*(.*)\s*\)/g,
+      oa = /([\s\S]*?);/g,
+      ba = /-self|flex-/g,
+      na = /[^]*?(:[rp][el]a[\w-]+)[^]*/,
+      la = /stretch|:\s*\w+\-(?:conte|avail)/,
+      ja = /([^-])(image-set\()/,
+      z = 1,
+      D = 1,
+      E = 0,
+      w = 1,
+      O = [],
+      S = [],
+      A = 0,
+      R = null,
+      Y = 0,
+      V = '';
+  B.use = T;
+  B.set = U;
+  void 0 !== W && U(W);
+  return B;
+}
+
+var weakMemoize = function weakMemoize(func) {
+  // $FlowFixMe flow doesn't include all non-primitive types as allowed for weakmaps
+  var cache = new WeakMap();
+  return function (arg) {
+    if (cache.has(arg)) {
+      // $FlowFixMe
+      return cache.get(arg);
+    }
+
+    var ret = func(arg);
+    cache.set(arg, ret);
+    return ret;
+  };
+};
+
+// https://github.com/thysultan/stylis.js/tree/master/plugins/rule-sheet
+// inlined to avoid umd wrapper and peerDep warnings/installing stylis
+// since we use stylis after closure compiler
+var delimiter$2 = '/*|*/';
+var needle = delimiter$2 + '}';
+
+function toSheet(block) {
+  if (block) {
+    Sheet.current.insert(block + '}');
+  }
+}
+
+var Sheet = {
+  current: null
+};
+var ruleSheet = function ruleSheet(context, content, selectors, parents, line, column, length, ns, depth, at) {
+  switch (context) {
+    // property
+    case 1:
+      {
+        switch (content.charCodeAt(0)) {
+          case 64:
+            {
+              // @import
+              Sheet.current.insert(content + ';');
+              return '';
+            }
+          // charcode for l
+
+          case 108:
+            {
+              // charcode for b
+              // this ignores label
+              if (content.charCodeAt(2) === 98) {
+                return '';
+              }
+            }
+        }
+
+        break;
+      }
+    // selector
+
+    case 2:
+      {
+        if (ns === 0) return content + delimiter$2;
+        break;
+      }
+    // at-rule
+
+    case 3:
+      {
+        switch (ns) {
+          // @font-face, @page
+          case 102:
+          case 112:
+            {
+              Sheet.current.insert(selectors[0] + content);
+              return '';
+            }
+
+          default:
+            {
+              return content + (at === 0 ? delimiter$2 : '');
+            }
+        }
+      }
+
+    case -2:
+      {
+        content.split(needle).forEach(toSheet);
+      }
+  }
+};
+var removeLabel = function removeLabel(context, content) {
+  if (context === 1 && // charcode for l
+  content.charCodeAt(0) === 108 && // charcode for b
+  content.charCodeAt(2) === 98 // this ignores label
+  ) {
+      return '';
+    }
+};
+
+var isBrowser = typeof document !== 'undefined';
+var rootServerStylisCache = {};
+var getServerStylisCache = isBrowser ? undefined : weakMemoize(function () {
+  var getCache = weakMemoize(function () {
+    return {};
+  });
+  var prefixTrueCache = {};
+  var prefixFalseCache = {};
+  return function (prefix) {
+    if (prefix === undefined || prefix === true) {
+      return prefixTrueCache;
+    }
+
+    if (prefix === false) {
+      return prefixFalseCache;
+    }
+
+    return getCache(prefix);
+  };
+});
+
+var createCache = function createCache(options) {
+  if (options === undefined) options = {};
+  var key = options.key || 'css';
+  var stylisOptions;
+
+  if (options.prefix !== undefined) {
+    stylisOptions = {
+      prefix: options.prefix
+    };
+  }
+
+  var stylis = new stylis_min(stylisOptions);
+
+  if (process.env.NODE_ENV !== 'production') {
+    // $FlowFixMe
+    if (/[^a-z-]/.test(key)) {
+      throw new Error("Emotion key must only contain lower case alphabetical characters and - but \"" + key + "\" was passed");
+    }
+  }
+
+  var inserted = {}; // $FlowFixMe
+
+  var container;
+
+  if (isBrowser) {
+    container = options.container || document.head;
+    var nodes = document.querySelectorAll("style[data-emotion-" + key + "]");
+    Array.prototype.forEach.call(nodes, function (node) {
+      var attrib = node.getAttribute("data-emotion-" + key); // $FlowFixMe
+
+      attrib.split(' ').forEach(function (id) {
+        inserted[id] = true;
+      });
+
+      if (node.parentNode !== container) {
+        container.appendChild(node);
+      }
+    });
+  }
+
+  var _insert;
+
+  if (isBrowser) {
+    stylis.use(options.stylisPlugins)(ruleSheet);
+
+    _insert = function insert(selector, serialized, sheet, shouldCache) {
+      var name = serialized.name;
+      Sheet.current = sheet;
+
+      if (process.env.NODE_ENV !== 'production' && serialized.map !== undefined) {
+        var map = serialized.map;
+        Sheet.current = {
+          insert: function insert(rule) {
+            sheet.insert(rule + map);
+          }
+        };
+      }
+
+      stylis(selector, serialized.styles);
+
+      if (shouldCache) {
+        cache.inserted[name] = true;
+      }
+    };
+  } else {
+    stylis.use(removeLabel);
+    var serverStylisCache = rootServerStylisCache;
+
+    if (options.stylisPlugins || options.prefix !== undefined) {
+      stylis.use(options.stylisPlugins); // $FlowFixMe
+
+      serverStylisCache = getServerStylisCache(options.stylisPlugins || rootServerStylisCache)(options.prefix);
+    }
+
+    var getRules = function getRules(selector, serialized) {
+      var name = serialized.name;
+
+      if (serverStylisCache[name] === undefined) {
+        serverStylisCache[name] = stylis(selector, serialized.styles);
+      }
+
+      return serverStylisCache[name];
+    };
+
+    _insert = function _insert(selector, serialized, sheet, shouldCache) {
+      var name = serialized.name;
+      var rules = getRules(selector, serialized);
+
+      if (cache.compat === undefined) {
+        // in regular mode, we don't set the styles on the inserted cache
+        // since we don't need to and that would be wasting memory
+        // we return them so that they are rendered in a style tag
+        if (shouldCache) {
+          cache.inserted[name] = true;
+        }
+
+        if ( // using === development instead of !== production
+        // because if people do ssr in tests, the source maps showing up would be annoying
+        process.env.NODE_ENV === 'development' && serialized.map !== undefined) {
+          return rules + serialized.map;
+        }
+
+        return rules;
+      } else {
+        // in compat mode, we put the styles on the inserted cache so
+        // that emotion-server can pull out the styles
+        // except when we don't want to cache it(just the Global component right now)
+        if (shouldCache) {
+          cache.inserted[name] = rules;
+        } else {
+          return rules;
+        }
+      }
+    };
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    // https://esbench.com/bench/5bf7371a4cd7e6009ef61d0a
+    var commentStart = /\/\*/g;
+    var commentEnd = /\*\//g;
+    stylis.use(function (context, content) {
+      switch (context) {
+        case -1:
+          {
+            while (commentStart.test(content)) {
+              commentEnd.lastIndex = commentStart.lastIndex;
+
+              if (commentEnd.test(content)) {
+                commentStart.lastIndex = commentEnd.lastIndex;
+                continue;
+              }
+
+              throw new Error('Your styles have an unterminated comment ("/*" without corresponding "*/").');
+            }
+
+            commentStart.lastIndex = 0;
+            break;
+          }
+      }
+    });
+    stylis.use(function (context, content, selectors) {
+      switch (context) {
+        case -1:
+          {
+            var flag = 'emotion-disable-server-rendering-unsafe-selector-warning-please-do-not-use-this-the-warning-exists-for-a-reason';
+            var unsafePseudoClasses = content.match(/(:first|:nth|:nth-last)-child/g);
+
+            if (unsafePseudoClasses) {
+              unsafePseudoClasses.forEach(function (unsafePseudoClass) {
+                var ignoreRegExp = new RegExp(unsafePseudoClass + ".*\\/\\* " + flag + " \\*\\/");
+                var ignore = ignoreRegExp.test(content);
+
+                if (unsafePseudoClass && !ignore) {
+                  console.error("The pseudo class \"" + unsafePseudoClass + "\" is potentially unsafe when doing server-side rendering. Try changing it to \"" + unsafePseudoClass.split('-child')[0] + "-of-type\".");
+                }
+              });
+            }
+
+            break;
+          }
+      }
+    });
+  }
+
+  var cache = {
+    key: key,
+    sheet: new StyleSheet({
+      key: key,
+      container: container,
+      nonce: options.nonce,
+      speedy: options.speedy
+    }),
+    nonce: options.nonce,
+    inserted: inserted,
+    registered: {},
+    insert: _insert
+  };
+  return cache;
+};
+
+var isBrowser$1 = typeof document !== 'undefined';
+function getRegisteredStyles(registered, registeredStyles, classNames) {
+  var rawClassName = '';
+  classNames.split(' ').forEach(function (className) {
+    if (registered[className] !== undefined) {
+      registeredStyles.push(registered[className]);
+    } else {
+      rawClassName += className + " ";
+    }
+  });
+  return rawClassName;
+}
+var insertStyles = function insertStyles(cache, serialized, isStringTag) {
+  var className = cache.key + "-" + serialized.name;
+
+  if ( // we only need to add the styles to the registered cache if the
+  // class name could be used further down
+  // the tree but if it's a string tag, we know it won't
+  // so we don't have to add it to registered cache.
+  // this improves memory usage since we can avoid storing the whole style string
+  (isStringTag === false || // we need to always store it if we're in compat mode and
+  // in node since emotion-server relies on whether a style is in
+  // the registered cache to know whether a style is global or not
+  // also, note that this check will be dead code eliminated in the browser
+  isBrowser$1 === false && cache.compat !== undefined) && cache.registered[className] === undefined) {
+    cache.registered[className] = serialized.styles;
+  }
+
+  if (cache.inserted[serialized.name] === undefined) {
+    var stylesForSSR = '';
+    var current = serialized;
+
+    do {
+      var maybeStyles = cache.insert("." + className, current, cache.sheet, true);
+
+      if (!isBrowser$1 && maybeStyles !== undefined) {
+        stylesForSSR += maybeStyles;
+      }
+
+      current = current.next;
+    } while (current !== undefined);
+
+    if (!isBrowser$1 && stylesForSSR.length !== 0) {
+      return stylesForSSR;
+    }
+  }
+};
+
+var isBrowser$2 = typeof document !== 'undefined';
+
+var EmotionCacheContext = React.createContext(isBrowser$2 ? createCache() : null);
+var ThemeContext = React.createContext({});
+var CacheProvider = EmotionCacheContext.Provider;
+
+var withEmotionCache = function withEmotionCache(func) {
+  var render = function render(props, ref) {
+    return React.createElement(EmotionCacheContext.Consumer, null, function ( // $FlowFixMe we know it won't be null
+    cache) {
+      return func(props, cache, ref);
+    });
+  }; // $FlowFixMe
+
+
+  return React.forwardRef(render);
+};
+
+if (!isBrowser$2) {
+  var BasicProvider =
+  /*#__PURE__*/
+  function (_React$Component) {
+    inheritsLoose(BasicProvider, _React$Component);
+
+    function BasicProvider(props, context, updater) {
+      var _this;
+
+      _this = _React$Component.call(this, props, context, updater) || this;
+      _this.state = {
+        value: createCache()
+      };
+      return _this;
+    }
+
+    var _proto = BasicProvider.prototype;
+
+    _proto.render = function render() {
+      return React.createElement(EmotionCacheContext.Provider, this.state, this.props.children(this.state.value));
+    };
+
+    return BasicProvider;
+  }(React.Component);
+
+  withEmotionCache = function withEmotionCache(func) {
+    return function (props) {
+      return React.createElement(EmotionCacheContext.Consumer, null, function (context) {
+        if (context === null) {
+          return React.createElement(BasicProvider, null, function (newContext) {
+            return func(props, newContext);
+          });
+        } else {
+          return func(props, context);
+        }
+      });
+    };
+  };
+}
+
+var typePropName = '__EMOTION_TYPE_PLEASE_DO_NOT_USE__';
+var labelPropName = '__EMOTION_LABEL_PLEASE_DO_NOT_USE__';
+var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
+
+var render = function render(cache, props, theme, ref) {
+  var type = props[typePropName];
+  var registeredStyles = [];
+  var className = '';
+  var cssProp = theme === null ? props.css : props.css(theme); // so that using `css` from `emotion` and passing the result to the css prop works
+  // not passing the registered cache to serializeStyles because it would
+  // make certain babel optimisations not possible
+
+  if (typeof cssProp === 'string' && cache.registered[cssProp] !== undefined) {
+    cssProp = cache.registered[cssProp];
+  }
+
+  registeredStyles.push(cssProp);
+
+  if (props.className !== undefined) {
+    className = getRegisteredStyles(cache.registered, registeredStyles, props.className);
+  }
+
+  var serialized = serializeStyles(registeredStyles);
+
+  if (process.env.NODE_ENV !== 'production' && serialized.name.indexOf('-') === -1) {
+    var labelFromStack = props[labelPropName];
+
+    if (labelFromStack) {
+      serialized = serializeStyles([serialized, 'label:' + labelFromStack + ';']);
+    }
+  }
+
+  var rules = insertStyles(cache, serialized, typeof type === 'string');
+  className += cache.key + "-" + serialized.name;
+  var newProps = {};
+
+  for (var key in props) {
+    if (hasOwnProperty$1.call(props, key) && key !== 'css' && key !== typePropName && (process.env.NODE_ENV === 'production' || key !== labelPropName)) {
+      newProps[key] = props[key];
+    }
+  }
+
+  newProps.ref = ref;
+  newProps.className = className;
+  var ele = React.createElement(type, newProps);
+
+  if (!isBrowser$2 && rules !== undefined) {
+    var _ref;
+
+    var serializedNames = serialized.name;
+    var next = serialized.next;
+
+    while (next !== undefined) {
+      serializedNames += ' ' + next.name;
+      next = next.next;
+    }
+
+    return React.createElement(React.Fragment, null, React.createElement("style", (_ref = {}, _ref["data-emotion-" + cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
+      __html: rules
+    }, _ref.nonce = cache.sheet.nonce, _ref)), ele);
+  }
+
+  return ele;
+};
+
+var Emotion = withEmotionCache(function (props, cache, ref) {
+  // use Context.read for the theme when it's stable
+  if (typeof props.css === 'function') {
+    return React.createElement(ThemeContext.Consumer, null, function (theme) {
+      return render(cache, props, theme, ref);
+    });
+  }
+
+  return render(cache, props, null, ref);
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  Emotion.displayName = 'EmotionCssPropInternal';
+} // $FlowFixMe
+
+
+var jsx = function jsx(type, props) {
+  var args = arguments;
+
+  if (props == null || props.css == null) {
+    // $FlowFixMe
+    return React.createElement.apply(undefined, args);
+  }
+
+  if (process.env.NODE_ENV !== 'production' && typeof props.css === 'string' && // check if there is a css declaration
+  props.css.indexOf(':') !== -1) {
+    throw new Error("Strings are not allowed as css prop values, please wrap it in a css template literal from '@emotion/css' like this: css`" + props.css + "`");
+  }
+
+  var argsLength = args.length;
+  var createElementArgArray = new Array(argsLength);
+  createElementArgArray[0] = Emotion;
+  var newProps = {};
+
+  for (var key in props) {
+    if (hasOwnProperty$1.call(props, key)) {
+      newProps[key] = props[key];
+    }
+  }
+
+  newProps[typePropName] = type;
+
+  if (process.env.NODE_ENV !== 'production') {
+    var error = new Error();
+
+    if (error.stack) {
+      // chrome
+      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z]+) /);
+
+      if (!match) {
+        // safari and firefox
+        match = error.stack.match(/^.*\n([A-Z][A-Za-z]+)@/);
+      }
+
+      if (match) {
+        newProps[labelPropName] = match[1];
+      }
+    }
+  }
+
+  createElementArgArray[1] = newProps;
+
+  for (var i = 2; i < argsLength; i++) {
+    createElementArgArray[i] = args[i];
+  } // $FlowFixMe
+
+
+  return React.createElement.apply(null, createElementArgArray);
+};
+
+var warnedAboutCssPropForGlobal = false;
+var Global =
+/* #__PURE__ */
+withEmotionCache(function (props, cache) {
+  if (process.env.NODE_ENV !== 'production' && !warnedAboutCssPropForGlobal && ( // check for className as well since the user is
+  // probably using the custom createElement which
+  // means it will be turned into a className prop
+  // $FlowFixMe I don't really want to add it to the type since it shouldn't be used
+  props.className || props.css)) {
+    console.error("It looks like you're using the css prop on Global, did you mean to use the styles prop instead?");
+    warnedAboutCssPropForGlobal = true;
+  }
+
+  var styles = props.styles;
+
+  if (typeof styles === 'function') {
+    return React.createElement(ThemeContext.Consumer, null, function (theme) {
+      var serialized = serializeStyles([styles(theme)]);
+      return React.createElement(InnerGlobal, {
+        serialized: serialized,
+        cache: cache
+      });
+    });
+  }
+
+  var serialized = serializeStyles([styles]);
+  return React.createElement(InnerGlobal, {
+    serialized: serialized,
+    cache: cache
+  });
+});
+
+// maintain place over rerenders.
+// initial render from browser, insertBefore context.sheet.tags[0] or if a style hasn't been inserted there yet, appendChild
+// initial client-side render from SSR, use place of hydrating tag
+var InnerGlobal =
+/*#__PURE__*/
+function (_React$Component) {
+  inheritsLoose(InnerGlobal, _React$Component);
+
+  function InnerGlobal(props, context, updater) {
+    return _React$Component.call(this, props, context, updater) || this;
+  }
+
+  var _proto = InnerGlobal.prototype;
+
+  _proto.componentDidMount = function componentDidMount() {
+    this.sheet = new StyleSheet({
+      key: this.props.cache.key + "-global",
+      nonce: this.props.cache.sheet.nonce,
+      container: this.props.cache.sheet.container
+    }); // $FlowFixMe
+
+    var node = document.querySelector("style[data-emotion-" + this.props.cache.key + "=\"" + this.props.serialized.name + "\"]");
+
+    if (node !== null) {
+      this.sheet.tags.push(node);
+    }
+
+    if (this.props.cache.sheet.tags.length) {
+      this.sheet.before = this.props.cache.sheet.tags[0];
+    }
+
+    this.insertStyles();
+  };
+
+  _proto.componentDidUpdate = function componentDidUpdate(prevProps) {
+    if (prevProps.serialized.name !== this.props.serialized.name) {
+      this.insertStyles();
+    }
+  };
+
+  _proto.insertStyles = function insertStyles$1() {
+    if (this.props.serialized.next !== undefined) {
+      // insert keyframes
+      insertStyles(this.props.cache, this.props.serialized.next, true);
+    }
+
+    if (this.sheet.tags.length) {
+      // if this doesn't exist then it will be null so the style element will be appended
+      var element = this.sheet.tags[this.sheet.tags.length - 1].nextElementSibling;
+      this.sheet.before = element;
+      this.sheet.flush();
+    }
+
+    this.props.cache.insert("", this.props.serialized, this.sheet, false);
+  };
+
+  _proto.componentWillUnmount = function componentWillUnmount() {
+    this.sheet.flush();
+  };
+
+  _proto.render = function render() {
+    if (!isBrowser$2) {
+      var _ref;
+
+      var serialized = this.props.serialized;
+      var serializedNames = serialized.name;
+      var serializedStyles = serialized.styles;
+      var next = serialized.next;
+
+      while (next !== undefined) {
+        serializedNames += ' ' + next.name;
+        serializedStyles += next.styles;
+        next = next.next;
+      }
+
+      var rules = this.props.cache.insert("", {
+        name: serializedNames,
+        styles: serializedStyles
+      }, this.sheet, false);
+      return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
+        __html: rules
+      }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
+    }
+
+    return null;
+  };
+
+  return InnerGlobal;
+}(React.Component);
+
+var keyframes = function keyframes() {
+  var insertable = css.apply(void 0, arguments);
+  var name = "animation-" + insertable.name; // $FlowFixMe
+
+  return {
+    name: name,
+    styles: "@keyframes " + name + "{" + insertable.styles + "}",
+    anim: 1,
+    toString: function toString() {
+      return "_EMO_" + this.name + "_" + this.styles + "_EMO_";
+    }
+  };
+};
+
+var classnames = function classnames(args) {
+  var len = args.length;
+  var i = 0;
+  var cls = '';
+
+  for (; i < len; i++) {
+    var arg = args[i];
+    if (arg == null) continue;
+    var toAdd = void 0;
+
+    switch (typeof arg) {
+      case 'boolean':
+        break;
+
+      case 'object':
+        {
+          if (Array.isArray(arg)) {
+            toAdd = classnames(arg);
+          } else {
+            toAdd = '';
+
+            for (var k in arg) {
+              if (arg[k] && k) {
+                toAdd && (toAdd += ' ');
+                toAdd += k;
+              }
+            }
+          }
+
+          break;
+        }
+
+      default:
+        {
+          toAdd = arg;
+        }
+    }
+
+    if (toAdd) {
+      cls && (cls += ' ');
+      cls += toAdd;
+    }
+  }
+
+  return cls;
+};
+
+function merge(registered, css, className) {
+  var registeredStyles = [];
+  var rawClassName = getRegisteredStyles(registered, registeredStyles, className);
+
+  if (registeredStyles.length < 2) {
+    return className;
+  }
+
+  return rawClassName + css(registeredStyles);
+}
+
+var ClassNames = withEmotionCache(function (props, context) {
+  return React.createElement(ThemeContext.Consumer, null, function (theme) {
+    var rules = '';
+    var serializedHashes = '';
+    var hasRendered = false;
+
+    var css = function css() {
+      if (hasRendered && process.env.NODE_ENV !== 'production') {
+        throw new Error('css can only be used during render');
+      }
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var serialized = serializeStyles(args, context.registered);
+
+      if (isBrowser$2) {
+        insertStyles(context, serialized, false);
+      } else {
+        var res = insertStyles(context, serialized, false);
+
+        if (res !== undefined) {
+          rules += res;
+        }
+      }
+
+      if (!isBrowser$2) {
+        serializedHashes += " " + serialized.name;
+      }
+
+      return context.key + "-" + serialized.name;
+    };
+
+    var cx = function cx() {
+      if (hasRendered && process.env.NODE_ENV !== 'production') {
+        throw new Error('cx can only be used during render');
+      }
+
+      for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+
+      return merge(context.registered, css, classnames(args));
+    };
+
+    var content = {
+      css: css,
+      cx: cx,
+      theme: theme
+    };
+    var ele = props.children(content);
+    hasRendered = true;
+
+    if (!isBrowser$2 && rules.length !== 0) {
+      var _ref;
+
+      return React.createElement(React.Fragment, null, React.createElement("style", (_ref = {}, _ref["data-emotion-" + context.key] = serializedHashes.substring(1), _ref.dangerouslySetInnerHTML = {
+        __html: rules
+      }, _ref.nonce = context.sheet.nonce, _ref)), ele);
+    }
+
+    return ele;
+  });
+});
+
+var core_esm = /*#__PURE__*/Object.freeze({
+    CacheProvider: CacheProvider,
+    ClassNames: ClassNames,
+    Global: Global,
+    ThemeContext: ThemeContext,
+    jsx: jsx,
+    keyframes: keyframes,
+    get withEmotionCache () { return withEmotionCache; },
+    css: css
+});
+
+var interopRequireDefault = createCommonjsModule(function (module) {
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : {
+    "default": obj
+  };
+}
+
+module.exports = _interopRequireDefault;
+});
+
+unwrapExports(interopRequireDefault);
+
+var setStatic_1 = createCommonjsModule(function (module, exports) {
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var setStatic = function setStatic(key, value) {
+  return function (BaseComponent) {
+    /* eslint-disable no-param-reassign */
+    BaseComponent[key] = value;
+    /* eslint-enable no-param-reassign */
+
+    return BaseComponent;
+  };
+};
+
+var _default = setStatic;
+exports.default = _default;
+});
+
+unwrapExports(setStatic_1);
+
+var setDisplayName_1 = createCommonjsModule(function (module, exports) {
+
+
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var _setStatic = interopRequireDefault(setStatic_1);
+
+var setDisplayName = function setDisplayName(displayName) {
+  return (0, _setStatic.default)('displayName', displayName);
+};
+
+var _default = setDisplayName;
+exports.default = _default;
+});
+
+unwrapExports(setDisplayName_1);
+
+var getDisplayName_1 = createCommonjsModule(function (module, exports) {
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var getDisplayName = function getDisplayName(Component) {
+  if (typeof Component === 'string') {
+    return Component;
+  }
+
+  if (!Component) {
+    return undefined;
+  }
+
+  return Component.displayName || Component.name || 'Component';
+};
+
+var _default = getDisplayName;
+exports.default = _default;
+});
+
+unwrapExports(getDisplayName_1);
+
+var wrapDisplayName_1 = createCommonjsModule(function (module, exports) {
+
+
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var _getDisplayName = interopRequireDefault(getDisplayName_1);
+
+var wrapDisplayName = function wrapDisplayName(BaseComponent, hocName) {
+  return hocName + "(" + (0, _getDisplayName.default)(BaseComponent) + ")";
+};
+
+var _default = wrapDisplayName;
+exports.default = _default;
+});
+
+unwrapExports(wrapDisplayName_1);
+
+var shouldUpdate_1 = createCommonjsModule(function (module, exports) {
+
+
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var _inheritsLoose2 = interopRequireDefault(inheritsLoose);
+
+
+
+var _setDisplayName = interopRequireDefault(setDisplayName_1);
+
+var _wrapDisplayName = interopRequireDefault(wrapDisplayName_1);
+
+var shouldUpdate = function shouldUpdate(test) {
+  return function (BaseComponent) {
+    var factory = (0, React__default.createFactory)(BaseComponent);
+
+    var ShouldUpdate =
+    /*#__PURE__*/
+    function (_Component) {
+      (0, _inheritsLoose2.default)(ShouldUpdate, _Component);
+
+      function ShouldUpdate() {
+        return _Component.apply(this, arguments) || this;
+      }
+
+      var _proto = ShouldUpdate.prototype;
+
+      _proto.shouldComponentUpdate = function shouldComponentUpdate(nextProps) {
+        return test(this.props, nextProps);
+      };
+
+      _proto.render = function render() {
+        return factory(this.props);
+      };
+
+      return ShouldUpdate;
+    }(React__default.Component);
+
+    if (process.env.NODE_ENV !== 'production') {
+      return (0, _setDisplayName.default)((0, _wrapDisplayName.default)(BaseComponent, 'shouldUpdate'))(ShouldUpdate);
+    }
+
+    return ShouldUpdate;
+  };
+};
+
+var _default = shouldUpdate;
+exports.default = _default;
+});
+
+unwrapExports(shouldUpdate_1);
+
+/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @typechecks
+ * 
+ */
+
+var hasOwnProperty$2 = Object.prototype.hasOwnProperty;
+
+/**
+ * inlined Object.is polyfill to avoid requiring consumers ship their own
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+ */
+function is(x, y) {
+  // SameValue algorithm
+  if (x === y) {
+    // Steps 1-5, 7-10
+    // Steps 6.b-6.e: +0 != -0
+    // Added the nonzero y check to make Flow happy, but it is redundant
+    return x !== 0 || y !== 0 || 1 / x === 1 / y;
+  } else {
+    // Step 6.a: NaN == NaN
+    return x !== x && y !== y;
+  }
+}
+
+/**
+ * Performs equality by iterating through keys on an object and returning false
+ * when any key has values which are not strictly equal between the arguments.
+ * Returns true when the values of all keys are strictly equal.
+ */
+function shallowEqual(objA, objB) {
+  if (is(objA, objB)) {
+    return true;
+  }
+
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+
+  var keysA = Object.keys(objA);
+  var keysB = Object.keys(objB);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  // Test for A's keys different from B.
+  for (var i = 0; i < keysA.length; i++) {
+    if (!hasOwnProperty$2.call(objB, keysA[i]) || !is(objA[keysA[i]], objB[keysA[i]])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+var shallowEqual_1 = shallowEqual;
+
+var shallowEqual$1 = createCommonjsModule(function (module, exports) {
+
+
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var _shallowEqual = interopRequireDefault(shallowEqual_1);
+
+var _default = _shallowEqual.default;
+exports.default = _default;
+});
+
+unwrapExports(shallowEqual$1);
+
+var pick_1 = createCommonjsModule(function (module, exports) {
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var pick = function pick(obj, keys) {
+  var result = {};
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+
+    if (obj.hasOwnProperty(key)) {
+      result[key] = obj[key];
+    }
+  }
+
+  return result;
+};
+
+var _default = pick;
+exports.default = _default;
+});
+
+unwrapExports(pick_1);
+
+var onlyUpdateForKeys_1 = createCommonjsModule(function (module, exports) {
+
+
+
+exports.__esModule = true;
+exports.default = void 0;
+
+var _shouldUpdate = interopRequireDefault(shouldUpdate_1);
+
+var _shallowEqual = interopRequireDefault(shallowEqual$1);
+
+var _setDisplayName = interopRequireDefault(setDisplayName_1);
+
+var _wrapDisplayName = interopRequireDefault(wrapDisplayName_1);
+
+var _pick = interopRequireDefault(pick_1);
+
+var onlyUpdateForKeys = function onlyUpdateForKeys(propKeys) {
+  var hoc = (0, _shouldUpdate.default)(function (props, nextProps) {
+    return !(0, _shallowEqual.default)((0, _pick.default)(nextProps, propKeys), (0, _pick.default)(props, propKeys));
+  });
+
+  if (process.env.NODE_ENV !== 'production') {
+    return function (BaseComponent) {
+      return (0, _setDisplayName.default)((0, _wrapDisplayName.default)(BaseComponent, 'onlyUpdateForKeys'))(hoc(BaseComponent));
+    };
+  }
+
+  return hoc;
+};
+
+var _default = onlyUpdateForKeys;
+exports.default = _default;
+});
+
+unwrapExports(onlyUpdateForKeys_1);
+
+var proptypes = createCommonjsModule(function (module, exports) {
+
+(function (global, factory) {
+  {
+    factory(exports, PropTypes);
+  }
+})(void 0, function (exports, _propTypes) {
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  exports.heightWidthRadiusDefaults = exports.heightWidthDefaults = exports.sizeMarginDefaults = exports.sizeDefaults = exports.heightWidthRadiusProps = exports.heightWidthProps = exports.sizeMarginProps = exports.sizeProps = exports.heightWidthRadiusKeys = exports.heightWidthKeys = exports.sizeMarginKeys = exports.sizeKeys = undefined;
+
+  var _propTypes2 = _interopRequireDefault(_propTypes);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  var _common, _size, _heightWidth, _Object$assign2, _commonValues;
+
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  /*
+   * List of string constants to represent different props
+   */
+  var LOADING = "loading";
+  var COLOR = "color";
+  var CSS = "css";
+  var SIZE = "size";
+  var SIZE_UNIT = "sizeUnit";
+  var WIDTH = "width";
+  var WIDTH_UNIT = "widthUnit";
+  var HEIGHT = "height";
+  var HEIGHT_UNIT = "heightUnit";
+  var RADIUS = "radius";
+  var RADIUS_UNIT = "radiusUnit";
+  var MARGIN = "margin";
+  /*
+   * Array for onlyUpdateForKeys function
+   */
+
+  var commonStrings = [LOADING, COLOR, CSS];
+  var sizeStrings = [SIZE, SIZE_UNIT];
+  var heightWidthString = [HEIGHT, HEIGHT_UNIT, WIDTH, WIDTH_UNIT];
+  var sizeKeys = exports.sizeKeys = commonStrings.concat(sizeStrings);
+  var sizeMarginKeys = exports.sizeMarginKeys = sizeKeys.concat([MARGIN]);
+  var heightWidthKeys = exports.heightWidthKeys = commonStrings.concat(heightWidthString);
+  var heightWidthRadiusKeys = exports.heightWidthRadiusKeys = heightWidthKeys.concat([RADIUS, RADIUS_UNIT, MARGIN]);
+  /*
+   * PropType object for different loaders
+   */
+
+  var precompiledCssType = _propTypes2["default"].shape({
+    name: _propTypes2["default"].string,
+    styles: _propTypes2["default"].string
+  });
+
+  var common = (_common = {}, _defineProperty(_common, LOADING, _propTypes2["default"].bool), _defineProperty(_common, COLOR, _propTypes2["default"].string), _defineProperty(_common, CSS, _propTypes2["default"].oneOfType([_propTypes2["default"].string, precompiledCssType])), _common);
+  var size = (_size = {}, _defineProperty(_size, SIZE, _propTypes2["default"].number), _defineProperty(_size, SIZE_UNIT, _propTypes2["default"].string), _size);
+  var heightWidth = (_heightWidth = {}, _defineProperty(_heightWidth, WIDTH, _propTypes2["default"].number), _defineProperty(_heightWidth, WIDTH_UNIT, _propTypes2["default"].string), _defineProperty(_heightWidth, HEIGHT, _propTypes2["default"].number), _defineProperty(_heightWidth, HEIGHT_UNIT, _propTypes2["default"].string), _heightWidth);
+  var sizeProps = exports.sizeProps = Object.assign({}, common, size);
+  var sizeMarginProps = exports.sizeMarginProps = Object.assign({}, sizeProps, _defineProperty({}, MARGIN, _propTypes2["default"].string));
+  var heightWidthProps = exports.heightWidthProps = Object.assign({}, common, heightWidth);
+  var heightWidthRadiusProps = exports.heightWidthRadiusProps = Object.assign({}, heightWidthProps, (_Object$assign2 = {}, _defineProperty(_Object$assign2, RADIUS, _propTypes2["default"].number), _defineProperty(_Object$assign2, RADIUS_UNIT, _propTypes2["default"].string), _defineProperty(_Object$assign2, MARGIN, _propTypes2["default"].string), _Object$assign2));
+  /*
+   * DefaultProps object for different loaders
+   */
+
+  var commonValues = (_commonValues = {}, _defineProperty(_commonValues, LOADING, true), _defineProperty(_commonValues, COLOR, "#000000"), _defineProperty(_commonValues, CSS, {}), _commonValues);
+
+  var heightWidthValues = function heightWidthValues(height, width) {
+    var _ref;
+
+    return _ref = {}, _defineProperty(_ref, HEIGHT, height), _defineProperty(_ref, HEIGHT_UNIT, "px"), _defineProperty(_ref, WIDTH, width), _defineProperty(_ref, WIDTH_UNIT, "px"), _ref;
+  };
+
+  var sizeValues = function sizeValues(sizeValue) {
+    var _ref2;
+
+    return _ref2 = {}, _defineProperty(_ref2, SIZE, sizeValue), _defineProperty(_ref2, SIZE_UNIT, "px"), _ref2;
+  };
+
+  var sizeDefaults = exports.sizeDefaults = function sizeDefaults(sizeValue) {
+    return Object.assign({}, commonValues, sizeValues(sizeValue));
+  };
+
+  var sizeMarginDefaults = exports.sizeMarginDefaults = function sizeMarginDefaults(sizeValue) {
+    return Object.assign({}, sizeDefaults(sizeValue), _defineProperty({}, MARGIN, "2px"));
+  };
+
+  var heightWidthDefaults = exports.heightWidthDefaults = function heightWidthDefaults(height, width) {
+    return Object.assign({}, commonValues, heightWidthValues(height, width));
+  };
+
+  var heightWidthRadiusDefaults = exports.heightWidthRadiusDefaults = function heightWidthRadiusDefaults(height, width) {
+    var _Object$assign4;
+
+    var radius = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 2;
+    return Object.assign({}, heightWidthDefaults(height, width), (_Object$assign4 = {}, _defineProperty(_Object$assign4, RADIUS, radius), _defineProperty(_Object$assign4, RADIUS_UNIT, "px"), _defineProperty(_Object$assign4, MARGIN, "2px"), _Object$assign4));
+  };
+});
+});
+
+unwrapExports(proptypes);
+
+var helpers = createCommonjsModule(function (module, exports) {
+
+(function (global, factory) {
+  {
+    factory(exports, proptypes);
+  }
+})(void 0, function (exports, _proptypes) {
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+  Object.keys(_proptypes).forEach(function (key) {
+    if (key === "default" || key === "__esModule") return;
+    Object.defineProperty(exports, key, {
+      enumerable: true,
+      get: function () {
+        return _proptypes[key];
+      }
+    });
+  });
+
+  var calculateRgba = exports.calculateRgba = function calculateRgba(color, opacity) {
+    if (color[0] === "#") {
+      color = color.slice(1);
+    }
+
+    if (color.length === 3) {
+      var res = "";
+      color.split("").forEach(function (c) {
+        res += c;
+        res += c;
+      });
+      color = res;
+    }
+
+    var rgbValues = color.match(/.{2}/g).map(function (hex) {
+      return parseInt(hex, 16);
+    }).join(", ");
+    return "rgba(".concat(rgbValues, ", ").concat(opacity, ")");
+  };
+});
+});
+
+unwrapExports(helpers);
+
+var ScaleLoader = createCommonjsModule(function (module, exports) {
+
+(function (global, factory) {
+  {
+    factory(exports, css, React__default, core_esm, onlyUpdateForKeys_1, helpers);
+  }
+})(void 0, function (exports, _css2, _react, _core, _onlyUpdateForKeys, _helpers) {
+
+  Object.defineProperty(exports, "__esModule", {
+    value: true
+  });
+
+  var _css3 = _interopRequireDefault(_css2);
+
+  var _react2 = _interopRequireDefault(_react);
+
+  var _onlyUpdateForKeys2 = _interopRequireDefault(_onlyUpdateForKeys);
+
+  function _interopRequireDefault(obj) {
+    return obj && obj.__esModule ? obj : {
+      default: obj
+    };
+  }
+
+  function _typeof(obj) {
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof = function _typeof(obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof = function _typeof(obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof(obj);
+  }
+
+  function _classCallCheck(instance, Constructor) {
+    if (!(instance instanceof Constructor)) {
+      throw new TypeError("Cannot call a class as a function");
+    }
+  }
+
+  function _defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      Object.defineProperty(target, descriptor.key, descriptor);
+    }
+  }
+
+  function _createClass(Constructor, protoProps, staticProps) {
+    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) _defineProperties(Constructor, staticProps);
+    return Constructor;
+  }
+
+  function _possibleConstructorReturn(self, call) {
+    if (call && (_typeof(call) === "object" || typeof call === "function")) {
+      return call;
+    }
+
+    return _assertThisInitialized(self);
+  }
+
+  function _getPrototypeOf(o) {
+    _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
+      return o.__proto__ || Object.getPrototypeOf(o);
+    };
+    return _getPrototypeOf(o);
+  }
+
+  function _assertThisInitialized(self) {
+    if (self === void 0) {
+      throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+    }
+
+    return self;
+  }
+
+  function _inherits(subClass, superClass) {
+    if (typeof superClass !== "function" && superClass !== null) {
+      throw new TypeError("Super expression must either be null or a function");
+    }
+
+    subClass.prototype = Object.create(superClass && superClass.prototype, {
+      constructor: {
+        value: subClass,
+        writable: true,
+        configurable: true
+      }
+    });
+    if (superClass) _setPrototypeOf(subClass, superClass);
+  }
+
+  function _setPrototypeOf(o, p) {
+    _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+      o.__proto__ = p;
+      return o;
+    };
+
+    return _setPrototypeOf(o, p);
+  }
+
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function _templateObject() {
+    var data = _taggedTemplateLiteral(["\n  0% {transform: scaley(1.0)}\n  50% {transform: scaley(0.4)}\n  100% {transform: scaley(1.0)}\n"]);
+
+    _templateObject = function _templateObject() {
+      return data;
+    };
+
+    return data;
+  }
+
+  function _taggedTemplateLiteral(strings, raw) {
+    if (!raw) {
+      raw = strings.slice(0);
+    }
+
+    return Object.freeze(Object.defineProperties(strings, {
+      raw: {
+        value: Object.freeze(raw)
+      }
+    }));
+  }
+
+  var scale = (0, _core.keyframes)(_templateObject());
+
+  var Loader = function (_React$Component) {
+    _inherits(Loader, _React$Component);
+
+    function Loader() {
+      var _getPrototypeOf2;
+
+      var _this;
+
+      _classCallCheck(this, Loader);
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      _this = _possibleConstructorReturn(this, (_getPrototypeOf2 = _getPrototypeOf(Loader)).call.apply(_getPrototypeOf2, [this].concat(args)));
+
+      _defineProperty(_assertThisInitialized(_this), "style", function (i) {
+        var _this$props = _this.props,
+            color = _this$props.color,
+            width = _this$props.width,
+            height = _this$props.height,
+            margin = _this$props.margin,
+            radius = _this$props.radius,
+            widthUnit = _this$props.widthUnit,
+            heightUnit = _this$props.heightUnit,
+            radiusUnit = _this$props.radiusUnit;
+        return (0, _core.css)("background-color:", color, ";width:", "".concat(width).concat(widthUnit), ";height:", "".concat(height).concat(heightUnit), ";margin:", margin, ";border-radius:", "".concat(radius).concat(radiusUnit), ";display:inline-block;animation:", scale, " 1s ", i * 0.1, "s infinite cubic-bezier(0.2,0.68,0.18,1.08);animation-fill-mode:both;label:style;" + (process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInNyYy9TY2FsZUxvYWRlci5qc3giXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBb0JjIiwiZmlsZSI6InNyYy9TY2FsZUxvYWRlci5qc3giLCJzb3VyY2VzQ29udGVudCI6WyIvKiogQGpzeCBqc3ggKi9cbmltcG9ydCBSZWFjdCBmcm9tIFwicmVhY3RcIjtcbmltcG9ydCB7IGtleWZyYW1lcywgY3NzLCBqc3ggfSBmcm9tIFwiQGVtb3Rpb24vY29yZVwiO1xuaW1wb3J0IG9ubHlVcGRhdGVGb3JLZXlzIGZyb20gXCJyZWNvbXBvc2Uvb25seVVwZGF0ZUZvcktleXNcIjtcbmltcG9ydCB7XG4gIGhlaWdodFdpZHRoUmFkaXVzUHJvcHMsXG4gIGhlaWdodFdpZHRoUmFkaXVzRGVmYXVsdHMsXG4gIGhlaWdodFdpZHRoUmFkaXVzS2V5c1xufSBmcm9tIFwiLi9oZWxwZXJzXCI7XG5cbmNvbnN0IHNjYWxlID0ga2V5ZnJhbWVzYFxuICAwJSB7dHJhbnNmb3JtOiBzY2FsZXkoMS4wKX1cbiAgNTAlIHt0cmFuc2Zvcm06IHNjYWxleSgwLjQpfVxuICAxMDAlIHt0cmFuc2Zvcm06IHNjYWxleSgxLjApfVxuYDtcblxuY2xhc3MgTG9hZGVyIGV4dGVuZHMgUmVhY3QuQ29tcG9uZW50IHtcbiAgc3R5bGUgPSAoaSkgPT4ge1xuICAgIGNvbnN0IHsgY29sb3IsIHdpZHRoLCBoZWlnaHQsIG1hcmdpbiwgcmFkaXVzLCB3aWR0aFVuaXQsIGhlaWdodFVuaXQsIHJhZGl1c1VuaXQgfSA9IHRoaXMucHJvcHM7XG5cbiAgICByZXR1cm4gY3NzYFxuICAgICAgYmFja2dyb3VuZC1jb2xvcjogJHtjb2xvcn07XG4gICAgICB3aWR0aDogJHtgJHt3aWR0aH0ke3dpZHRoVW5pdH1gfTtcbiAgICAgIGhlaWdodDogJHtgJHtoZWlnaHR9JHtoZWlnaHRVbml0fWB9O1xuICAgICAgbWFyZ2luOiAke21hcmdpbn07XG4gICAgICBib3JkZXItcmFkaXVzOiAke2Ake3JhZGl1c30ke3JhZGl1c1VuaXR9YH07XG4gICAgICBkaXNwbGF5OiBpbmxpbmUtYmxvY2s7XG4gICAgICBhbmltYXRpb246ICR7c2NhbGV9IDFzICR7aSAqIDAuMX1zIGluZmluaXRlIGN1YmljLWJlemllcigwLjIsIDAuNjgsIDAuMTgsIDEuMDgpO1xuICAgICAgYW5pbWF0aW9uLWZpbGwtbW9kZTogYm90aDtcbiAgICBgO1xuICB9O1xuXG4gIHJlbmRlcigpIHtcbiAgICBjb25zdCB7IGxvYWRpbmcsIGNzcyB9ID0gdGhpcy5wcm9wcztcblxuICAgIHJldHVybiBsb2FkaW5nID8gKFxuICAgICAgPGRpdiBjc3M9e1tjc3NdfT5cbiAgICAgICAgPGRpdiBjc3M9e3RoaXMuc3R5bGUoMSl9IC8+XG4gICAgICAgIDxkaXYgY3NzPXt0aGlzLnN0eWxlKDIpfSAvPlxuICAgICAgICA8ZGl2IGNzcz17dGhpcy5zdHlsZSgzKX0gLz5cbiAgICAgICAgPGRpdiBjc3M9e3RoaXMuc3R5bGUoNCl9IC8+XG4gICAgICAgIDxkaXYgY3NzPXt0aGlzLnN0eWxlKDUpfSAvPlxuICAgICAgPC9kaXY+XG4gICAgKSA6IG51bGw7XG4gIH1cbn1cblxuTG9hZGVyLnByb3BUeXBlcyA9IGhlaWdodFdpZHRoUmFkaXVzUHJvcHM7XG5cbkxvYWRlci5kZWZhdWx0UHJvcHMgPSBoZWlnaHRXaWR0aFJhZGl1c0RlZmF1bHRzKDM1LCA0LCAyKTtcblxuY29uc3QgQ29tcG9uZW50ID0gb25seVVwZGF0ZUZvcktleXMoaGVpZ2h0V2lkdGhSYWRpdXNLZXlzKShMb2FkZXIpO1xuQ29tcG9uZW50LmRlZmF1bHRQcm9wcyA9IExvYWRlci5kZWZhdWx0UHJvcHM7XG5leHBvcnQgZGVmYXVsdCBDb21wb25lbnQ7XG4iXX0= */"));
+      });
+
+      return _this;
+    }
+
+    _createClass(Loader, [{
+      key: "render",
+      value: function render() {
+        var _this$props2 = this.props,
+            loading = _this$props2.loading,
+            css = _this$props2.css;
+        return loading ? (0, _core.jsx)("div", {
+          css: (0, _css3["default"])([css], "label:Loader;" + (process.env.NODE_ENV === "production" ? "" : "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInNyYy9TY2FsZUxvYWRlci5qc3giXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBb0NXIiwiZmlsZSI6InNyYy9TY2FsZUxvYWRlci5qc3giLCJzb3VyY2VzQ29udGVudCI6WyIvKiogQGpzeCBqc3ggKi9cbmltcG9ydCBSZWFjdCBmcm9tIFwicmVhY3RcIjtcbmltcG9ydCB7IGtleWZyYW1lcywgY3NzLCBqc3ggfSBmcm9tIFwiQGVtb3Rpb24vY29yZVwiO1xuaW1wb3J0IG9ubHlVcGRhdGVGb3JLZXlzIGZyb20gXCJyZWNvbXBvc2Uvb25seVVwZGF0ZUZvcktleXNcIjtcbmltcG9ydCB7XG4gIGhlaWdodFdpZHRoUmFkaXVzUHJvcHMsXG4gIGhlaWdodFdpZHRoUmFkaXVzRGVmYXVsdHMsXG4gIGhlaWdodFdpZHRoUmFkaXVzS2V5c1xufSBmcm9tIFwiLi9oZWxwZXJzXCI7XG5cbmNvbnN0IHNjYWxlID0ga2V5ZnJhbWVzYFxuICAwJSB7dHJhbnNmb3JtOiBzY2FsZXkoMS4wKX1cbiAgNTAlIHt0cmFuc2Zvcm06IHNjYWxleSgwLjQpfVxuICAxMDAlIHt0cmFuc2Zvcm06IHNjYWxleSgxLjApfVxuYDtcblxuY2xhc3MgTG9hZGVyIGV4dGVuZHMgUmVhY3QuQ29tcG9uZW50IHtcbiAgc3R5bGUgPSAoaSkgPT4ge1xuICAgIGNvbnN0IHsgY29sb3IsIHdpZHRoLCBoZWlnaHQsIG1hcmdpbiwgcmFkaXVzLCB3aWR0aFVuaXQsIGhlaWdodFVuaXQsIHJhZGl1c1VuaXQgfSA9IHRoaXMucHJvcHM7XG5cbiAgICByZXR1cm4gY3NzYFxuICAgICAgYmFja2dyb3VuZC1jb2xvcjogJHtjb2xvcn07XG4gICAgICB3aWR0aDogJHtgJHt3aWR0aH0ke3dpZHRoVW5pdH1gfTtcbiAgICAgIGhlaWdodDogJHtgJHtoZWlnaHR9JHtoZWlnaHRVbml0fWB9O1xuICAgICAgbWFyZ2luOiAke21hcmdpbn07XG4gICAgICBib3JkZXItcmFkaXVzOiAke2Ake3JhZGl1c30ke3JhZGl1c1VuaXR9YH07XG4gICAgICBkaXNwbGF5OiBpbmxpbmUtYmxvY2s7XG4gICAgICBhbmltYXRpb246ICR7c2NhbGV9IDFzICR7aSAqIDAuMX1zIGluZmluaXRlIGN1YmljLWJlemllcigwLjIsIDAuNjgsIDAuMTgsIDEuMDgpO1xuICAgICAgYW5pbWF0aW9uLWZpbGwtbW9kZTogYm90aDtcbiAgICBgO1xuICB9O1xuXG4gIHJlbmRlcigpIHtcbiAgICBjb25zdCB7IGxvYWRpbmcsIGNzcyB9ID0gdGhpcy5wcm9wcztcblxuICAgIHJldHVybiBsb2FkaW5nID8gKFxuICAgICAgPGRpdiBjc3M9e1tjc3NdfT5cbiAgICAgICAgPGRpdiBjc3M9e3RoaXMuc3R5bGUoMSl9IC8+XG4gICAgICAgIDxkaXYgY3NzPXt0aGlzLnN0eWxlKDIpfSAvPlxuICAgICAgICA8ZGl2IGNzcz17dGhpcy5zdHlsZSgzKX0gLz5cbiAgICAgICAgPGRpdiBjc3M9e3RoaXMuc3R5bGUoNCl9IC8+XG4gICAgICAgIDxkaXYgY3NzPXt0aGlzLnN0eWxlKDUpfSAvPlxuICAgICAgPC9kaXY+XG4gICAgKSA6IG51bGw7XG4gIH1cbn1cblxuTG9hZGVyLnByb3BUeXBlcyA9IGhlaWdodFdpZHRoUmFkaXVzUHJvcHM7XG5cbkxvYWRlci5kZWZhdWx0UHJvcHMgPSBoZWlnaHRXaWR0aFJhZGl1c0RlZmF1bHRzKDM1LCA0LCAyKTtcblxuY29uc3QgQ29tcG9uZW50ID0gb25seVVwZGF0ZUZvcktleXMoaGVpZ2h0V2lkdGhSYWRpdXNLZXlzKShMb2FkZXIpO1xuQ29tcG9uZW50LmRlZmF1bHRQcm9wcyA9IExvYWRlci5kZWZhdWx0UHJvcHM7XG5leHBvcnQgZGVmYXVsdCBDb21wb25lbnQ7XG4iXX0= */"))
+        }, (0, _core.jsx)("div", {
+          css: this.style(1)
+        }), (0, _core.jsx)("div", {
+          css: this.style(2)
+        }), (0, _core.jsx)("div", {
+          css: this.style(3)
+        }), (0, _core.jsx)("div", {
+          css: this.style(4)
+        }), (0, _core.jsx)("div", {
+          css: this.style(5)
+        })) : null;
+      }
+    }]);
+
+    return Loader;
+  }(_react2["default"].Component);
+
+  Loader.propTypes = _helpers.heightWidthRadiusProps;
+  Loader.defaultProps = (0, _helpers.heightWidthRadiusDefaults)(35, 4, 2);
+  var Component = (0, _onlyUpdateForKeys2["default"])(_helpers.heightWidthRadiusKeys)(Loader);
+  Component.defaultProps = Loader.defaultProps;
+  exports["default"] = Component;
+});
+});
+
+var ScaleLoader$1 = unwrapExports(ScaleLoader);
+
+const override = process.env.NODE_ENV === "production" ? {
+  name: "1uf9cho-override",
+  styles: "display:inline-block;margin:0 auto;border-color:red;margin-top:50px;label:override;"
+} : {
+  name: "1uf9cho-override",
+  styles: "display:inline-block;margin:0 auto;border-color:red;margin-top:50px;label:override;",
+  map: "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImluZGV4LmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXFCb0IiLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGJhYmVsJztcbi8vIENvcHlyaWdodCAyMDE4IEV0aGVyYXRvbSBBdXRob3JzXG4vLyBUaGlzIGZpbGUgaXMgcGFydCBvZiBFdGhlcmF0b20uXG5cbi8vIEV0aGVyYXRvbSBpcyBmcmVlIHNvZnR3YXJlOiB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5XG4vLyBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieVxuLy8gdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgZWl0aGVyIHZlcnNpb24gMyBvZiB0aGUgTGljZW5zZSwgb3Jcbi8vIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uXG5cbi8vIEV0aGVyYXRvbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSB0aGF0IGl0IHdpbGwgYmUgdXNlZnVsLFxuLy8gYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2Zcbi8vIE1FUkNIQU5UQUJJTElUWSBvciBGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGVcbi8vIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGZvciBtb3JlIGRldGFpbHMuXG5cbi8vIFlvdSBzaG91bGQgaGF2ZSByZWNlaXZlZCBhIGNvcHkgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlXG4vLyBhbG9uZyB3aXRoIEV0aGVyYXRvbS4gIElmIG5vdCwgc2VlIDxodHRwOi8vd3d3LmdudS5vcmcvbGljZW5zZXMvPi5cbmltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBjb25uZWN0IH0gZnJvbSAncmVhY3QtcmVkdXgnO1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJztcbmltcG9ydCBTY2FsZUxvYWRlciBmcm9tICdyZWFjdC1zcGlubmVycy9TY2FsZUxvYWRlcic7XG5pbXBvcnQgeyBjc3MgfSBmcm9tICdAZW1vdGlvbi9jb3JlJztcbmNvbnN0IG92ZXJyaWRlID0gY3NzYFxuICAgIGRpc3BsYXk6IGlubGluZS1ibG9jaztcbiAgICBtYXJnaW46IDAgYXV0bztcbiAgICBib3JkZXItY29sb3I6IHJlZDtcbiAgICBtYXJnaW4tdG9wOjUwcHg7XG5gO1xuY29uc3QgbG9hZGVyQ29udGFpbmVyU3R5bGUgPSB7XG4gICAgdGV4dEFsaWduOiAnY2VudGVyJ1xufTtcblxuY2xhc3MgTG9hZGVyVmlldyBleHRlbmRzIFJlYWN0LkNvbXBvbmVudCB7XG4gICAgY29uc3RydWN0b3IocHJvcHMpIHtcbiAgICAgICAgc3VwZXIocHJvcHMpO1xuICAgICAgICB0aGlzLnN0b3JlID0gdGhpcy5wcm9wcy5zdG9yZTtcbiAgICB9XG4gICAgc3RhdGVDaGFuZ2UoKSB7XG4gICAgfVxuICAgIGNvbXBvbmVudERpZFVwZGF0ZSgpIHtcblxuICAgIH1cbiAgICBjb21wb25lbnRXaWxsUmVjZWl2ZVByb3BzKCkge1xuXG4gICAgfVxuICAgIHJlbmRlcigpIHtcbiAgICAgICAgY29uc3QgeyBjbGllbnRzIH0gPSB0aGlzLnByb3BzO1xuICAgICAgICBjb25zdCB7IGhhc0Nvbm5lY3Rpb24gfSA9IGNsaWVudHNbMF07XG5cbiAgICAgICAgLy8gYWxlcnQoaGFzQ29ubmVjdGlvbik7XG5cbiAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibG9hZGVyX1wiIHN0eWxlPXtsb2FkZXJDb250YWluZXJTdHlsZX0+XG4gICAgICAgICAgICAgICAgPFNjYWxlTG9hZGVyXG4gICAgICAgICAgICAgICAgICAgIGNzcz17b3ZlcnJpZGV9XG4gICAgICAgICAgICAgICAgICAgIHNpemVVbml0PXsncHgnfVxuICAgICAgICAgICAgICAgICAgICBzaXplPXs4MH1cbiAgICAgICAgICAgICAgICAgICAgY29sb3I9eycjNjM2OTczJ31cbiAgICAgICAgICAgICAgICAgICAgbG9hZGluZz17IWhhc0Nvbm5lY3Rpb259XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICApO1xuICAgIH1cbn1cblxuTG9hZGVyVmlldy5wcm9wVHlwZXMgPSB7XG4gICAgY2xpZW50czogUHJvcFR5cGVzLmFueS5pc1JlcXVpcmVkXG59O1xuXG5jb25zdCBtYXBTdGF0ZVRvUHJvcHMgPSAoeyBjbGllbnRSZWR1Y2VyIH0pID0+IHtcbiAgICBjb25zdCB7IGNsaWVudHMgfSA9IGNsaWVudFJlZHVjZXI7XG4gICAgcmV0dXJuIHsgY2xpZW50cyB9O1xufTtcbmV4cG9ydCBkZWZhdWx0IGNvbm5lY3QobWFwU3RhdGVUb1Byb3BzKShMb2FkZXJWaWV3KTtcblxuIl19 */"
+};
+const loaderContainerStyle = {
+  textAlign: 'center'
+};
+
+class LoaderView extends React__default.Component {
+  constructor(props) {
+    super(props);
+    this.store = this.props.store;
+  }
+
+  stateChange() {}
+
+  componentDidUpdate() {}
+
+  componentWillReceiveProps() {}
+
+  render() {
+    const {
+      clients
+    } = this.props;
+    const {
+      hasConnection
+    } = clients[0]; // alert(hasConnection);
+
+    return React__default.createElement("div", {
+      className: "loader_",
+      style: loaderContainerStyle
+    }, React__default.createElement(ScaleLoader$1, {
+      css: override,
+      sizeUnit: 'px',
+      size: 80,
+      color: '#636973',
+      loading: !hasConnection
+    }));
+  }
+
+}
+
+LoaderView.propTypes = {
+  clients: PropTypes.any.isRequired
+};
+
+const mapStateToProps$h = ({
+  clientReducer
+}) => {
+  const {
+    clients
+  } = clientReducer;
+  return {
+    clients
+  };
+};
+
+var LoaderView$1 = reactRedux.connect(mapStateToProps$h)(LoaderView);
+
 class View {
   constructor(store) {
     this.Accounts = [];
     this.coinbase = null;
-    this.web3 = getWeb3Conn();
     this.store = store;
-    this.helpers = new Web3Helpers();
+    this.helpers = new Web3Helpers(this.store);
   }
 
   async createCoinbaseView() {
     try {
-      const accounts = await this.web3.eth.getAccounts();
-      this.store.dispatch({
-        type: SET_ACCOUNTS,
-        payload: accounts
-      });
-      this.store.dispatch({
-        type: SET_COINBASE,
-        payload: accounts[0]
-      });
-      ReactDOM.render(React.createElement(CoinbaseView$1, {
+      await this.helpers.getAccounts();
+      ReactDOM.render(React__default.createElement(CoinbaseView$1, {
         store: this.store,
         helpers: this.helpers
       }), document.getElementById('accounts-list'));
@@ -5468,7 +8240,7 @@ class View {
         type: SET_COINBASE,
         payload: '0x00'
       });
-      ReactDOM.render(React.createElement(CoinbaseView$1, {
+      ReactDOM.render(React__default.createElement(CoinbaseView$1, {
         store: this.store,
         helpers: this.helpers
       }), document.getElementById('accounts-list'));
@@ -5477,23 +8249,28 @@ class View {
   }
 
   createButtonsView() {
-    ReactDOM.render(React.createElement(CompileBtn$1, {
+    ReactDOM.render(React__default.createElement(CompileBtn$1, {
       store: this.store
     }), document.getElementById('compile_btn'));
   }
 
   createTabView() {
-    ReactDOM.render(React.createElement(TabView$1, {
+    ReactDOM.render(React__default.createElement(TabView$1, {
       store: this.store,
-      helpers: this.helpers,
-      web3: this.web3
+      helpers: this.helpers
     }), document.getElementById('tab_view'));
   }
 
   createVersionSelector() {
-    ReactDOM.render(React.createElement(VersionSelector$1, {
+    ReactDOM.render(React__default.createElement(VersionSelector$1, {
       store: this.store
     }), document.getElementById('version_selector'));
+  }
+
+  createLoaderView() {
+    ReactDOM.render(React__default.createElement(LoaderView$1, {
+      store: this.store
+    }), document.getElementById('loader_'));
   }
 
   createTextareaR(text) {
@@ -5512,10 +8289,33 @@ class Web3Env {
     this.subscriptions = new atom$1.CompositeDisposable();
     this.web3Subscriptions = new atom$1.CompositeDisposable();
     this.saveSubscriptions = new atom$1.CompositeDisposable();
-    this.compileSubscriptions = new atom$1.CompositeDisposable();
+    this.compileSubscriptions = new atom$1.CompositeDisposable(); //binding local functions
+
+    this.checkConnection = this.checkConnection.bind(this);
+    this.checkReduxState = this.checkReduxState.bind(this);
+    this.subscribeToWeb3Commands = this.subscribeToWeb3Commands.bind(this);
+    this.subscribeToWeb3Events = this.subscribeToWeb3Events.bind(this);
     this.store = store;
+    this.helpers = new Web3Helpers(this.store);
+    this.havConnection = this.store.getState().clientReducer.clients[0].hasConnection; // Subscribing the redux state
+
+    this.store.subscribe(this.checkReduxState); // subscribe to transaction through helpers
+
+    this.helpers.subscribeTransaction(); // subscribe to eth connection through helpers
+
+    this.helpers.subscribeETHconnection();
     this.subscribeToWeb3Commands();
     this.subscribeToWeb3Events();
+    this.helpers.checkConnection();
+  }
+
+  checkReduxState() {
+    this.havConnection = this.store.getState().clientReducer.clients[0].hasConnection;
+    let firstCheck = this.store.getState().clientReducer.clients[0].firstTimeCheck;
+
+    if (this.havConnection && firstCheck) {
+      this.subscribeToWeb3Events();
+    }
   }
 
   dispose() {
@@ -5579,80 +8379,10 @@ class Web3Env {
       return;
     }
 
-    if (typeof this.web3 !== 'undefined') {
-      this.web3 = new Web3(this.web3.currentProvider);
-    } else {
-      this.web3 = getWeb3Conn();
-    }
-
     this.view = new View(this.store);
-    this.helpers = new Web3Helpers(this.store);
-
-    if (Object.is(this.web3.currentProvider.constructor, Web3.providers.WebsocketProvider)) {
-      console.log('%c Provider is websocket. Creating subscriptions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B'); // newBlockHeaders subscriber
-
-      /*this.web3.eth.subscribe('newBlockHeaders')
-          .on('data', (blocks) => {
-              console.log('%c newBlockHeaders:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-              console.log(blocks);
-          })
-          .on('error', (e) => {
-              console.log('%c newBlockHeaders:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-              console.log(e);
-          });*/
-      // pendingTransactions subscriber
-
-      this.web3.eth.subscribe('pendingTransactions').on('data', transaction => {
-        /*console.log("%c pendingTransactions:data ", 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(transaction);*/
-        this.store.dispatch({
-          type: ADD_PENDING_TRANSACTION,
-          payload: transaction
-        });
-      }).on('error', e => {
-        console.log('%c pendingTransactions:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(e);
-      }); // syncing subscription
-
-      this.web3.eth.subscribe('syncing').on('data', sync => {
-        console.log('%c syncing:data ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(sync);
-
-        if (typeof sync === 'boolean') {
-          this.store.dispatch({
-            type: SET_SYNCING,
-            payload: sync
-          });
-        }
-
-        if (typeof sync === 'object') {
-          this.store.dispatch({
-            type: SET_SYNCING,
-            payload: sync.syncing
-          });
-          const status = {
-            currentBlock: sync.status.CurrentBlock,
-            highestBlock: sync.status.HighestBlock,
-            knownStates: sync.status.KnownStates,
-            pulledStates: sync.status.PulledStates,
-            startingBlock: sync.status.StartingBlock
-          };
-          this.store.dispatch({
-            type: SET_SYNC_STATUS,
-            payload: status
-          });
-        }
-      }).on('changed', isSyncing => {
-        console.log('%c syncing:changed ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(isSyncing);
-      }).on('error', e => {
-        console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-        console.log(e);
-      });
-    }
-
-    this.checkConnection((error, connection) => {
+    await this.checkConnection((error, connection) => {
       if (error) {
+        this.view.createLoaderView();
         showPanelError(error);
       } else if (connection) {
         this.view.createCoinbaseView();
@@ -5717,11 +8447,9 @@ class Web3Env {
   } // common functions
 
 
-  checkConnection(callback) {
-    let haveConn;
-    haveConn = this.web3.currentProvider;
-
-    if (!haveConn) {
+  async checkConnection(callback) {
+    // await this.helpers.checkConnection();
+    if (!this.havConnection) {
       return callback(new Error('Error could not connect to local geth instance!'), null);
     } else {
       return callback(null, true);
@@ -5913,7 +8641,8 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
 const INITIAL_STATE$2 = {
   coinbase: '',
   password: false,
-  accounts: []
+  accounts: [],
+  balance: 0.00
 };
 var AccountReducer = ((state = INITIAL_STATE$2, action) => {
   switch (action.type) {
@@ -5930,6 +8659,11 @@ var AccountReducer = ((state = INITIAL_STATE$2, action) => {
     case SET_ACCOUNTS:
       return _objectSpread({}, state, {
         accounts: action.payload
+      });
+
+    case SET_BALANCE:
+      return _objectSpread({}, state, {
+        balance: action.payload
       });
 
     default:
@@ -5981,26 +8715,38 @@ var EventReducer = ((state = INITIAL_STATE$4, action) => {
   }
 });
 
-// This file is part of Etheratom.
-// Etheratom is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// Etheratom is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-// You should have received a copy of the GNU General Public License
-// along with Etheratom.  If not, see <http://www.gnu.org/licenses/>.
-
 const INITIAL_STATE$5 = {
   clients: [{
     provider: 'web3',
-    desc: 'Backend ethereum node'
+    desc: 'Backend ethereum node',
+    hasConnection: false,
+    firstTimeCheck: true,
+    isWsProvider: false,
+    isHttpProvider: false
   }]
 };
 var ClientReducer = ((state = INITIAL_STATE$5, action) => {
   switch (action.type) {
+    case 'set_connection_status':
+      return _objectSpread({}, state, {
+        clients: action.payload
+      });
+
+    case 'first_time_check_enable':
+      return _objectSpread({}, state, {
+        clients: action.payload
+      });
+
+    case 'is_ws_provider':
+      return _objectSpread({}, state, {
+        clients: action.payload
+      });
+
+    case 'is_http_provider':
+      return _objectSpread({}, state, {
+        clients: action.payload
+      });
+
     default:
       return state;
   }
@@ -6070,8 +8816,6 @@ class Etheratom {
   }
 
   activate() {
-    window.alert();
-
     require('atom-package-deps').install('etheratom', true).then(function () {
       console.log('All dependencies installed, good to go');
     });
