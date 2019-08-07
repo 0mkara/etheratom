@@ -1,4 +1,4 @@
-'use babel';
+'use babel'
 import 'idempotent-babel-polyfill';
 import { Etheratom } from './lib/ethereum-interface';
 

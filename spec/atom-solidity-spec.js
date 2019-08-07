@@ -1,4 +1,4 @@
-'use babel';
+'use babel'
 import { combineSource } from '../lib/helpers/compiler-imports';
 /* global it, describe, expect */
 
