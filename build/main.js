@@ -3449,7 +3449,7 @@ class ContractCompiled extends React__default.Component {
 
   _handleGasChange(event) {
     this.setState({
-      estimatedGas: event.target.value
+      estimatedGas: parseInt(event.target.value)
     });
   }
 
