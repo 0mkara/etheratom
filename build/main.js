@@ -7,6 +7,7 @@ var atom$1 = require('atom');
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
+require('web3');
 var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
@@ -990,6 +991,12 @@ const setInstance = ({
   contractName,
   instance
 }) => {
+  console.log({
+    contractName
+  });
+  console.log({
+    instance
+  });
   return dispatch => {
     dispatch({
       type: SET_INSTANCE,
@@ -1105,6 +1112,8 @@ class Web3Helpers {
     this.web3ProcessHandler = this.web3ProcessHandler.bind(this);
     this.setCoinbase = this.setCoinbase.bind(this);
     this.getCurrentClients = this.getCurrentClients.bind(this);
+    this.showPanelError = this.showPanelError.bind(this);
+    this.showPanelSuccess = this.showPanelSuccess.bind(this);
     this.hookWeb3ChildProcess = this.createWeb3Connection(); //sending rpc or ws address to create ethereum connection
 
     const rpcAddress = atom.config.get('etheratom.rpcAddress');
@@ -1168,6 +1177,8 @@ class Web3Helpers {
 
   web3ProcessHandler() {
     this.hookWeb3ChildProcess.on('message', message => {
+      console.log("new message : ", message);
+
       if (message.hasOwnProperty('transaction')) {
         this.store.dispatch({
           type: ADD_PENDING_TRANSACTION,
@@ -1210,6 +1221,7 @@ class Web3Helpers {
         });
       } else if (message.hasOwnProperty('error')) {
         console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message.error);
+        this.showPanelError(message.error);
       } else if (message.hasOwnProperty('hasConnection')) {
         let clients = this.getCurrentClients();
         clients[0].hasConnection = message['hasConnection'];
@@ -1221,7 +1233,7 @@ class Web3Helpers {
         this.store.dispatch({
           type: 'first_time_check_enable',
           payload: clients
-        }); // set_connection_status(message['hasConnection']);                
+        }); // set_connection_status(message['hasConnection']);
       } else if (message.hasOwnProperty('isWsProvider')) {
         let clients = this.getCurrentClients();
         clients[0].isWsProvider = message['isWsProvider'];
@@ -1245,9 +1257,91 @@ class Web3Helpers {
           type: SET_COINBASE,
           payload: message.accounts[0]
         });
-      } else if (message.hasOwnProperty('contract')) {
-        console.log('HHHHpei');
-        console.log(message.contract);
+      } else if (message.hasOwnProperty('getAccountsForNodeSubmit')) {
+        let clients = this.getCurrentClients();
+
+        try {
+          this.store.dispatch({
+            type: SET_ACCOUNTS,
+            payload: message.getAccountsForNodeSubmit
+          });
+          this.store.dispatch({
+            type: SET_COINBASE,
+            payload: message.getAccountsForNodeSubmit[0]
+          });
+
+          if (message['node_type'] === 'node_ws') {
+            this.showPanelSuccess('Connection Re-established with Web socket');
+            clients[0].isWsProvider = true;
+            clients[0].isHttpProvider = false;
+            this.store.dispatch({
+              type: 'is_ws_provider',
+              payload: clients
+            });
+          } else if (message['node_type'] === 'node_rpc') {
+            this.showPanelSuccess('Connection Re-established with rpc');
+            clients[0].isHttpProvider = true;
+            clients[0].isWsProvider = false;
+            this.store.dispatch({
+              type: 'is_http_provider',
+              payload: clients
+            });
+          }
+        } catch (e) {
+          if (message['node_type'] === 'node_ws') {
+            this.showPanelError('Error with RPC value. Please check again');
+          } else if (message['node_type'] === 'node_rpc') {
+            this.showPanelError('Error with Web Socket value. Please check again');
+          }
+
+          this.store.dispatch({
+            type: SET_ACCOUNTS,
+            payload: []
+          });
+          this.store.dispatch({
+            type: SET_COINBASE,
+            payload: '0x00'
+          });
+        }
+      } else if (message.hasOwnProperty('isMining')) {
+        setMining(message['isMining']);
+      } else if (message.hasOwnProperty('getHashrate')) {
+        setHashrate(message['getHashrate']);
+      } else if (message.hasOwnProperty('gasLimit')) {
+        this.store.dispatch({
+          type: SET_GAS_LIMIT,
+          payload: message['gasLimit']
+        });
+      } else if (message.hasOwnProperty('transactionHash')) {
+        console.log(message['transactionHash']);
+        let contract = {};
+        contract.transactionHash = message['transactionHash'];
+        setInstance({
+          contractName: message.contractName,
+          instance: Object.assign({}, contract)
+        });
+      } else if (message.hasOwnProperty('txReceipt')) {
+        console.log(message['txReceipt']);
+      } else if (message.hasOwnProperty('confirmationNumber')) {
+        console.log(message['confirmationNumber']);
+      } else if (message.hasOwnProperty('logsEvents')) {
+        console.log(message['logsEvents']);
+      } else if (message.hasOwnProperty('dataEvents')) {
+        console.log(message.hasOwnProperty('dataEvents'));
+      } else if (message.hasOwnProperty('changedEvent')) {
+        console.log(message['changedEvent']);
+      } else if (message.hasOwnProperty('address')) {
+        console.log('KOKlkomswh');
+        console.log(message); // setDeployed({ contractName: message.contractName, deployed: true });
+
+        let contractName = message['contractName'];
+        this.store.dispatch({
+          type: 'set_deployed',
+          payload: {
+            contractName,
+            deployed: true
+          }
+        });
       }
     });
   }
@@ -1297,7 +1391,6 @@ class Web3Helpers {
     if (this.jobs[fileName]) {
       if (this.jobs[fileName].hashId === hashId || this.jobs[fileName].hashId === undefined) {
         this.jobs[fileName].wasBusy = true;
-        console.log(hashId);
         console.error(`Job in progress for ${fileName}`);
         return;
       }
@@ -1391,84 +1484,16 @@ class Web3Helpers {
     });
   }
 
-  async create(_ref) {
-    let args = _extends({}, _ref);
-
+  async create(args) {
     console.log('%c Creating contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
     this.hookWeb3ChildProcess.send({
       action: 'create',
-      argumentsForCreate: _objectSpread({}, args)
-    }); // const coinbase = args.coinbase;
-    // const password = args.password;
-    // const abi = args.abi;
-    // const code = args.bytecode;
-    // const gasSupply = args.gas;
-    // if (!coinbase) {
-    //     const error = new Error('No coinbase selected!');
-    //     throw error;
-    // }
-    // this.web3.eth.defaultAccount = coinbase;
-    // try {
-    //     if (password) {
-    //         await this.web3.eth.personal.unlockAccount(coinbase, password);
-    //     }
-    //     try {
-    //         const gasPrice = await this.web3.eth.getGasPrice();
-    //         const contract = await new this.web3.eth.Contract(abi, {
-    //             from: this.web3.eth.defaultAccount,
-    //             data: '0x' + code,
-    //             gas: this.web3.utils.toHex(gasSupply),
-    //             gasPrice: this.web3.utils.toHex(gasPrice)
-    //         });
-    //         return contract;
-    //     } catch (e) {
-    //         console.log(e);
-    //         throw e;
-    //     }
-    // } catch (e) {
-    //     console.log(e);
-    //     throw e;
-    // }
-  } // async deploy(contract, params) {
-  //     console.log('%c Deploying contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-  //     class ContractInstance extends EventEmitter { }
-  //     const contractInstance = new ContractInstance();
-  //     try {
-  //         params = params.map(param => {
-  //             return param.type.endsWith('[]') ? param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',') : param.value;
-  //         });
-  //         contract.deploy({
-  //             arguments: params
-  //         })
-  //             .send({
-  //                 from: this.web3.eth.defaultAccount
-  //             })
-  //             .on('transactionHash', transactionHash => {
-  //                 contractInstance.emit('transactionHash', transactionHash);
-  //             })
-  //             .on('receipt', txReceipt => {
-  //                 contractInstance.emit('receipt', txReceipt);
-  //             })
-  //             .on('confirmation', confirmationNumber => {
-  //                 contractInstance.emit('confirmation', confirmationNumber);
-  //             })
-  //             .on('error', error => {
-  //                 contractInstance.emit('error', error);
-  //             })
-  //             .then(instance => {
-  //                 contractInstance.emit('address', instance.options.address);
-  //                 contractInstance.emit('instance', instance);
-  //             });
-  //         return contractInstance;
-  //     } catch (e) {
-  //         console.log(e);
-  //         throw e;
-  //     }
-  // }
+      argumentsForCreate: args
+    });
+  }
 
-
-  async call(_ref2) {
-    let args = _extends({}, _ref2);
+  async call(_ref) {
+    let args = _extends({}, _ref);
 
     console.log('%c Web3 calling functions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
     const coinbase = args.coinbase;
@@ -1615,8 +1640,8 @@ class Web3Helpers {
     }));
   }
 
-  showOutput(_ref3) {
-    let args = _extends({}, _ref3);
+  showOutput(_ref2) {
+    let args = _extends({}, _ref2);
 
     const address = args.address;
     const data = args.data;
@@ -1646,8 +1671,8 @@ class Web3Helpers {
     return;
   }
 
-  showTransaction(_ref4) {
-    let args = _extends({}, _ref4);
+  showTransaction(_ref3) {
+    let args = _extends({}, _ref3);
 
     const head = args.head;
     const data = args.data;
@@ -1693,12 +1718,9 @@ class Web3Helpers {
 
 
   async getGasLimit() {
-    try {
-      const block = await this.web3.eth.getBlock('latest');
-      return block.gasLimit;
-    } catch (e) {
-      throw e;
-    }
+    this.hookWeb3ChildProcess.send({
+      action: 'getGasLimit'
+    });
   }
 
   async getAccounts() {
@@ -1707,22 +1729,24 @@ class Web3Helpers {
     });
   }
 
-  async getMining() {
-    alert();
+  async getAccountsForNodeSubmit(node_string, node_url) {
+    this.hookWeb3ChildProcess.send({
+      action: 'getAccountsForNodeSubmit',
+      node_type: node_string,
+      node_url
+    });
+  }
 
-    try {
-      return await this.web3.eth.isMining();
-    } catch (e) {
-      throw e;
-    }
+  async getMining() {
+    this.hookWeb3ChildProcess.send({
+      action: 'getMiningStatus'
+    });
   }
 
   async getHashrate() {
-    try {
-      return await this.web3.eth.getHashrate();
-    } catch (e) {
-      throw e;
-    }
+    this.hookWeb3ChildProcess.send({
+      action: 'getHashrateStatus'
+    });
   }
 
   async updateWeb3() {// try {
@@ -3035,8 +3059,6 @@ async function combineSource(fileRoot, sources) {
       matches.push(match);
     }
 
-    console.log(matches);
-
     for (let match of matches) {
       importLine = match[0];
       const extra = match[1] ? match[1] : '';
@@ -3235,80 +3257,100 @@ class CreateButton extends React__default.Component {
     this.setState({
       atAddress: event.target.value
     });
-  } // async _handleSubmit() {
-  //     try {
-  //         const { abi, bytecode, contractName, gas, coinbase, password } = this.props;
-  //         const { atAddress } = this.state;
-  //         const contractInterface = this.props.interfaces[contractName].interface;
-  //         const constructor = contractInterface.find(interfaceItem => interfaceItem.type === 'constructor');
-  //         const params = [];
-  //         if (constructor) {
-  //             for (let input of constructor.inputs) {
-  //                 if (input.value) {
-  //                     params.push(input);
-  //                 }
-  //             }
-  //         }
-  //         const contract = await this.helpers.create({ coinbase, password, atAddress, abi, bytecode, contractName, gas });
-  //         console.log('CREATE CONTRACTS ===========================================================================');
-  //         console.log(contract);
-  //         // this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         // if (!atAddress) {
-  //         //     const contractInstance = await this.helpers.deploy(contract, params);
-  //         //     this.props.setDeployed({ contractName, deployed: true });
-  //         //     contractInstance.on('address', address => {
-  //         //         contract.options.address = address;
-  //         //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         //     });
-  //         //     contractInstance.on('transactionHash', transactionHash => {
-  //         //         contract.transactionHash = transactionHash;
-  //         //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         //     });
-  //         //     contractInstance.on('error', error => {
-  //         //         this.helpers.showPanelError(error);
-  //         //     });
-  //         //     contractInstance.on('instance', instance => {
-  //         //         instance.events.allEvents({ fromBlock: 'latest' })
-  //         //             .on('logs', (logs) => {
-  //         //                 this.props.addNewEvents({ payload: logs });
-  //         //             })
-  //         //             .on('data', (data) => {
-  //         //                 this.props.addNewEvents({ payload: data });
-  //         //             })
-  //         //             .on('changed', (changed) => {
-  //         //                 this.props.addNewEvents({ payload: changed });
-  //         //             })
-  //         //             .on('error', (error) => {
-  //         //                 console.log(error);
-  //         //             });
-  //         //     });
-  //         //     contractInstance.on('error', error => {
-  //         //         this.helpers.showPanelError(error);
-  //         //     });
-  //         // } else {
-  //         //     contract.options.address = atAddress;
-  //         //     this.props.setDeployed({ contractName, deployed: true });
-  //         //     this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         //     contract.events.allEvents({ fromBlock: 'latest' })
-  //         //         .on('logs', (logs) => {
-  //         //             this.props.addNewEvents({ payload: logs });
-  //         //         })
-  //         //         .on('data', (data) => {
-  //         //             this.props.addNewEvents({ payload: data });
-  //         //         })
-  //         //         .on('changed', (changed) => {
-  //         //             this.props.addNewEvents({ payload: changed });
-  //         //         })
-  //         //         .on('error', (error) => {
-  //         //             console.log(error);
-  //         //         });
-  //         // }
-  //     } catch (e) {
-  //         console.log(e);
-  //         this.helpers.showPanelError(e);
-  //     }
-  // }
+  }
 
+  async _handleSubmit() {
+    console.log("Deploying...");
+
+    try {
+      const {
+        abi,
+        bytecode,
+        contractName,
+        gas,
+        coinbase,
+        password
+      } = this.props;
+      const {
+        atAddress
+      } = this.state;
+      const contractInterface = this.props.interfaces[contractName].interface;
+      const constructor = contractInterface.find(interfaceItem => interfaceItem.type === 'constructor');
+      const params = [];
+
+      if (constructor) {
+        for (let input of constructor.inputs) {
+          if (input.value) {
+            params.push(input);
+          }
+        }
+      }
+
+      await this.helpers.create({
+        coinbase,
+        password,
+        atAddress,
+        abi,
+        bytecode,
+        contractName,
+        params,
+        gas
+      }); // this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+      // if (!atAddress) {
+      //     const contractInstance = await this.helpers.deploy(contract, params);
+      //     this.props.setDeployed({ contractName, deployed: true });
+      //     contractInstance.on('address', address => {
+      //         contract.options.address = address;
+      //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+      //     });
+      //     contractInstance.on('transactionHash', transactionHash => {
+      //         contract.transactionHash = transactionHash;
+      //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+      //     });
+      //     contractInstance.on('error', error => {
+      //         this.helpers.showPanelError(error);
+      //     });
+      //     contractInstance.on('instance', instance => {
+      //         instance.events.allEvents({ fromBlock: 'latest' })
+      //             .on('logs', (logs) => {
+      //                 this.props.addNewEvents({ payload: logs });
+      //             })
+      //             .on('data', (data) => {
+      //                 this.props.addNewEvents({ payload: data });
+      //             })
+      //             .on('changed', (changed) => {
+      //                 this.props.addNewEvents({ payload: changed });
+      //             })
+      //             .on('error', (error) => {
+      //                 console.log(error);
+      //             });
+      //     });
+      //     contractInstance.on('error', error => {
+      //         this.helpers.showPanelError(error);
+      //     });
+      // } else {
+      //     contract.options.address = atAddress;
+      //     this.props.setDeployed({ contractName, deployed: true });
+      //     this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
+      //     contract.events.allEvents({ fromBlock: 'latest' })
+      //         .on('logs', (logs) => {
+      //             this.props.addNewEvents({ payload: logs });
+      //         })
+      //         .on('data', (data) => {
+      //             this.props.addNewEvents({ payload: data });
+      //         })
+      //         .on('changed', (changed) => {
+      //             this.props.addNewEvents({ payload: changed });
+      //         })
+      //         .on('error', (error) => {
+      //             console.log(error);
+      //         });
+      // }
+    } catch (e) {
+      console.log(e);
+      this.helpers.showPanelError(e);
+    }
+  }
 
   render() {
     const {
@@ -3326,8 +3368,8 @@ class CreateButton extends React__default.Component {
       type: "text",
       placeholder: "at:",
       className: "inputs",
-      value: this.state.atAddress // onChange={this._handleAtAddressChange}
-
+      value: this.state.atAddress,
+      onChange: this._handleAtAddressChange
     }));
   }
 
@@ -3413,12 +3455,13 @@ class ContractCompiled extends React__default.Component {
 
   _handleInput() {
     const {
-      contractName
+      contractName,
+      addInterface
     } = this.props;
     const {
       ContractABI
     } = this.state;
-    this.props.addInterface({
+    addInterface({
       contractName,
       ContractABI
     });
@@ -3899,6 +3942,22 @@ class CollapsedFile extends React__default.Component {
   _clearContract() {// TODO: clear interface from store
   }
 
+  renderContractFunction(contractAbi) {
+    const contractAbiArray = [];
+
+    for (var x in contractAbi) {
+      {
+        for (var y = 0; y < contractAbi[x].abi.length; y++) {
+          contractAbiArray.push(React__default.createElement(ContractsFunction, {
+            abi: contractAbi[x].abi[y]
+          }));
+        }
+      }
+    }
+
+    return contractAbiArray;
+  }
+
   render() {
     const {
       isOpened,
@@ -3912,6 +3971,8 @@ class CollapsedFile extends React__default.Component {
       compiling,
       interfaces
     } = this.props;
+    console.log('==================++++++++++++++++=====================');
+    console.log(deployed);
     return React__default.createElement("div", null, React__default.createElement("label", {
       className: "label file-collapse-label"
     }, React__default.createElement("h4", {
@@ -3933,13 +3994,38 @@ class CollapsedFile extends React__default.Component {
         bytecode: bytecode,
         index: index,
         helpers: this.helpers
-      }), deployed[contractName] && React__default.createElement(ContractExecution$1, {
+      }), React__default.createElement("form", {
+        className: "gas-estimate-form"
+      }, React__default.createElement("button", {
+        className: "input text-subtle"
+      }, "Contract address"), React__default.createElement("input", {
+        id: "SimpleStorageContract_gas",
+        type: "number",
+        className: "inputs"
+      })), compiled ? this.renderContractFunction(compiled.contracts[fileName]) : '', deployed[contractName] && React__default.createElement(ContractExecution$1, {
         contractName: contractName,
         bytecode: bytecode,
         index: index,
         helpers: this.helpers
       }));
     })));
+  }
+
+}
+
+class ContractsFunction extends React__default.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    const {
+      abi
+    } = this.props;
+    console.log(abi);
+    return React__default.createElement("div", {
+      className: "function"
+    }, React__default.createElement("p", null, abi.name));
   }
 
 }
@@ -3968,6 +4054,8 @@ class Contracts extends React__default.Component {
           for (const [contractName, contract] of Object.entries(file[1])) {
             // Add interface to redux
             const ContractABI = contract.abi;
+            console.log('THIS IS CONTRACT ABI =================================');
+            console.log(ContractABI);
             this.props.addInterface({
               contractName,
               ContractABI
@@ -3989,6 +4077,7 @@ class Contracts extends React__default.Component {
       compiling,
       interfaces
     } = this.props;
+    console.log(interfaces);
     return React__default.createElement(reactRedux.Provider, {
       store: this.props.store
     }, React__default.createElement("div", {
@@ -4559,9 +4648,6 @@ class NodeControl extends React__default.Component {
       websocketAddress: atom.config.get('etheratom.websocketAddress'),
       status: this.props.store.getState().node.status
     };
-    console.log('==========================================================================');
-    console.log(this.props.store.getState());
-    console.log('==========================================================================');
     this._refreshSync = this._refreshSync.bind(this);
     this.getNodeInfo = this.getNodeInfo.bind(this);
     this._handleToAddrrChange = this._handleToAddrrChange.bind(this);
@@ -4577,7 +4663,7 @@ class NodeControl extends React__default.Component {
     this.getNodeInfo();
   }
 
-  async componentDidUpdate(_, prevState) {
+  async componentDidUpdate(prevProps, prevState) {
     if (this.state.httpProvider !== this.props.store.getState().clientReducer.clients[0].isHttpProvider) {
       this.setState({
         httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider
@@ -4609,11 +4695,9 @@ class NodeControl extends React__default.Component {
     });
     this.props.setSyncStatus(this.state.status); // get mining status
 
-    const mining = await this.helpers.getMining();
-    this.props.setMining(mining); // get hashrate
+    await this.helpers.getMining(); // get hashrate
 
-    const hashRate = await this.helpers.getHashrate();
-    this.props.setHashrate(hashRate);
+    await this.helpers.getHashrate(); // this.props.setHashrate(hashRate);
   }
 
   _handleToAddrrChange(event) {
@@ -4657,24 +4741,12 @@ class NodeControl extends React__default.Component {
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
       websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
-    this.setState(newState);
-    this.helpers.updateWeb3();
+    this.setState(newState); // this.helpers.updateWeb3();
 
     try {
-      const accounts = await this.helpers.getAccounts();
-      this.helpers.showPanelSuccess('Connection Re-established');
-      this.props.setAccounts(accounts);
-
-      if (accounts.length > 0) {
-        this.props.setCoinbase(accounts[0]);
-      } else {
-        this.props.setCoinbase('0x00');
-      }
+      await this.helpers.getAccountsForNodeSubmit('node_ws', websocketAddress);
     } catch (e) {
       this.helpers.showPanelError('Error with Web Socket value. Please check again');
-      this.props.setAccounts([]);
-      this.props.setCoinbase('0x00');
-      this.props.setMining(false);
     }
   }
 
@@ -4693,24 +4765,12 @@ class NodeControl extends React__default.Component {
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
       websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
-    this.setState(newState);
-    this.helpers.updateWeb3();
+    this.setState(newState); // this.helpers.updateWeb3();
 
     try {
-      const accounts = await this.helpers.getAccounts();
-      this.helpers.showPanelSuccess('Connection Re-established with rpc');
-      this.props.setAccounts(accounts);
-
-      if (accounts.length > 0) {
-        this.props.setCoinbase(accounts[0]);
-      } else {
-        this.props.setCoinbase('0x00');
-      }
+      await this.helpers.getAccountsForNodeSubmit('node_rpc', rpcAddress);
     } catch (e) {
       this.helpers.showPanelError('Error with RPC value. Please check again');
-      this.props.setAccounts([]);
-      this.props.setCoinbase('0x00');
-      this.props.setMining(false);
     }
   }
 
@@ -5346,17 +5406,13 @@ class CoinbaseView extends React__default.Component {
   render() {
     const {
       balance,
-      password
+      password,
+      coinbase,
+      unlock_style
     } = this.state;
     const {
       accounts
     } = this.props;
-    const {
-      coinbase
-    } = this.state;
-    const {
-      unlock_style
-    } = this.state;
     return React__default.createElement("div", {
       className: "content"
     }, accounts.length > 0 && React__default.createElement("div", {
@@ -5662,7 +5718,7 @@ var processStyleValue = function processStyleValue(key, value) {
     case 'animationName':
       {
         if (typeof value === 'string') {
-          value = value.replace(animationRegex, function (match, p1, p2) {
+          return value.replace(animationRegex, function (match, p1, p2) {
             cursor = {
               name: p1,
               styles: p2,
@@ -5827,7 +5883,21 @@ function createStringFromObject(mergedProps, registered, obj) {
             string += processStyleName(_key) + ":" + processStyleValue(_key, value[_i]) + ";";
           }
         } else {
-          string += _key + "{" + handleInterpolation(mergedProps, registered, value, false) + "}";
+          var interpolated = handleInterpolation(mergedProps, registered, value, false);
+
+          switch (_key) {
+            case 'animation':
+            case 'animationName':
+              {
+                string += processStyleName(_key) + ":" + interpolated + ";";
+                break;
+              }
+
+            default:
+              {
+                string += _key + "{" + interpolated + "}";
+              }
+          }
         }
       }
     }
@@ -6898,7 +6968,11 @@ var createCache = function createCache(options) {
       } else {
         // in compat mode, we put the styles on the inserted cache so
         // that emotion-server can pull out the styles
-        // except when we don't want to cache it(just the Global component right now)
+        // except when we don't want to cache it which was in Global but now
+        // is nowhere but we don't want to do a major right now
+        // and just in case we're going to leave the case here
+        // it's also not affecting client side bundle size
+        // so it's really not a big deal
         if (shouldCache) {
           cache.inserted[name] = rules;
         } else {
@@ -7078,6 +7152,12 @@ if (!isBrowser$2) {
   };
 }
 
+// thus we only need to replace what is a valid character for JS, but not for CSS
+
+var sanitizeIdentifier = function sanitizeIdentifier(identifier) {
+  return identifier.replace(/\$/g, '-');
+};
+
 var typePropName = '__EMOTION_TYPE_PLEASE_DO_NOT_USE__';
 var labelPropName = '__EMOTION_LABEL_PLEASE_DO_NOT_USE__';
 var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
@@ -7190,15 +7270,15 @@ var jsx = function jsx(type, props) {
 
     if (error.stack) {
       // chrome
-      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z]+) /);
+      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z$]+) /);
 
       if (!match) {
         // safari and firefox
-        match = error.stack.match(/^.*\n([A-Z][A-Za-z]+)@/);
+        match = error.stack.match(/^.*\n([A-Z][A-Za-z$]+)@/);
       }
 
       if (match) {
-        newProps[labelPropName] = match[1];
+        newProps[labelPropName] = sanitizeIdentifier(match[1]);
       }
     }
   }
@@ -7307,8 +7387,6 @@ function (_React$Component) {
 
   _proto.render = function render() {
     if (!isBrowser$2) {
-      var _ref;
-
       var serialized = this.props.serialized;
       var serializedNames = serialized.name;
       var serializedStyles = serialized.styles;
@@ -7320,13 +7398,19 @@ function (_React$Component) {
         next = next.next;
       }
 
+      var shouldCache = this.props.cache.compat === true;
       var rules = this.props.cache.insert("", {
         name: serializedNames,
         styles: serializedStyles
-      }, this.sheet, false);
-      return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
-        __html: rules
-      }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
+      }, this.sheet, shouldCache);
+
+      if (!shouldCache) {
+        var _ref;
+
+        return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
+          __html: rules
+        }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
+      }
     }
 
     return null;
@@ -8517,11 +8601,7 @@ class Web3Env {
         }
 
         this.helpers.compileWeb3(sources);
-        const gasLimit = await this.helpers.getGasLimit();
-        this.store.dispatch({
-          type: SET_GAS_LIMIT,
-          payload: gasLimit
-        });
+        await this.helpers.getGasLimit();
       } catch (e) {
         console.log(e);
         showPanelError(e);
@@ -8572,6 +8652,8 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
       });
 
     case SET_DEPLOYED:
+      console.log('DEPLOYED');
+      console.log(action.payload.deployed);
       return _objectSpread({}, state, {
         deployed: _objectSpread({}, state.deployed, {
           [action.payload.contractName]: action.payload.deployed
