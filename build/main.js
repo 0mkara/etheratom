@@ -7,7 +7,6 @@ var atom$1 = require('atom');
 var md5 = _interopDefault(require('md5'));
 var atomMessagePanel = require('atom-message-panel');
 var child_process = require('child_process');
-require('web3');
 var axios = _interopDefault(require('axios'));
 var validUrl = _interopDefault(require('valid-url'));
 var fs = _interopDefault(require('fs'));
@@ -925,7 +924,8 @@ const UPDATE_INTERFACE = 'update_interface';
 const SET_INSTANCE = 'set_instance';
 const SET_DEPLOYED = 'set_deployed';
 const SET_GAS_LIMIT = 'set_gas_limit';
-const SET_BALANCE = 'set_balance'; // Files action types
+const SET_BALANCE = 'set_balance';
+const SET_GAS_ESTIMATE = 'set_gas_estimate'; // Files action types
 
 const RESET_SOURCES = 'reset_sources';
 const SET_SOURCES = 'set_sources';
@@ -991,12 +991,6 @@ const setInstance = ({
   contractName,
   instance
 }) => {
-  console.log({
-    contractName
-  });
-  console.log({
-    instance
-  });
   return dispatch => {
     dispatch({
       type: SET_INSTANCE,
@@ -1105,10 +1099,10 @@ const resetErrors = () => {
 
 class Web3Helpers {
   constructor(store) {
-    // this.web3 = getWeb3Conn();
     this.store = store;
     this.jobs = {// fileName: { solcWorker, hash }
     };
+    this.contract;
     this.web3ProcessHandler = this.web3ProcessHandler.bind(this);
     this.setCoinbase = this.setCoinbase.bind(this);
     this.getCurrentClients = this.getCurrentClients.bind(this);
@@ -1313,28 +1307,22 @@ class Web3Helpers {
           payload: message['gasLimit']
         });
       } else if (message.hasOwnProperty('transactionHash')) {
-        console.log(message['transactionHash']);
-        let contract = {};
-        contract.transactionHash = message['transactionHash'];
+        this.contract.transactionHash = message['transactionHash'];
+        const contractName = message['contractName'];
         setInstance({
-          contractName: message.contractName,
+          contractName,
+          instance: Object.assign({}, this.contract)
+        });
+      } else if (message.hasOwnProperty('txReceipt')) ; else if (message.hasOwnProperty('confirmationNumber')) ; else if (message.hasOwnProperty('logsEvents')) ; else if (message.hasOwnProperty('dataEvents')) ; else if (message.hasOwnProperty('changedEvent')) ; else if (message.hasOwnProperty('address')) {
+        const {
+          contract
+        } = this;
+        contract.options.address = message['address'];
+        const contractName = message['contractName'];
+        setInstance({
+          contractName,
           instance: Object.assign({}, contract)
         });
-      } else if (message.hasOwnProperty('txReceipt')) {
-        console.log(message['txReceipt']);
-      } else if (message.hasOwnProperty('confirmationNumber')) {
-        console.log(message['confirmationNumber']);
-      } else if (message.hasOwnProperty('logsEvents')) {
-        console.log(message['logsEvents']);
-      } else if (message.hasOwnProperty('dataEvents')) {
-        console.log(message.hasOwnProperty('dataEvents'));
-      } else if (message.hasOwnProperty('changedEvent')) {
-        console.log(message['changedEvent']);
-      } else if (message.hasOwnProperty('address')) {
-        console.log('KOKlkomswh');
-        console.log(message); // setDeployed({ contractName: message.contractName, deployed: true });
-
-        let contractName = message['contractName'];
         this.store.dispatch({
           type: 'set_deployed',
           payload: {
@@ -1342,7 +1330,26 @@ class Web3Helpers {
             deployed: true
           }
         });
-      }
+      } else if (message.hasOwnProperty('gasEstimate')) {
+        const gasEstimate = message['gasEstimate'];
+        this.store.dispatch({
+          type: SET_GAS_ESTIMATE,
+          payload: {
+            gasEstimate
+          }
+        });
+      } else if (message.hasOwnProperty('contractObject')) {
+        this.contract = message['contractObject']['contract'];
+        const instance = message['contractObject']['contract'];
+        const contractName = message['contractObject']['contractName'];
+        this.store.dispatch({
+          type: SET_INSTANCE,
+          payload: {
+            contractName,
+            instance
+          }
+        });
+      } else if (message.hasOwnProperty('callResult')) ;
     });
   }
 
@@ -1492,110 +1499,46 @@ class Web3Helpers {
     });
   }
 
-  async call(_ref) {
-    let args = _extends({}, _ref);
-
+  async call(args) {
     console.log('%c Web3 calling functions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-    const coinbase = args.coinbase;
-    const password = args.password;
-    const contract = args.contract;
-    const abiItem = args.abiItem;
-    var params = args.params || [];
-    this.web3.eth.defaultAccount = coinbase;
 
     try {
-      // Prepare params for call
-      params = params.map(param => {
-        if (param.type.endsWith('[]')) {
-          return param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',');
-        }
-
-        if (param.type.indexOf('int') > -1) {
-          return new this.web3.utils.BN(param.value);
-        }
-
-        return param.value;
-      }); // Handle fallback
-
-      if (abiItem.type === 'fallback') {
-        if (password) {
-          await this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        const result = await this.web3.eth.sendTransaction({
-          from: coinbase,
-          to: contract.options.address,
-          value: abiItem.payableValue || 0
-        });
-        return result;
-      }
-
-      if (abiItem.constant === false || abiItem.payable === true) {
-        if (password) {
-          await this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        if (params.length > 0) {
-          const result = await contract.methods[abiItem.name](...params).send({
-            from: coinbase,
-            value: abiItem.payableValue
-          });
-          return result;
-        }
-
-        const result = await contract.methods[abiItem.name]().send({
-          from: coinbase,
-          value: abiItem.payableValue
-        });
-        return result;
-      }
-
-      if (params.length > 0) {
-        const result = await contract.methods[abiItem.name](...params).call({
-          from: coinbase
-        });
-        return result;
-      }
-
-      const result = await contract.methods[abiItem.name]().call({
-        from: coinbase
+      this.hookWeb3ChildProcess.send({
+        action: 'callDeployedContract',
+        argumentsForCall: args
       });
-      return result;
     } catch (e) {
       console.log(e);
       throw e;
     }
-  }
+  } // async send(to, amount, password) {
+  //     return new Promise((resolve, reject) => {
+  //         try {
+  //             const coinbase = this.web3.eth.defaultAccount;
+  //             if (password) {
+  //                 this.web3.eth.personal.unlockAccount(coinbase, password);
+  //             }
+  //             this.web3.eth.sendTransaction({
+  //                 from: coinbase,
+  //                 to: to,
+  //                 value: amount
+  //             })
+  //                 .on('transactionHash', txHash => {
+  //                     this.showTransaction({ head: 'Transaction hash:', data: txHash });
+  //                 })
+  //                 .then(txRecipt => {
+  //                     resolve(txRecipt);
+  //                 })
+  //                 .catch(e => {
+  //                     reject(e);
+  //                 });
+  //         } catch (e) {
+  //             console.error(e);
+  //             reject(e);
+  //         }
+  //     });
+  // }
 
-  async send(to, amount, password) {
-    return new Promise((resolve, reject) => {
-      try {
-        const coinbase = this.web3.eth.defaultAccount;
-
-        if (password) {
-          this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        this.web3.eth.sendTransaction({
-          from: coinbase,
-          to: to,
-          value: amount
-        }).on('transactionHash', txHash => {
-          this.showTransaction({
-            head: 'Transaction hash:',
-            data: txHash
-          });
-        }).then(txRecipt => {
-          resolve(txRecipt);
-        }).catch(e => {
-          reject(e);
-        });
-      } catch (e) {
-        console.error(e);
-        reject(e);
-      }
-    });
-  }
 
   async funcParamsToArray(contractFunction) {
     if (contractFunction && contractFunction.inputs.length > 0) {
@@ -1606,15 +1549,13 @@ class Web3Helpers {
     }
 
     return [];
-  }
+  } // async inputsToArray(paramObject) {
+  //     if (paramObject.type.endsWith('[]')) {
+  //         return paramObject.value.split(',').map(val => this.web3.utils.toHex(val.trim()));
+  //     }
+  //     return this.web3.utils.toHex(paramObject.value);
+  // }
 
-  async inputsToArray(paramObject) {
-    if (paramObject.type.endsWith('[]')) {
-      return paramObject.value.split(',').map(val => this.web3.utils.toHex(val.trim()));
-    }
-
-    return this.web3.utils.toHex(paramObject.value);
-  }
 
   showPanelError(err_message) {
     let messages;
@@ -1640,8 +1581,8 @@ class Web3Helpers {
     }));
   }
 
-  showOutput(_ref2) {
-    let args = _extends({}, _ref2);
+  showOutput(_ref) {
+    let args = _extends({}, _ref);
 
     const address = args.address;
     const data = args.data;
@@ -1671,8 +1612,8 @@ class Web3Helpers {
     return;
   }
 
-  showTransaction(_ref3) {
-    let args = _extends({}, _ref3);
+  showTransaction(_ref2) {
+    let args = _extends({}, _ref2);
 
     const head = args.head;
     const data = args.data;
@@ -1701,20 +1642,16 @@ class Web3Helpers {
     }));
     return;
   } // Transaction analysis
-
-
-  async getTxAnalysis(txHash) {
-    try {
-      const transaction = await this.web3.eth.getTransaction(txHash);
-      const transactionRecipt = await this.web3.eth.getTransactionReceipt(txHash);
-      return {
-        transaction,
-        transactionRecipt
-      };
-    } catch (e) {
-      throw e;
-    }
-  } // Gas Limit
+  // async getTxAnalysis(txHash) {
+  //     try {
+  //         const transaction = await this.web3.eth.getTransaction(txHash);
+  //         const transactionRecipt = await this.web3.eth.getTransactionReceipt(txHash);
+  //         return { transaction, transactionRecipt };
+  //     } catch (e) {
+  //         throw e;
+  //     }
+  // }
+  // Gas Limit
 
 
   async getGasLimit() {
@@ -1747,13 +1684,6 @@ class Web3Helpers {
     this.hookWeb3ChildProcess.send({
       action: 'getHashrateStatus'
     });
-  }
-
-  async updateWeb3() {// try {
-    //     this.web3 = getWeb3Conn();
-    // } catch (e) {
-    //     throw e;
-    // }
   }
 
 }
@@ -3260,8 +3190,6 @@ class CreateButton extends React__default.Component {
   }
 
   async _handleSubmit() {
-    console.log("Deploying...");
-
     try {
       const {
         abi,
@@ -3295,57 +3223,7 @@ class CreateButton extends React__default.Component {
         contractName,
         params,
         gas
-      }); // this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-      // if (!atAddress) {
-      //     const contractInstance = await this.helpers.deploy(contract, params);
-      //     this.props.setDeployed({ contractName, deployed: true });
-      //     contractInstance.on('address', address => {
-      //         contract.options.address = address;
-      //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-      //     });
-      //     contractInstance.on('transactionHash', transactionHash => {
-      //         contract.transactionHash = transactionHash;
-      //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-      //     });
-      //     contractInstance.on('error', error => {
-      //         this.helpers.showPanelError(error);
-      //     });
-      //     contractInstance.on('instance', instance => {
-      //         instance.events.allEvents({ fromBlock: 'latest' })
-      //             .on('logs', (logs) => {
-      //                 this.props.addNewEvents({ payload: logs });
-      //             })
-      //             .on('data', (data) => {
-      //                 this.props.addNewEvents({ payload: data });
-      //             })
-      //             .on('changed', (changed) => {
-      //                 this.props.addNewEvents({ payload: changed });
-      //             })
-      //             .on('error', (error) => {
-      //                 console.log(error);
-      //             });
-      //     });
-      //     contractInstance.on('error', error => {
-      //         this.helpers.showPanelError(error);
-      //     });
-      // } else {
-      //     contract.options.address = atAddress;
-      //     this.props.setDeployed({ contractName, deployed: true });
-      //     this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-      //     contract.events.allEvents({ fromBlock: 'latest' })
-      //         .on('logs', (logs) => {
-      //             this.props.addNewEvents({ payload: logs });
-      //         })
-      //         .on('data', (data) => {
-      //             this.props.addNewEvents({ payload: data });
-      //         })
-      //         .on('changed', (changed) => {
-      //             this.props.addNewEvents({ payload: changed });
-      //         })
-      //         .on('error', (error) => {
-      //             console.log(error);
-      //         });
-      // }
+      });
     } catch (e) {
       console.log(e);
       this.helpers.showPanelError(e);
@@ -3422,7 +3300,7 @@ class ContractCompiled extends React__default.Component {
     super(props);
     this.helpers = props.helpers;
     this.state = {
-      estimatedGas: 9000000,
+      estimatedGas: props.gasEstimate,
       ContractABI: props.interfaces[props.contractName].interface,
       savePath: `${props.contractName}.abi`
     };
@@ -3444,6 +3322,14 @@ class ContractCompiled extends React__default.Component {
     } catch (e) {
       console.log(e);
       this.helpers.showPanelError(e);
+    }
+  }
+
+  async componentDidUpdate(prevProps, prevState) {
+    if (prevProps.gasEstimate !== this.props.gasEstimate) {
+      this.setState({
+        estimatedGas: this.props.gasEstimate
+      });
     }
   }
 
@@ -3549,6 +3435,7 @@ class ContractCompiled extends React__default.Component {
 ContractCompiled.propTypes = {
   helpers: PropTypes.any.isRequired,
   interfaces: PropTypes.object,
+  gasEstimate: PropTypes.number,
   contractName: PropTypes.string,
   fileName: PropTypes.string,
   addInterface: PropTypes.func,
@@ -3563,7 +3450,8 @@ const mapStateToProps$3 = ({
 }) => {
   const {
     compiled,
-    interfaces
+    interfaces,
+    gasEstimate
   } = contract;
   const {
     coinbase
@@ -3571,7 +3459,8 @@ const mapStateToProps$3 = ({
   return {
     compiled,
     interfaces,
-    coinbase
+    coinbase,
+    gasEstimate
   };
 };
 
@@ -3595,6 +3484,7 @@ class FunctionABI extends React__default.Component {
       interfaces
     } = this.props;
     const ContractABI = interfaces[contractName].interface;
+    console.log(ContractABI);
     const input = ContractABI[i].inputs[j];
     input.value = event.target.value;
     ContractABI[i].inputs[j] = Object.assign({}, input);
@@ -3606,6 +3496,7 @@ class FunctionABI extends React__default.Component {
 
   _handlePayableValue(abi, event) {
     abi.payableValue = event.target.value;
+    console.log(abi.payableValue);
   }
 
   async _handleFallback(abiItem) {
@@ -3651,17 +3542,13 @@ class FunctionABI extends React__default.Component {
         }
       }
 
-      const result = await this.helpers.call({
+      this.helpers.call({
         coinbase,
         password,
         contract,
         abiItem: methodItem,
         params
-      });
-      this.helpers.showOutput({
-        address: contract.options.address,
-        data: result
-      });
+      }); // this.helpers.showOutput({ address: contract.options.address, data: result });
     } catch (e) {
       console.log(e);
       this.helpers.showPanelError(e);
@@ -3942,22 +3829,6 @@ class CollapsedFile extends React__default.Component {
   _clearContract() {// TODO: clear interface from store
   }
 
-  renderContractFunction(contractAbi) {
-    const contractAbiArray = [];
-
-    for (var x in contractAbi) {
-      {
-        for (var y = 0; y < contractAbi[x].abi.length; y++) {
-          contractAbiArray.push(React__default.createElement(ContractsFunction, {
-            abi: contractAbi[x].abi[y]
-          }));
-        }
-      }
-    }
-
-    return contractAbiArray;
-  }
-
   render() {
     const {
       isOpened,
@@ -3971,8 +3842,6 @@ class CollapsedFile extends React__default.Component {
       compiling,
       interfaces
     } = this.props;
-    console.log('==================++++++++++++++++=====================');
-    console.log(deployed);
     return React__default.createElement("div", null, React__default.createElement("label", {
       className: "label file-collapse-label"
     }, React__default.createElement("h4", {
@@ -3994,38 +3863,13 @@ class CollapsedFile extends React__default.Component {
         bytecode: bytecode,
         index: index,
         helpers: this.helpers
-      }), React__default.createElement("form", {
-        className: "gas-estimate-form"
-      }, React__default.createElement("button", {
-        className: "input text-subtle"
-      }, "Contract address"), React__default.createElement("input", {
-        id: "SimpleStorageContract_gas",
-        type: "number",
-        className: "inputs"
-      })), compiled ? this.renderContractFunction(compiled.contracts[fileName]) : '', deployed[contractName] && React__default.createElement(ContractExecution$1, {
+      }), deployed[contractName] && React__default.createElement(ContractExecution$1, {
         contractName: contractName,
         bytecode: bytecode,
         index: index,
         helpers: this.helpers
       }));
     })));
-  }
-
-}
-
-class ContractsFunction extends React__default.Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render() {
-    const {
-      abi
-    } = this.props;
-    console.log(abi);
-    return React__default.createElement("div", {
-      className: "function"
-    }, React__default.createElement("p", null, abi.name));
   }
 
 }
@@ -4054,8 +3898,6 @@ class Contracts extends React__default.Component {
           for (const [contractName, contract] of Object.entries(file[1])) {
             // Add interface to redux
             const ContractABI = contract.abi;
-            console.log('THIS IS CONTRACT ABI =================================');
-            console.log(ContractABI);
             this.props.addInterface({
               contractName,
               ContractABI
@@ -8637,7 +8479,8 @@ const INITIAL_STATE$1 = {
   deployed: false,
   interfaces: null,
   instances: null,
-  gasLimit: 0
+  gasLimit: 0,
+  gasEstimate: 90000
 };
 var ContractReducer = ((state = INITIAL_STATE$1, action) => {
   switch (action.type) {
@@ -8652,8 +8495,6 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
       });
 
     case SET_DEPLOYED:
-      console.log('DEPLOYED');
-      console.log(action.payload.deployed);
       return _objectSpread({}, state, {
         deployed: _objectSpread({}, state.deployed, {
           [action.payload.contractName]: action.payload.deployed
@@ -8713,6 +8554,11 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
     case SET_GAS_LIMIT:
       return _objectSpread({}, state, {
         gasLimit: action.payload
+      });
+
+    case SET_GAS_ESTIMATE:
+      return _objectSpread({}, state, {
+        gasEstimate: action.payload.gasEstimate
       });
 
     default:
