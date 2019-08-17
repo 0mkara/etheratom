@@ -20,7 +20,6 @@ describe('Etheratom', async function () {
                 await atom.packages.loadPackage('etheratom');
                 atom.packages.activatePackage('etheratom')
                     .then((data) => {
-                        console.log(data);
                         expect(atom.packages.isPackageActive('etheratom')).toBe(true);
                     });
 

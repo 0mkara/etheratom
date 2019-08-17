@@ -924,7 +924,8 @@ const UPDATE_INTERFACE = 'update_interface';
 const SET_INSTANCE = 'set_instance';
 const SET_DEPLOYED = 'set_deployed';
 const SET_GAS_LIMIT = 'set_gas_limit';
-const SET_BALANCE = 'set_balance'; // Files action types
+const SET_BALANCE = 'set_balance';
+const SET_GAS_ESTIMATE = 'set_gas_estimate'; // Files action types
 
 const RESET_SOURCES = 'reset_sources';
 const SET_SOURCES = 'set_sources';
@@ -936,7 +937,8 @@ const RESET_ERRORS = 'reset_errors'; // Ethereum client events
 
 const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
 const ADD_EVENTS = 'add_logs';
-const SET_EVENTS = 'set_events'; // Node variables
+const SET_EVENTS = 'set_events';
+const TEXT_ANALYSIS = 'text_analysis'; // Node variables
 const SET_SYNC_STATUS = 'set_sync_status';
 const SET_SYNCING = 'set_syncing';
 const SET_MINING = 'set_mining';
@@ -1098,13 +1100,15 @@ const resetErrors = () => {
 
 class Web3Helpers {
   constructor(store) {
-    // this.web3 = getWeb3Conn();
     this.store = store;
     this.jobs = {// fileName: { solcWorker, hash }
     };
+    this.contract;
     this.web3ProcessHandler = this.web3ProcessHandler.bind(this);
     this.setCoinbase = this.setCoinbase.bind(this);
     this.getCurrentClients = this.getCurrentClients.bind(this);
+    this.showPanelError = this.showPanelError.bind(this);
+    this.showPanelSuccess = this.showPanelSuccess.bind(this);
     this.hookWeb3ChildProcess = this.createWeb3Connection(); //sending rpc or ws address to create ethereum connection
 
     const rpcAddress = atom.config.get('etheratom.rpcAddress');
@@ -1168,11 +1172,20 @@ class Web3Helpers {
 
   web3ProcessHandler() {
     this.hookWeb3ChildProcess.on('message', message => {
+      console.log('new message : ', message);
+
       if (message.hasOwnProperty('transaction')) {
         this.store.dispatch({
           type: ADD_PENDING_TRANSACTION,
           payload: message.transaction
         });
+
+        if (message.hasOwnProperty('transactionRecipt')) {
+          this.store.dispatch({
+            type: TEXT_ANALYSIS,
+            payload: message
+          });
+        }
       } else if (message.hasOwnProperty('isBooleanSync')) {
         this.store.dispatch({
           type: SET_SYNCING,
@@ -1209,7 +1222,8 @@ class Web3Helpers {
           payload: message['ethBalance']
         });
       } else if (message.hasOwnProperty('error')) {
-        console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message.error);
+        console.log('%c Error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message);
+        this.showPanelError(message.error);
       } else if (message.hasOwnProperty('hasConnection')) {
         let clients = this.getCurrentClients();
         clients[0].hasConnection = message['hasConnection'];
@@ -1221,7 +1235,7 @@ class Web3Helpers {
         this.store.dispatch({
           type: 'first_time_check_enable',
           payload: clients
-        }); // set_connection_status(message['hasConnection']);                
+        }); // set_connection_status(message['hasConnection']);
       } else if (message.hasOwnProperty('isWsProvider')) {
         let clients = this.getCurrentClients();
         clients[0].isWsProvider = message['isWsProvider'];
@@ -1245,9 +1259,119 @@ class Web3Helpers {
           type: SET_COINBASE,
           payload: message.accounts[0]
         });
-      } else if (message.hasOwnProperty('contract')) {
-        console.log('HHHHpei');
-        console.log(message.contract);
+      } else if (message.hasOwnProperty('getAccountsForNodeSubmit')) {
+        let clients = this.getCurrentClients();
+
+        try {
+          this.store.dispatch({
+            type: SET_ACCOUNTS,
+            payload: message.getAccountsForNodeSubmit
+          });
+          this.store.dispatch({
+            type: SET_COINBASE,
+            payload: message.getAccountsForNodeSubmit[0]
+          });
+
+          if (message['node_type'] === 'node_ws') {
+            this.showPanelSuccess('Connection Re-established with Web socket');
+            clients[0].isWsProvider = true;
+            clients[0].isHttpProvider = false;
+            this.store.dispatch({
+              type: 'is_ws_provider',
+              payload: clients
+            });
+          } else if (message['node_type'] === 'node_rpc') {
+            this.showPanelSuccess('Connection Re-established with rpc');
+            clients[0].isHttpProvider = true;
+            clients[0].isWsProvider = false;
+            this.store.dispatch({
+              type: 'is_http_provider',
+              payload: clients
+            });
+          }
+        } catch (e) {
+          if (message['node_type'] === 'node_ws') {
+            this.showPanelError('Error with RPC value. Please check again');
+          } else if (message['node_type'] === 'node_rpc') {
+            this.showPanelError('Error with Web Socket value. Please check again');
+          }
+
+          this.store.dispatch({
+            type: SET_ACCOUNTS,
+            payload: []
+          });
+          this.store.dispatch({
+            type: SET_COINBASE,
+            payload: '0x00'
+          });
+        }
+      } else if (message.hasOwnProperty('isMining')) {
+        setMining(message['isMining']);
+      } else if (message.hasOwnProperty('getHashrate')) {
+        setHashrate(message['getHashrate']);
+      } else if (message.hasOwnProperty('gasLimit')) {
+        this.store.dispatch({
+          type: SET_GAS_LIMIT,
+          payload: message['gasLimit']
+        });
+      } else if (message.hasOwnProperty('transactionHash')) {
+        this.contract.transactionHash = message['transactionHash'];
+        const contractName = message['contractName'];
+        setInstance({
+          contractName,
+          instance: Object.assign({}, this.contract)
+        });
+      } else if (message.hasOwnProperty('txReceipt')) ; else if (message.hasOwnProperty('confirmationNumber')) ; else if (message.hasOwnProperty('logsEvents')) ; else if (message.hasOwnProperty('dataEvents')) ; else if (message.hasOwnProperty('changedEvent')) ; else if (message.hasOwnProperty('address')) {
+        const {
+          contract
+        } = this;
+        contract.options.address = message['address'];
+        const contractName = message['contractName'];
+        setInstance({
+          contractName,
+          instance: Object.assign({}, contract)
+        });
+        this.store.dispatch({
+          type: 'set_deployed',
+          payload: {
+            contractName,
+            deployed: true
+          }
+        });
+      } else if (message.hasOwnProperty('gasEstimate')) {
+        const gasEstimate = message['gasEstimate'];
+        this.store.dispatch({
+          type: SET_GAS_ESTIMATE,
+          payload: {
+            gasEstimate
+          }
+        });
+      } else if (message.hasOwnProperty('contractObject')) {
+        this.contract = message['contractObject']['contract'];
+        const instance = message['contractObject']['contract'];
+        const contractName = message['contractObject']['contractName'];
+        this.store.dispatch({
+          type: SET_INSTANCE,
+          payload: {
+            contractName,
+            instance
+          }
+        });
+      } else if (message.hasOwnProperty('callResult')) {
+        this.showOutput({
+          address: this.contract.options.address,
+          data: message['callResult']
+        });
+      } else if (message.hasOwnProperty('transactionHashonSend')) {
+        this.showTransaction({
+          head: 'Transaction hash:',
+          data: message['transactionHashonSend']
+        });
+      } else if (message.hasOwnProperty('txReciptonSend')) {
+        this.showTransaction({
+          head: 'Transaction recipt:',
+          data: message['txReciptonSend']
+        });
       }
     });
   }
@@ -1297,7 +1421,6 @@ class Web3Helpers {
     if (this.jobs[fileName]) {
       if (this.jobs[fileName].hashId === hashId || this.jobs[fileName].hashId === undefined) {
         this.jobs[fileName].wasBusy = true;
-        console.log(hashId);
         console.error(`Job in progress for ${fileName}`);
         return;
       }
@@ -1391,151 +1514,22 @@ class Web3Helpers {
     });
   }
 
-  async create(_ref) {
-    let args = _extends({}, _ref);
-
+  async create(args) {
     console.log('%c Creating contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
     this.hookWeb3ChildProcess.send({
       action: 'create',
-      argumentsForCreate: _objectSpread({}, args)
-    }); // const coinbase = args.coinbase;
-    // const password = args.password;
-    // const abi = args.abi;
-    // const code = args.bytecode;
-    // const gasSupply = args.gas;
-    // if (!coinbase) {
-    //     const error = new Error('No coinbase selected!');
-    //     throw error;
-    // }
-    // this.web3.eth.defaultAccount = coinbase;
-    // try {
-    //     if (password) {
-    //         await this.web3.eth.personal.unlockAccount(coinbase, password);
-    //     }
-    //     try {
-    //         const gasPrice = await this.web3.eth.getGasPrice();
-    //         const contract = await new this.web3.eth.Contract(abi, {
-    //             from: this.web3.eth.defaultAccount,
-    //             data: '0x' + code,
-    //             gas: this.web3.utils.toHex(gasSupply),
-    //             gasPrice: this.web3.utils.toHex(gasPrice)
-    //         });
-    //         return contract;
-    //     } catch (e) {
-    //         console.log(e);
-    //         throw e;
-    //     }
-    // } catch (e) {
-    //     console.log(e);
-    //     throw e;
-    // }
-  } // async deploy(contract, params) {
-  //     console.log('%c Deploying contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-  //     class ContractInstance extends EventEmitter { }
-  //     const contractInstance = new ContractInstance();
-  //     try {
-  //         params = params.map(param => {
-  //             return param.type.endsWith('[]') ? param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',') : param.value;
-  //         });
-  //         contract.deploy({
-  //             arguments: params
-  //         })
-  //             .send({
-  //                 from: this.web3.eth.defaultAccount
-  //             })
-  //             .on('transactionHash', transactionHash => {
-  //                 contractInstance.emit('transactionHash', transactionHash);
-  //             })
-  //             .on('receipt', txReceipt => {
-  //                 contractInstance.emit('receipt', txReceipt);
-  //             })
-  //             .on('confirmation', confirmationNumber => {
-  //                 contractInstance.emit('confirmation', confirmationNumber);
-  //             })
-  //             .on('error', error => {
-  //                 contractInstance.emit('error', error);
-  //             })
-  //             .then(instance => {
-  //                 contractInstance.emit('address', instance.options.address);
-  //                 contractInstance.emit('instance', instance);
-  //             });
-  //         return contractInstance;
-  //     } catch (e) {
-  //         console.log(e);
-  //         throw e;
-  //     }
-  // }
+      argumentsForCreate: args
+    });
+  }
 
-
-  async call(_ref2) {
-    let args = _extends({}, _ref2);
-
+  async call(args) {
     console.log('%c Web3 calling functions... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
-    const coinbase = args.coinbase;
-    const password = args.password;
-    const contract = args.contract;
-    const abiItem = args.abiItem;
-    var params = args.params || [];
-    this.web3.eth.defaultAccount = coinbase;
 
     try {
-      // Prepare params for call
-      params = params.map(param => {
-        if (param.type.endsWith('[]')) {
-          return param.value.search(', ') > 0 ? param.value.split(', ') : param.value.split(',');
-        }
-
-        if (param.type.indexOf('int') > -1) {
-          return new this.web3.utils.BN(param.value);
-        }
-
-        return param.value;
-      }); // Handle fallback
-
-      if (abiItem.type === 'fallback') {
-        if (password) {
-          await this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        const result = await this.web3.eth.sendTransaction({
-          from: coinbase,
-          to: contract.options.address,
-          value: abiItem.payableValue || 0
-        });
-        return result;
-      }
-
-      if (abiItem.constant === false || abiItem.payable === true) {
-        if (password) {
-          await this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        if (params.length > 0) {
-          const result = await contract.methods[abiItem.name](...params).send({
-            from: coinbase,
-            value: abiItem.payableValue
-          });
-          return result;
-        }
-
-        const result = await contract.methods[abiItem.name]().send({
-          from: coinbase,
-          value: abiItem.payableValue
-        });
-        return result;
-      }
-
-      if (params.length > 0) {
-        const result = await contract.methods[abiItem.name](...params).call({
-          from: coinbase
-        });
-        return result;
-      }
-
-      const result = await contract.methods[abiItem.name]().call({
-        from: coinbase
+      this.hookWeb3ChildProcess.send({
+        action: 'callDeployedContract',
+        argumentsForCall: args
       });
-      return result;
     } catch (e) {
       console.log(e);
       throw e;
@@ -1543,32 +1537,14 @@ class Web3Helpers {
   }
 
   async send(to, amount, password) {
-    return new Promise((resolve, reject) => {
-      try {
-        const coinbase = this.web3.eth.defaultAccount;
-
-        if (password) {
-          this.web3.eth.personal.unlockAccount(coinbase, password);
-        }
-
-        this.web3.eth.sendTransaction({
-          from: coinbase,
-          to: to,
-          value: amount
-        }).on('transactionHash', txHash => {
-          this.showTransaction({
-            head: 'Transaction hash:',
-            data: txHash
-          });
-        }).then(txRecipt => {
-          resolve(txRecipt);
-        }).catch(e => {
-          reject(e);
-        });
-      } catch (e) {
-        console.error(e);
-        reject(e);
-      }
+    let params = {
+      to,
+      amount,
+      password
+    };
+    this.hookWeb3ChildProcess.send({
+      action: 'sendTransaction',
+      params
     });
   }
 
@@ -1584,11 +1560,10 @@ class Web3Helpers {
   }
 
   async inputsToArray(paramObject) {
-    if (paramObject.type.endsWith('[]')) {
-      return paramObject.value.split(',').map(val => this.web3.utils.toHex(val.trim()));
-    }
-
-    return this.web3.utils.toHex(paramObject.value);
+    this.hookWeb3ChildProcess.send({
+      action: 'inputsToArray',
+      paramObject
+    });
   }
 
   showPanelError(err_message) {
@@ -1615,8 +1590,8 @@ class Web3Helpers {
     }));
   }
 
-  showOutput(_ref3) {
-    let args = _extends({}, _ref3);
+  showOutput(_ref) {
+    let args = _extends({}, _ref);
 
     const address = args.address;
     const data = args.data;
@@ -1646,8 +1621,8 @@ class Web3Helpers {
     return;
   }
 
-  showTransaction(_ref4) {
-    let args = _extends({}, _ref4);
+  showTransaction(_ref2) {
+    let args = _extends({}, _ref2);
 
     const head = args.head;
     const data = args.data;
@@ -1679,26 +1654,17 @@ class Web3Helpers {
 
 
   async getTxAnalysis(txHash) {
-    try {
-      const transaction = await this.web3.eth.getTransaction(txHash);
-      const transactionRecipt = await this.web3.eth.getTransactionReceipt(txHash);
-      return {
-        transaction,
-        transactionRecipt
-      };
-    } catch (e) {
-      throw e;
-    }
+    this.hookWeb3ChildProcess.send({
+      action: 'getTxAnalysis',
+      txHash
+    });
   } // Gas Limit
 
 
   async getGasLimit() {
-    try {
-      const block = await this.web3.eth.getBlock('latest');
-      return block.gasLimit;
-    } catch (e) {
-      throw e;
-    }
+    this.hookWeb3ChildProcess.send({
+      action: 'getGasLimit'
+    });
   }
 
   async getAccounts() {
@@ -1707,29 +1673,24 @@ class Web3Helpers {
     });
   }
 
-  async getMining() {
-    alert();
+  async getAccountsForNodeSubmit(node_string, node_url) {
+    this.hookWeb3ChildProcess.send({
+      action: 'getAccountsForNodeSubmit',
+      node_type: node_string,
+      node_url
+    });
+  }
 
-    try {
-      return await this.web3.eth.isMining();
-    } catch (e) {
-      throw e;
-    }
+  async getMining() {
+    this.hookWeb3ChildProcess.send({
+      action: 'getMiningStatus'
+    });
   }
 
   async getHashrate() {
-    try {
-      return await this.web3.eth.getHashrate();
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async updateWeb3() {// try {
-    //     this.web3 = getWeb3Conn();
-    // } catch (e) {
-    //     throw e;
-    // }
+    this.hookWeb3ChildProcess.send({
+      action: 'getHashrateStatus'
+    });
   }
 
 }
@@ -3035,8 +2996,6 @@ async function combineSource(fileRoot, sources) {
       matches.push(match);
     }
 
-    console.log(matches);
-
     for (let match of matches) {
       importLine = match[0];
       const extra = match[1] ? match[1] : '';
@@ -3235,80 +3194,48 @@ class CreateButton extends React__default.Component {
     this.setState({
       atAddress: event.target.value
     });
-  } // async _handleSubmit() {
-  //     try {
-  //         const { abi, bytecode, contractName, gas, coinbase, password } = this.props;
-  //         const { atAddress } = this.state;
-  //         const contractInterface = this.props.interfaces[contractName].interface;
-  //         const constructor = contractInterface.find(interfaceItem => interfaceItem.type === 'constructor');
-  //         const params = [];
-  //         if (constructor) {
-  //             for (let input of constructor.inputs) {
-  //                 if (input.value) {
-  //                     params.push(input);
-  //                 }
-  //             }
-  //         }
-  //         const contract = await this.helpers.create({ coinbase, password, atAddress, abi, bytecode, contractName, gas });
-  //         console.log('CREATE CONTRACTS ===========================================================================');
-  //         console.log(contract);
-  //         // this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         // if (!atAddress) {
-  //         //     const contractInstance = await this.helpers.deploy(contract, params);
-  //         //     this.props.setDeployed({ contractName, deployed: true });
-  //         //     contractInstance.on('address', address => {
-  //         //         contract.options.address = address;
-  //         //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         //     });
-  //         //     contractInstance.on('transactionHash', transactionHash => {
-  //         //         contract.transactionHash = transactionHash;
-  //         //         this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         //     });
-  //         //     contractInstance.on('error', error => {
-  //         //         this.helpers.showPanelError(error);
-  //         //     });
-  //         //     contractInstance.on('instance', instance => {
-  //         //         instance.events.allEvents({ fromBlock: 'latest' })
-  //         //             .on('logs', (logs) => {
-  //         //                 this.props.addNewEvents({ payload: logs });
-  //         //             })
-  //         //             .on('data', (data) => {
-  //         //                 this.props.addNewEvents({ payload: data });
-  //         //             })
-  //         //             .on('changed', (changed) => {
-  //         //                 this.props.addNewEvents({ payload: changed });
-  //         //             })
-  //         //             .on('error', (error) => {
-  //         //                 console.log(error);
-  //         //             });
-  //         //     });
-  //         //     contractInstance.on('error', error => {
-  //         //         this.helpers.showPanelError(error);
-  //         //     });
-  //         // } else {
-  //         //     contract.options.address = atAddress;
-  //         //     this.props.setDeployed({ contractName, deployed: true });
-  //         //     this.props.setInstance({ contractName, instance: Object.assign({}, contract) });
-  //         //     contract.events.allEvents({ fromBlock: 'latest' })
-  //         //         .on('logs', (logs) => {
-  //         //             this.props.addNewEvents({ payload: logs });
-  //         //         })
-  //         //         .on('data', (data) => {
-  //         //             this.props.addNewEvents({ payload: data });
-  //         //         })
-  //         //         .on('changed', (changed) => {
-  //         //             this.props.addNewEvents({ payload: changed });
-  //         //         })
-  //         //         .on('error', (error) => {
-  //         //             console.log(error);
-  //         //         });
-  //         // }
-  //     } catch (e) {
-  //         console.log(e);
-  //         this.helpers.showPanelError(e);
-  //     }
-  // }
+  }
 
+  async _handleSubmit() {
+    try {
+      const {
+        abi,
+        bytecode,
+        contractName,
+        gas,
+        coinbase,
+        password
+      } = this.props;
+      const {
+        atAddress
+      } = this.state;
+      const contractInterface = this.props.interfaces[contractName].interface;
+      const constructor = contractInterface.find(interfaceItem => interfaceItem.type === 'constructor');
+      const params = [];
+
+      if (constructor) {
+        for (let input of constructor.inputs) {
+          if (input.value) {
+            params.push(input);
+          }
+        }
+      }
+
+      await this.helpers.create({
+        coinbase,
+        password,
+        atAddress,
+        abi,
+        bytecode,
+        contractName,
+        params,
+        gas
+      });
+    } catch (e) {
+      console.log(e);
+      this.helpers.showPanelError(e);
+    }
+  }
 
   render() {
     const {
@@ -3326,8 +3253,8 @@ class CreateButton extends React__default.Component {
       type: "text",
       placeholder: "at:",
       className: "inputs",
-      value: this.state.atAddress // onChange={this._handleAtAddressChange}
-
+      value: this.state.atAddress,
+      onChange: this._handleAtAddressChange
     }));
   }
 
@@ -3380,7 +3307,7 @@ class ContractCompiled extends React__default.Component {
     super(props);
     this.helpers = props.helpers;
     this.state = {
-      estimatedGas: 9000000,
+      estimatedGas: props.gasEstimate,
       ContractABI: props.interfaces[props.contractName].interface,
       savePath: `${props.contractName}.abi`
     };
@@ -3405,20 +3332,29 @@ class ContractCompiled extends React__default.Component {
     }
   }
 
+  async componentDidUpdate(prevProps, prevState) {
+    if (prevProps.gasEstimate !== this.props.gasEstimate) {
+      this.setState({
+        estimatedGas: this.props.gasEstimate
+      });
+    }
+  }
+
   _handleGasChange(event) {
     this.setState({
-      estimatedGas: event.target.value
+      estimatedGas: parseInt(event.target.value)
     });
   }
 
   _handleInput() {
     const {
-      contractName
+      contractName,
+      addInterface
     } = this.props;
     const {
       ContractABI
     } = this.state;
-    this.props.addInterface({
+    addInterface({
       contractName,
       ContractABI
     });
@@ -3506,6 +3442,7 @@ class ContractCompiled extends React__default.Component {
 ContractCompiled.propTypes = {
   helpers: PropTypes.any.isRequired,
   interfaces: PropTypes.object,
+  gasEstimate: PropTypes.number,
   contractName: PropTypes.string,
   fileName: PropTypes.string,
   addInterface: PropTypes.func,
@@ -3520,7 +3457,8 @@ const mapStateToProps$3 = ({
 }) => {
   const {
     compiled,
-    interfaces
+    interfaces,
+    gasEstimate
   } = contract;
   const {
     coinbase
@@ -3528,7 +3466,8 @@ const mapStateToProps$3 = ({
   return {
     compiled,
     interfaces,
-    coinbase
+    coinbase,
+    gasEstimate
   };
 };
 
@@ -3575,15 +3514,11 @@ class FunctionABI extends React__default.Component {
     const contract = instances[contractName];
 
     try {
-      const result = await this.helpers.call({
+      this.helpers.call({
         coinbase,
         password,
         contract,
         abiItem
-      });
-      this.helpers.showOutput({
-        address: contract.options.address,
-        data: result
       });
     } catch (e) {
       console.log(e);
@@ -3608,16 +3543,12 @@ class FunctionABI extends React__default.Component {
         }
       }
 
-      const result = await this.helpers.call({
+      this.helpers.call({
         coinbase,
         password,
         contract,
         abiItem: methodItem,
         params
-      });
-      this.helpers.showOutput({
-        address: contract.options.address,
-        data: result
       });
     } catch (e) {
       console.log(e);
@@ -4068,7 +3999,7 @@ class TxAnalyzer extends React__default.Component {
     this.helpers = props.helpers;
     this.state = {
       txHash: undefined,
-      txAnalysis: undefined,
+      txAnalysis: props.txAnalysis,
       toggleBtnStyle: 'btn icon icon-unfold inline-block-tight',
       isOpened: false
     };
@@ -4086,6 +4017,14 @@ class TxAnalyzer extends React__default.Component {
       this.setState({
         isOpened: true,
         toggleBtnStyle: 'btn btn-success icon icon-fold inline-block-tight'
+      });
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.txAnalysis !== this.props.txAnalysis) {
+      this.setState({
+        txAnalysis: this.props.txAnalysis
       });
     }
   }
@@ -4138,7 +4077,8 @@ class TxAnalyzer extends React__default.Component {
       isOpened
     } = this.state;
     const {
-      pendingTransactions
+      pendingTransactions,
+      txAnalysis
     } = this.props;
     const transactions = pendingTransactions.slice();
     transactions.reverse();
@@ -4181,23 +4121,23 @@ class TxAnalyzer extends React__default.Component {
       }, React__default.createElement("span", {
         className: "padded text-warning"
       }, transactions[index]))
-    })), this.state.txAnalysis && this.state.txAnalysis.transaction && React__default.createElement("div", {
+    })), txAnalysis && txAnalysis.transaction && React__default.createElement("div", {
       className: "block"
     }, React__default.createElement("h2", {
       className: "block highlight-info tx-header"
     }, "Transaction"), React__default.createElement(ReactJson, {
-      src: this.state.txAnalysis.transaction,
+      src: txAnalysis.transaction,
       theme: "chalk",
       displayDataTypes: false,
       name: false,
       collapseStringsAfterLength: 64,
       iconStyle: "triangle"
-    })), this.state.txAnalysis && this.state.txAnalysis.transactionRecipt && React__default.createElement("div", {
+    })), txAnalysis && txAnalysis.transactionRecipt && React__default.createElement("div", {
       className: "block"
     }, React__default.createElement("h2", {
       className: "block highlight-info tx-header"
     }, "Transaction receipt"), React__default.createElement(ReactJson, {
-      src: this.state.txAnalysis.transactionRecipt,
+      src: txAnalysis.transactionRecipt,
       theme: "chalk",
       displayDataTypes: false,
       name: false,
@@ -4210,17 +4150,20 @@ class TxAnalyzer extends React__default.Component {
 
 TxAnalyzer.propTypes = {
   helpers: PropTypes.any.isRequired,
-  pendingTransactions: PropTypes.array
+  pendingTransactions: PropTypes.array,
+  txAnalysis: PropTypes.any
 };
 
 const mapStateToProps$8 = ({
   eventReducer
 }) => {
   const {
-    pendingTransactions
+    pendingTransactions,
+    txAnalysis
   } = eventReducer;
   return {
-    pendingTransactions
+    pendingTransactions,
+    txAnalysis
   };
 };
 
@@ -4559,9 +4502,6 @@ class NodeControl extends React__default.Component {
       websocketAddress: atom.config.get('etheratom.websocketAddress'),
       status: this.props.store.getState().node.status
     };
-    console.log('==========================================================================');
-    console.log(this.props.store.getState());
-    console.log('==========================================================================');
     this._refreshSync = this._refreshSync.bind(this);
     this.getNodeInfo = this.getNodeInfo.bind(this);
     this._handleToAddrrChange = this._handleToAddrrChange.bind(this);
@@ -4577,7 +4517,7 @@ class NodeControl extends React__default.Component {
     this.getNodeInfo();
   }
 
-  async componentDidUpdate(_, prevState) {
+  async componentDidUpdate(prevProps, prevState) {
     if (this.state.httpProvider !== this.props.store.getState().clientReducer.clients[0].isHttpProvider) {
       this.setState({
         httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider
@@ -4609,11 +4549,9 @@ class NodeControl extends React__default.Component {
     });
     this.props.setSyncStatus(this.state.status); // get mining status
 
-    const mining = await this.helpers.getMining();
-    this.props.setMining(mining); // get hashrate
+    await this.helpers.getMining(); // get hashrate
 
-    const hashRate = await this.helpers.getHashrate();
-    this.props.setHashrate(hashRate);
+    await this.helpers.getHashrate(); // this.props.setHashrate(hashRate);
   }
 
   _handleToAddrrChange(event) {
@@ -4657,24 +4595,12 @@ class NodeControl extends React__default.Component {
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
       websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
-    this.setState(newState);
-    this.helpers.updateWeb3();
+    this.setState(newState); // this.helpers.updateWeb3();
 
     try {
-      const accounts = await this.helpers.getAccounts();
-      this.helpers.showPanelSuccess('Connection Re-established');
-      this.props.setAccounts(accounts);
-
-      if (accounts.length > 0) {
-        this.props.setCoinbase(accounts[0]);
-      } else {
-        this.props.setCoinbase('0x00');
-      }
+      await this.helpers.getAccountsForNodeSubmit('node_ws', websocketAddress);
     } catch (e) {
       this.helpers.showPanelError('Error with Web Socket value. Please check again');
-      this.props.setAccounts([]);
-      this.props.setCoinbase('0x00');
-      this.props.setMining(false);
     }
   }
 
@@ -4693,24 +4619,12 @@ class NodeControl extends React__default.Component {
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
       websocketAddress: atom.config.get('etheratom.websocketAddress')
     };
-    this.setState(newState);
-    this.helpers.updateWeb3();
+    this.setState(newState); // this.helpers.updateWeb3();
 
     try {
-      const accounts = await this.helpers.getAccounts();
-      this.helpers.showPanelSuccess('Connection Re-established with rpc');
-      this.props.setAccounts(accounts);
-
-      if (accounts.length > 0) {
-        this.props.setCoinbase(accounts[0]);
-      } else {
-        this.props.setCoinbase('0x00');
-      }
+      await this.helpers.getAccountsForNodeSubmit('node_rpc', rpcAddress);
     } catch (e) {
       this.helpers.showPanelError('Error with RPC value. Please check again');
-      this.props.setAccounts([]);
-      this.props.setCoinbase('0x00');
-      this.props.setMining(false);
     }
   }
 
@@ -5346,17 +5260,13 @@ class CoinbaseView extends React__default.Component {
   render() {
     const {
       balance,
-      password
+      password,
+      coinbase,
+      unlock_style
     } = this.state;
     const {
       accounts
     } = this.props;
-    const {
-      coinbase
-    } = this.state;
-    const {
-      unlock_style
-    } = this.state;
     return React__default.createElement("div", {
       className: "content"
     }, accounts.length > 0 && React__default.createElement("div", {
@@ -5662,7 +5572,7 @@ var processStyleValue = function processStyleValue(key, value) {
     case 'animationName':
       {
         if (typeof value === 'string') {
-          value = value.replace(animationRegex, function (match, p1, p2) {
+          return value.replace(animationRegex, function (match, p1, p2) {
             cursor = {
               name: p1,
               styles: p2,
@@ -5827,7 +5737,21 @@ function createStringFromObject(mergedProps, registered, obj) {
             string += processStyleName(_key) + ":" + processStyleValue(_key, value[_i]) + ";";
           }
         } else {
-          string += _key + "{" + handleInterpolation(mergedProps, registered, value, false) + "}";
+          var interpolated = handleInterpolation(mergedProps, registered, value, false);
+
+          switch (_key) {
+            case 'animation':
+            case 'animationName':
+              {
+                string += processStyleName(_key) + ":" + interpolated + ";";
+                break;
+              }
+
+            default:
+              {
+                string += _key + "{" + interpolated + "}";
+              }
+          }
         }
       }
     }
@@ -6898,7 +6822,11 @@ var createCache = function createCache(options) {
       } else {
         // in compat mode, we put the styles on the inserted cache so
         // that emotion-server can pull out the styles
-        // except when we don't want to cache it(just the Global component right now)
+        // except when we don't want to cache it which was in Global but now
+        // is nowhere but we don't want to do a major right now
+        // and just in case we're going to leave the case here
+        // it's also not affecting client side bundle size
+        // so it's really not a big deal
         if (shouldCache) {
           cache.inserted[name] = rules;
         } else {
@@ -7078,6 +7006,12 @@ if (!isBrowser$2) {
   };
 }
 
+// thus we only need to replace what is a valid character for JS, but not for CSS
+
+var sanitizeIdentifier = function sanitizeIdentifier(identifier) {
+  return identifier.replace(/\$/g, '-');
+};
+
 var typePropName = '__EMOTION_TYPE_PLEASE_DO_NOT_USE__';
 var labelPropName = '__EMOTION_LABEL_PLEASE_DO_NOT_USE__';
 var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
@@ -7190,15 +7124,15 @@ var jsx = function jsx(type, props) {
 
     if (error.stack) {
       // chrome
-      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z]+) /);
+      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z$]+) /);
 
       if (!match) {
         // safari and firefox
-        match = error.stack.match(/^.*\n([A-Z][A-Za-z]+)@/);
+        match = error.stack.match(/^.*\n([A-Z][A-Za-z$]+)@/);
       }
 
       if (match) {
-        newProps[labelPropName] = match[1];
+        newProps[labelPropName] = sanitizeIdentifier(match[1]);
       }
     }
   }
@@ -7307,8 +7241,6 @@ function (_React$Component) {
 
   _proto.render = function render() {
     if (!isBrowser$2) {
-      var _ref;
-
       var serialized = this.props.serialized;
       var serializedNames = serialized.name;
       var serializedStyles = serialized.styles;
@@ -7320,13 +7252,19 @@ function (_React$Component) {
         next = next.next;
       }
 
+      var shouldCache = this.props.cache.compat === true;
       var rules = this.props.cache.insert("", {
         name: serializedNames,
         styles: serializedStyles
-      }, this.sheet, false);
-      return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
-        __html: rules
-      }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
+      }, this.sheet, shouldCache);
+
+      if (!shouldCache) {
+        var _ref;
+
+        return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
+          __html: rules
+        }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
+      }
     }
 
     return null;
@@ -8517,11 +8455,7 @@ class Web3Env {
         }
 
         this.helpers.compileWeb3(sources);
-        const gasLimit = await this.helpers.getGasLimit();
-        this.store.dispatch({
-          type: SET_GAS_LIMIT,
-          payload: gasLimit
-        });
+        await this.helpers.getGasLimit();
       } catch (e) {
         console.log(e);
         showPanelError(e);
@@ -8557,7 +8491,8 @@ const INITIAL_STATE$1 = {
   deployed: false,
   interfaces: null,
   instances: null,
-  gasLimit: 0
+  gasLimit: 0,
+  gasEstimate: 90000
 };
 var ContractReducer = ((state = INITIAL_STATE$1, action) => {
   switch (action.type) {
@@ -8633,6 +8568,11 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
         gasLimit: action.payload
       });
 
+    case SET_GAS_ESTIMATE:
+      return _objectSpread({}, state, {
+        gasEstimate: action.payload.gasEstimate
+      });
+
     default:
       return state;
   }
@@ -8691,7 +8631,8 @@ var ErrorReducer = ((state = INITIAL_STATE$3, action) => {
 
 const INITIAL_STATE$4 = {
   pendingTransactions: [],
-  events: []
+  events: [],
+  txAnalysis: {}
 };
 var EventReducer = ((state = INITIAL_STATE$4, action) => {
   switch (action.type) {
@@ -8708,6 +8649,11 @@ var EventReducer = ((state = INITIAL_STATE$4, action) => {
     case SET_EVENTS:
       return _objectSpread({}, state, {
         events: []
+      });
+
+    case TEXT_ANALYSIS:
+      return _objectSpread({}, state, {
+        txAnalysis: action.payload
       });
 
     default:
