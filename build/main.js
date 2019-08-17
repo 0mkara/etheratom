@@ -3306,10 +3306,15 @@ class ContractCompiled extends React__default.Component {
   constructor(props) {
     super(props);
     this.helpers = props.helpers;
+    const {
+      gasEstimate,
+      interfaces,
+      contractName
+    } = props;
     this.state = {
-      estimatedGas: props.gasEstimate,
-      ContractABI: props.interfaces[props.contractName].interface,
-      savePath: `${props.contractName}.abi`
+      estimatedGas: gasEstimate,
+      ContractABI: interfaces[props.contractName].interface,
+      savePath: `${contractName}.abi`
     };
     this._handleGasChange = this._handleGasChange.bind(this);
     this._handleInput = this._handleInput.bind(this);
