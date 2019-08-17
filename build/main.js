@@ -4965,10 +4965,11 @@ class StaticAnalysis extends React__default.Component {
       onClick: this._runAnalysis
     }, "Run analysis"), running && React__default.createElement("span", {
       className: "loading loading-spinner-tiny inline-block"
-    }), analysis.length > 0 && analysis.map(a => {
+    }), analysis.length > 0 && analysis.map((a, j) => {
       if (a.report.length > 0) {
         return React__default.createElement("div", {
-          className: "padded"
+          className: "padded",
+          key: j
         }, a.report.map((report, i) => {
           return React__default.createElement("div", {
             key: i
