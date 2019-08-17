@@ -937,7 +937,8 @@ const RESET_ERRORS = 'reset_errors'; // Ethereum client events
 
 const ADD_PENDING_TRANSACTION = 'add_pending_transaction';
 const ADD_EVENTS = 'add_logs';
-const SET_EVENTS = 'set_events'; // Node variables
+const SET_EVENTS = 'set_events';
+const TEXT_ANALYSIS = 'text_analysis'; // Node variables
 const SET_SYNC_STATUS = 'set_sync_status';
 const SET_SYNCING = 'set_syncing';
 const SET_MINING = 'set_mining';
@@ -1171,13 +1172,20 @@ class Web3Helpers {
 
   web3ProcessHandler() {
     this.hookWeb3ChildProcess.on('message', message => {
-      console.log("new message : ", message);
+      console.log('new message : ', message);
 
       if (message.hasOwnProperty('transaction')) {
         this.store.dispatch({
           type: ADD_PENDING_TRANSACTION,
           payload: message.transaction
         });
+
+        if (message.hasOwnProperty('transactionRecipt')) {
+          this.store.dispatch({
+            type: TEXT_ANALYSIS,
+            payload: message
+          });
+        }
       } else if (message.hasOwnProperty('isBooleanSync')) {
         this.store.dispatch({
           type: SET_SYNCING,
@@ -1214,7 +1222,7 @@ class Web3Helpers {
           payload: message['ethBalance']
         });
       } else if (message.hasOwnProperty('error')) {
-        console.log('%c syncing:error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message.error);
+        console.log('%c Error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message);
         this.showPanelError(message.error);
       } else if (message.hasOwnProperty('hasConnection')) {
         let clients = this.getCurrentClients();
@@ -1349,7 +1357,22 @@ class Web3Helpers {
             instance
           }
         });
-      } else if (message.hasOwnProperty('callResult')) ;
+      } else if (message.hasOwnProperty('callResult')) {
+        this.showOutput({
+          address: this.contract.options.address,
+          data: message['callResult']
+        });
+      } else if (message.hasOwnProperty('transactionHashonSend')) {
+        this.showTransaction({
+          head: 'Transaction hash:',
+          data: message['transactionHashonSend']
+        });
+      } else if (message.hasOwnProperty('txReciptonSend')) {
+        this.showTransaction({
+          head: 'Transaction recipt:',
+          data: message['txReciptonSend']
+        });
+      }
     });
   }
 
@@ -1511,34 +1534,19 @@ class Web3Helpers {
       console.log(e);
       throw e;
     }
-  } // async send(to, amount, password) {
-  //     return new Promise((resolve, reject) => {
-  //         try {
-  //             const coinbase = this.web3.eth.defaultAccount;
-  //             if (password) {
-  //                 this.web3.eth.personal.unlockAccount(coinbase, password);
-  //             }
-  //             this.web3.eth.sendTransaction({
-  //                 from: coinbase,
-  //                 to: to,
-  //                 value: amount
-  //             })
-  //                 .on('transactionHash', txHash => {
-  //                     this.showTransaction({ head: 'Transaction hash:', data: txHash });
-  //                 })
-  //                 .then(txRecipt => {
-  //                     resolve(txRecipt);
-  //                 })
-  //                 .catch(e => {
-  //                     reject(e);
-  //                 });
-  //         } catch (e) {
-  //             console.error(e);
-  //             reject(e);
-  //         }
-  //     });
-  // }
+  }
 
+  async send(to, amount, password) {
+    let params = {
+      to,
+      amount,
+      password
+    };
+    this.hookWeb3ChildProcess.send({
+      action: 'sendTransaction',
+      params
+    });
+  }
 
   async funcParamsToArray(contractFunction) {
     if (contractFunction && contractFunction.inputs.length > 0) {
@@ -1549,13 +1557,14 @@ class Web3Helpers {
     }
 
     return [];
-  } // async inputsToArray(paramObject) {
-  //     if (paramObject.type.endsWith('[]')) {
-  //         return paramObject.value.split(',').map(val => this.web3.utils.toHex(val.trim()));
-  //     }
-  //     return this.web3.utils.toHex(paramObject.value);
-  // }
+  }
 
+  async inputsToArray(paramObject) {
+    this.hookWeb3ChildProcess.send({
+      action: 'inputsToArray',
+      paramObject
+    });
+  }
 
   showPanelError(err_message) {
     let messages;
@@ -1642,16 +1651,14 @@ class Web3Helpers {
     }));
     return;
   } // Transaction analysis
-  // async getTxAnalysis(txHash) {
-  //     try {
-  //         const transaction = await this.web3.eth.getTransaction(txHash);
-  //         const transactionRecipt = await this.web3.eth.getTransactionReceipt(txHash);
-  //         return { transaction, transactionRecipt };
-  //     } catch (e) {
-  //         throw e;
-  //     }
-  // }
-  // Gas Limit
+
+
+  async getTxAnalysis(txHash) {
+    this.hookWeb3ChildProcess.send({
+      action: 'getTxAnalysis',
+      txHash
+    });
+  } // Gas Limit
 
 
   async getGasLimit() {
@@ -3484,7 +3491,6 @@ class FunctionABI extends React__default.Component {
       interfaces
     } = this.props;
     const ContractABI = interfaces[contractName].interface;
-    console.log(ContractABI);
     const input = ContractABI[i].inputs[j];
     input.value = event.target.value;
     ContractABI[i].inputs[j] = Object.assign({}, input);
@@ -3496,7 +3502,6 @@ class FunctionABI extends React__default.Component {
 
   _handlePayableValue(abi, event) {
     abi.payableValue = event.target.value;
-    console.log(abi.payableValue);
   }
 
   async _handleFallback(abiItem) {
@@ -3509,15 +3514,11 @@ class FunctionABI extends React__default.Component {
     const contract = instances[contractName];
 
     try {
-      const result = await this.helpers.call({
+      this.helpers.call({
         coinbase,
         password,
         contract,
         abiItem
-      });
-      this.helpers.showOutput({
-        address: contract.options.address,
-        data: result
       });
     } catch (e) {
       console.log(e);
@@ -3548,7 +3549,7 @@ class FunctionABI extends React__default.Component {
         contract,
         abiItem: methodItem,
         params
-      }); // this.helpers.showOutput({ address: contract.options.address, data: result });
+      });
     } catch (e) {
       console.log(e);
       this.helpers.showPanelError(e);
@@ -3919,7 +3920,6 @@ class Contracts extends React__default.Component {
       compiling,
       interfaces
     } = this.props;
-    console.log(interfaces);
     return React__default.createElement(reactRedux.Provider, {
       store: this.props.store
     }, React__default.createElement("div", {
@@ -3999,7 +3999,7 @@ class TxAnalyzer extends React__default.Component {
     this.helpers = props.helpers;
     this.state = {
       txHash: undefined,
-      txAnalysis: undefined,
+      txAnalysis: props.txAnalysis,
       toggleBtnStyle: 'btn icon icon-unfold inline-block-tight',
       isOpened: false
     };
@@ -4017,6 +4017,14 @@ class TxAnalyzer extends React__default.Component {
       this.setState({
         isOpened: true,
         toggleBtnStyle: 'btn btn-success icon icon-fold inline-block-tight'
+      });
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.txAnalysis !== this.props.txAnalysis) {
+      this.setState({
+        txAnalysis: this.props.txAnalysis
       });
     }
   }
@@ -4069,7 +4077,8 @@ class TxAnalyzer extends React__default.Component {
       isOpened
     } = this.state;
     const {
-      pendingTransactions
+      pendingTransactions,
+      txAnalysis
     } = this.props;
     const transactions = pendingTransactions.slice();
     transactions.reverse();
@@ -4112,23 +4121,23 @@ class TxAnalyzer extends React__default.Component {
       }, React__default.createElement("span", {
         className: "padded text-warning"
       }, transactions[index]))
-    })), this.state.txAnalysis && this.state.txAnalysis.transaction && React__default.createElement("div", {
+    })), txAnalysis && txAnalysis.transaction && React__default.createElement("div", {
       className: "block"
     }, React__default.createElement("h2", {
       className: "block highlight-info tx-header"
     }, "Transaction"), React__default.createElement(ReactJson, {
-      src: this.state.txAnalysis.transaction,
+      src: txAnalysis.transaction,
       theme: "chalk",
       displayDataTypes: false,
       name: false,
       collapseStringsAfterLength: 64,
       iconStyle: "triangle"
-    })), this.state.txAnalysis && this.state.txAnalysis.transactionRecipt && React__default.createElement("div", {
+    })), txAnalysis && txAnalysis.transactionRecipt && React__default.createElement("div", {
       className: "block"
     }, React__default.createElement("h2", {
       className: "block highlight-info tx-header"
     }, "Transaction receipt"), React__default.createElement(ReactJson, {
-      src: this.state.txAnalysis.transactionRecipt,
+      src: txAnalysis.transactionRecipt,
       theme: "chalk",
       displayDataTypes: false,
       name: false,
@@ -4141,17 +4150,20 @@ class TxAnalyzer extends React__default.Component {
 
 TxAnalyzer.propTypes = {
   helpers: PropTypes.any.isRequired,
-  pendingTransactions: PropTypes.array
+  pendingTransactions: PropTypes.array,
+  txAnalysis: PropTypes.any
 };
 
 const mapStateToProps$8 = ({
   eventReducer
 }) => {
   const {
-    pendingTransactions
+    pendingTransactions,
+    txAnalysis
   } = eventReducer;
   return {
-    pendingTransactions
+    pendingTransactions,
+    txAnalysis
   };
 };
 
@@ -8619,7 +8631,8 @@ var ErrorReducer = ((state = INITIAL_STATE$3, action) => {
 
 const INITIAL_STATE$4 = {
   pendingTransactions: [],
-  events: []
+  events: [],
+  txAnalysis: {}
 };
 var EventReducer = ((state = INITIAL_STATE$4, action) => {
   switch (action.type) {
@@ -8636,6 +8649,11 @@ var EventReducer = ((state = INITIAL_STATE$4, action) => {
     case SET_EVENTS:
       return _objectSpread({}, state, {
         events: []
+      });
+
+    case TEXT_ANALYSIS:
+      return _objectSpread({}, state, {
+        txAnalysis: action.payload
       });
 
     default:
