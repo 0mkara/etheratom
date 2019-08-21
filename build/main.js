@@ -1109,7 +1109,8 @@ class Web3Helpers {
     this.getCurrentClients = this.getCurrentClients.bind(this);
     this.showPanelError = this.showPanelError.bind(this);
     this.showPanelSuccess = this.showPanelSuccess.bind(this);
-    this.hookWeb3ChildProcess = this.createWeb3Connection(); //sending rpc or ws address to create ethereum connection
+    this.hookWeb3ChildProcess = this.createWeb3Connection();
+    this.setDefaultAccount = this.setDefaultAccount.bind(this); //sending rpc or ws address to create ethereum connection
 
     const rpcAddress = atom.config.get('etheratom.rpcAddress');
     const websocketAddress = atom.config.get('etheratom.websocketAddress');
@@ -1172,7 +1173,7 @@ class Web3Helpers {
 
   web3ProcessHandler() {
     this.hookWeb3ChildProcess.on('message', message => {
-      console.log('new message : ', message);
+      console.log('New Message:', message);
 
       if (message.hasOwnProperty('transaction')) {
         this.store.dispatch({
@@ -1188,7 +1189,7 @@ class Web3Helpers {
         }
       } else if (message.hasOwnProperty('isBooleanSync')) {
         this.store.dispatch({
-          type: SET_SYNCING,
+          type: 'set_syncing',
           payload: message['isBooleanSync']
         });
       } else if (message.hasOwnProperty('isObjectSync')) {
@@ -1308,7 +1309,10 @@ class Web3Helpers {
       } else if (message.hasOwnProperty('isMining')) {
         setMining(message['isMining']);
       } else if (message.hasOwnProperty('getHashrate')) {
-        setHashrate(message['getHashrate']);
+        this.store.dispatch({
+          type: 'set_hash_rate',
+          payload: message['getHashrate']
+        });
       } else if (message.hasOwnProperty('gasLimit')) {
         this.store.dispatch({
           type: SET_GAS_LIMIT,
@@ -4326,9 +4330,11 @@ class RemixTest extends React__default.Component {
   }
 
   async _runRemixTests() {
+    console.log(this.props);
     const {
       sources
     } = this.props;
+    console.log(sources);
     this.setState({
       testResults: [],
       testResult: {
@@ -4642,11 +4648,7 @@ class NodeControl extends React__default.Component {
         toAddress,
         amount
       } = this.state;
-      const txRecipt = await this.helpers.send(toAddress, amount, password);
-      this.helpers.showTransaction({
-        head: 'Transaction recipt:',
-        data: txRecipt
-      });
+      await this.helpers.send(toAddress, amount, password); // this.helpers.showTransaction({ head: 'Transaction recipt:', data: txRecipt });
     } catch (e) {
       this.helpers.showPanelError(e);
     }
@@ -4928,6 +4930,11 @@ class StaticAnalysis extends React__default.Component {
         });
         throw e;
       }
+    } else {
+      this.setState({
+        running: false
+      });
+      this.helpers.showPanelError('Compile the code first then, analyse it.');
     }
   }
 
@@ -5185,7 +5192,10 @@ class CoinbaseView extends React__default.Component {
     const {
       coinbase
     } = this.state;
-    await this.helpers.setDefaultAccount(coinbase);
+
+    if (this.state.coinbase !== prevState.coinbase) {
+      await this.helpers.setDefaultAccount(coinbase);
+    }
   }
 
   async componentWillReceiveProps() {
@@ -5193,11 +5203,8 @@ class CoinbaseView extends React__default.Component {
       this.setState({
         coinbase: this.props.accounts[0]
       });
-    }
+    } // this.setState({ balance: this.props.store.getState().account.balance });
 
-    this.setState({
-      balance: this.props.store.getState().account.balance
-    });
   }
 
   _linkClick(event) {
@@ -5210,11 +5217,11 @@ class CoinbaseView extends React__default.Component {
   async _handleAccChange(event) {
     const coinbase = event.target.value;
     await this.helpers.setDefaultAccount(coinbase);
-    const balance = await this.helpers.getBalance(coinbase);
+    await this.helpers.getBalance(coinbase);
     this.props.setCoinbase(coinbase);
     this.setState({
       coinbase,
-      balance
+      balance: this.props.store.getState().account.balance
     });
   }
 
@@ -5578,7 +5585,7 @@ var processStyleValue = function processStyleValue(key, value) {
     case 'animationName':
       {
         if (typeof value === 'string') {
-          return value.replace(animationRegex, function (match, p1, p2) {
+          value = value.replace(animationRegex, function (match, p1, p2) {
             cursor = {
               name: p1,
               styles: p2,
@@ -5743,21 +5750,7 @@ function createStringFromObject(mergedProps, registered, obj) {
             string += processStyleName(_key) + ":" + processStyleValue(_key, value[_i]) + ";";
           }
         } else {
-          var interpolated = handleInterpolation(mergedProps, registered, value, false);
-
-          switch (_key) {
-            case 'animation':
-            case 'animationName':
-              {
-                string += processStyleName(_key) + ":" + interpolated + ";";
-                break;
-              }
-
-            default:
-              {
-                string += _key + "{" + interpolated + "}";
-              }
-          }
+          string += _key + "{" + handleInterpolation(mergedProps, registered, value, false) + "}";
         }
       }
     }
@@ -6828,11 +6821,7 @@ var createCache = function createCache(options) {
       } else {
         // in compat mode, we put the styles on the inserted cache so
         // that emotion-server can pull out the styles
-        // except when we don't want to cache it which was in Global but now
-        // is nowhere but we don't want to do a major right now
-        // and just in case we're going to leave the case here
-        // it's also not affecting client side bundle size
-        // so it's really not a big deal
+        // except when we don't want to cache it(just the Global component right now)
         if (shouldCache) {
           cache.inserted[name] = rules;
         } else {
@@ -7012,12 +7001,6 @@ if (!isBrowser$2) {
   };
 }
 
-// thus we only need to replace what is a valid character for JS, but not for CSS
-
-var sanitizeIdentifier = function sanitizeIdentifier(identifier) {
-  return identifier.replace(/\$/g, '-');
-};
-
 var typePropName = '__EMOTION_TYPE_PLEASE_DO_NOT_USE__';
 var labelPropName = '__EMOTION_LABEL_PLEASE_DO_NOT_USE__';
 var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
@@ -7130,15 +7113,15 @@ var jsx = function jsx(type, props) {
 
     if (error.stack) {
       // chrome
-      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z$]+) /);
+      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z]+) /);
 
       if (!match) {
         // safari and firefox
-        match = error.stack.match(/^.*\n([A-Z][A-Za-z$]+)@/);
+        match = error.stack.match(/^.*\n([A-Z][A-Za-z]+)@/);
       }
 
       if (match) {
-        newProps[labelPropName] = sanitizeIdentifier(match[1]);
+        newProps[labelPropName] = match[1];
       }
     }
   }
@@ -7247,6 +7230,8 @@ function (_React$Component) {
 
   _proto.render = function render() {
     if (!isBrowser$2) {
+      var _ref;
+
       var serialized = this.props.serialized;
       var serializedNames = serialized.name;
       var serializedStyles = serialized.styles;
@@ -7258,19 +7243,13 @@ function (_React$Component) {
         next = next.next;
       }
 
-      var shouldCache = this.props.cache.compat === true;
       var rules = this.props.cache.insert("", {
         name: serializedNames,
         styles: serializedStyles
-      }, this.sheet, shouldCache);
-
-      if (!shouldCache) {
-        var _ref;
-
-        return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
-          __html: rules
-        }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
-      }
+      }, this.sheet, false);
+      return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
+        __html: rules
+      }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
     }
 
     return null;
