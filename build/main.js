@@ -5585,7 +5585,7 @@ var processStyleValue = function processStyleValue(key, value) {
     case 'animationName':
       {
         if (typeof value === 'string') {
-          value = value.replace(animationRegex, function (match, p1, p2) {
+          return value.replace(animationRegex, function (match, p1, p2) {
             cursor = {
               name: p1,
               styles: p2,
@@ -5750,7 +5750,21 @@ function createStringFromObject(mergedProps, registered, obj) {
             string += processStyleName(_key) + ":" + processStyleValue(_key, value[_i]) + ";";
           }
         } else {
-          string += _key + "{" + handleInterpolation(mergedProps, registered, value, false) + "}";
+          var interpolated = handleInterpolation(mergedProps, registered, value, false);
+
+          switch (_key) {
+            case 'animation':
+            case 'animationName':
+              {
+                string += processStyleName(_key) + ":" + interpolated + ";";
+                break;
+              }
+
+            default:
+              {
+                string += _key + "{" + interpolated + "}";
+              }
+          }
         }
       }
     }
@@ -6821,7 +6835,11 @@ var createCache = function createCache(options) {
       } else {
         // in compat mode, we put the styles on the inserted cache so
         // that emotion-server can pull out the styles
-        // except when we don't want to cache it(just the Global component right now)
+        // except when we don't want to cache it which was in Global but now
+        // is nowhere but we don't want to do a major right now
+        // and just in case we're going to leave the case here
+        // it's also not affecting client side bundle size
+        // so it's really not a big deal
         if (shouldCache) {
           cache.inserted[name] = rules;
         } else {
@@ -7001,6 +7019,12 @@ if (!isBrowser$2) {
   };
 }
 
+// thus we only need to replace what is a valid character for JS, but not for CSS
+
+var sanitizeIdentifier = function sanitizeIdentifier(identifier) {
+  return identifier.replace(/\$/g, '-');
+};
+
 var typePropName = '__EMOTION_TYPE_PLEASE_DO_NOT_USE__';
 var labelPropName = '__EMOTION_LABEL_PLEASE_DO_NOT_USE__';
 var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
@@ -7113,15 +7137,15 @@ var jsx = function jsx(type, props) {
 
     if (error.stack) {
       // chrome
-      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z]+) /);
+      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z$]+) /);
 
       if (!match) {
         // safari and firefox
-        match = error.stack.match(/^.*\n([A-Z][A-Za-z]+)@/);
+        match = error.stack.match(/^.*\n([A-Z][A-Za-z$]+)@/);
       }
 
       if (match) {
-        newProps[labelPropName] = match[1];
+        newProps[labelPropName] = sanitizeIdentifier(match[1]);
       }
     }
   }
@@ -7230,8 +7254,6 @@ function (_React$Component) {
 
   _proto.render = function render() {
     if (!isBrowser$2) {
-      var _ref;
-
       var serialized = this.props.serialized;
       var serializedNames = serialized.name;
       var serializedStyles = serialized.styles;
@@ -7243,13 +7265,19 @@ function (_React$Component) {
         next = next.next;
       }
 
+      var shouldCache = this.props.cache.compat === true;
       var rules = this.props.cache.insert("", {
         name: serializedNames,
         styles: serializedStyles
-      }, this.sheet, false);
-      return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
-        __html: rules
-      }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
+      }, this.sheet, shouldCache);
+
+      if (!shouldCache) {
+        var _ref;
+
+        return React.createElement("style", (_ref = {}, _ref["data-emotion-" + this.props.cache.key] = serializedNames, _ref.dangerouslySetInnerHTML = {
+          __html: rules
+        }, _ref.nonce = this.props.cache.sheet.nonce, _ref));
+      }
     }
 
     return null;
