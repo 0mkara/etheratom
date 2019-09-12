@@ -8399,7 +8399,6 @@ class Web3Env {
 
 
   async checkConnection(callback) {
-    // await this.helpers.checkConnection();
     if (!this.havConnection) {
       return callback(new Error('Error could not connect to local geth instance!'), null);
     } else {
