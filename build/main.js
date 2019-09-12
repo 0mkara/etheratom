@@ -1149,7 +1149,8 @@ class Web3Helpers {
     });
   }
 
-  async getBalance(coinbase) {
+  getBalance(coinbase) {
+    console.log("Getting balance: ", coinbase);
     this.hookWeb3ChildProcess.send({
       action: 'get_balances',
       coinbase
@@ -5167,7 +5168,6 @@ class CoinbaseView extends React__default.Component {
     this.helpers = props.helpers;
     this.state = {
       coinbase: props.accounts[0],
-      balance: this.props.store.getState().account.balance,
       password: '',
       toAddress: '',
       unlock_style: 'unlock-default',
@@ -5184,8 +5184,8 @@ class CoinbaseView extends React__default.Component {
     const {
       coinbase
     } = this.state;
-    await this.helpers.setDefaultAccount(coinbase);
-    await this.helpers.getBalance(coinbase);
+    this.helpers.setDefaultAccount(coinbase);
+    this.helpers.getBalance(coinbase);
   }
 
   async componentDidUpdate(prevProps, prevState) {
@@ -5194,7 +5194,8 @@ class CoinbaseView extends React__default.Component {
     } = this.state;
 
     if (this.state.coinbase !== prevState.coinbase) {
-      await this.helpers.setDefaultAccount(coinbase);
+      this.helpers.setDefaultAccount(coinbase);
+      this.helpers.getBalance(coinbase);
     }
   }
 
@@ -5216,12 +5217,14 @@ class CoinbaseView extends React__default.Component {
 
   async _handleAccChange(event) {
     const coinbase = event.target.value;
-    await this.helpers.setDefaultAccount(coinbase);
-    await this.helpers.getBalance(coinbase);
-    this.props.setCoinbase(coinbase);
+    const {
+      setCoinbase
+    } = this.props;
+    this.helpers.setDefaultAccount(coinbase);
+    this.helpers.getBalance(coinbase);
+    setCoinbase(coinbase);
     this.setState({
-      coinbase,
-      balance: this.props.store.getState().account.balance
+      coinbase
     });
   }
 
@@ -5244,12 +5247,15 @@ class CoinbaseView extends React__default.Component {
       password,
       coinbase
     } = this.state;
+    const {
+      setCoinbase
+    } = this.props;
 
     if (password.length > 0) {
       this.props.setPassword({
         password
       });
-      this.props.setCoinbase(coinbase); // TODO: Set web3.eth.defaultAccount on unlock
+      setCoinbase(coinbase); // TODO: Set web3.eth.defaultAccount on unlock
 
       this.helpers.setCoinbase(coinbase);
       this.setState({
@@ -5272,13 +5278,13 @@ class CoinbaseView extends React__default.Component {
 
   render() {
     const {
-      balance,
       password,
-      coinbase,
       unlock_style
     } = this.state;
     const {
-      accounts
+      balance,
+      accounts,
+      coinbase
     } = this.props;
     return React__default.createElement("div", {
       className: "content"
