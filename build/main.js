@@ -1110,7 +1110,7 @@ class Web3Helpers {
     this.showPanelError = this.showPanelError.bind(this);
     this.showPanelSuccess = this.showPanelSuccess.bind(this);
     this.hookWeb3ChildProcess = this.createWeb3Connection();
-    this.setDefaultAccount = this.setDefaultAccount.bind(this); //sending rpc or ws address to create ethereum connection
+    this.setDefaultAccount = this.setDefaultAccount.bind(this); // sending rpc or ws address to create ethereum connection
 
     const rpcAddress = atom.config.get('etheratom.rpcAddress');
     const websocketAddress = atom.config.get('etheratom.websocketAddress');
@@ -1118,10 +1118,11 @@ class Web3Helpers {
       action: 'set_rpc_ws',
       rpcAddress,
       websocketAddress
-    }); //handle the web3 child process responses
+    }); // handle the web3 child process responses
 
     this.web3ProcessHandler();
-  } // WEB3 JS CHILD PROCESS START ==================================================================
+  }
+  /* ================================ Web3js CHILD PROCESS communication START ================================== */
 
 
   createWeb3Connection() {
@@ -1150,7 +1151,6 @@ class Web3Helpers {
   }
 
   getBalance(coinbase) {
-    console.log("Getting balance: ", coinbase);
     this.hookWeb3ChildProcess.send({
       action: 'get_balances',
       coinbase
