@@ -3,5 +3,5 @@
       "@babel/preset-react",
       [ "@babel/preset-env", { "targets": { "electron": "2.0.7" } } ]
   ],
-  "plugins": ["@babel/plugin-proposal-object-rest-spread"]
+  "plugins": ["@babel/plugin-proposal-object-rest-spread","emotion"]
 }
