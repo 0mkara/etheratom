@@ -920,7 +920,9 @@ const SET_COMPILED = 'set_compiled';
 const RESET_COMPILED = 'reset_compiled';
 const SET_PARAMS = 'set_params';
 const ADD_INTERFACE = 'add_interface';
-const UPDATE_INTERFACE = 'update_interface';
+const UPDATE_INTERFACE$1 = 'update_interface';
+const UPDATE_OPTIONS = 'update_options';
+const ADD_TX_HASH = 'add_tx_hash';
 const SET_INSTANCE = 'set_instance';
 const SET_DEPLOYED = 'set_deployed';
 const SET_GAS_LIMIT = 'set_gas_limit';
@@ -1319,12 +1321,33 @@ class Web3Helpers {
           type: SET_GAS_LIMIT,
           payload: message['gasLimit']
         });
-      } else if (message.hasOwnProperty('transactionHash')) {
-        this.contract.transactionHash = message['transactionHash'];
+      } else if (message.hasOwnProperty('options')) {
+        const options = message['options'];
         const contractName = message['contractName'];
-        setInstance({
-          contractName,
-          instance: Object.assign({}, this.contract)
+        this.store.dispatch({
+          type: UPDATE_OPTIONS,
+          payload: {
+            contractName,
+            options
+          }
+        });
+      } else if (message.hasOwnProperty('transactionHash')) {
+        console.log("Got txHash");
+        const transactionHash = message['transactionHash'];
+        const contractName = message['contractName'];
+        this.store.dispatch({
+          type: ADD_TX_HASH,
+          payload: {
+            transactionHash,
+            contractName
+          }
+        });
+        this.store.dispatch({
+          type: SET_DEPLOYED,
+          payload: {
+            contractName,
+            deployed: true
+          }
         });
       } else if (message.hasOwnProperty('txReceipt')) ; else if (message.hasOwnProperty('confirmationNumber')) ; else if (message.hasOwnProperty('logsEvents')) ; else if (message.hasOwnProperty('dataEvents')) ; else if (message.hasOwnProperty('changedEvent')) ; else if (message.hasOwnProperty('address')) {
         const {
@@ -1360,6 +1383,16 @@ class Web3Helpers {
           payload: {
             contractName,
             instance
+          }
+        });
+      } else if (message.hasOwnProperty('jsonInterface')) {
+        const contractName = message['contractName'];
+        const jsonInterface = message['jsonInterface'];
+        this.store.dispatch({
+          type: UPDATE_INTERFACE,
+          payload: {
+            contractName,
+            interface: jsonInterface
           }
         });
       } else if (message.hasOwnProperty('callResult')) {
@@ -1507,7 +1540,7 @@ class Web3Helpers {
   }
 
   async setCoinbase(coinbase) {
-    this.hookWeb3ChildProcess({
+    this.hookWeb3ChildProcess.send({
       action: 'set_coinbase',
       coinbase
     });
@@ -3237,7 +3270,7 @@ class CreateButton extends React__default.Component {
         gas
       });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       this.helpers.showPanelError(e);
     }
   }
@@ -3337,7 +3370,7 @@ class ContractCompiled extends React__default.Component {
         estimatedGas: gas
       });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       this.helpers.showPanelError(e);
     }
   }
@@ -3673,11 +3706,11 @@ class ContractExecution extends React__default.Component {
       contractName,
       bytecode,
       index,
-      instances,
-      interfaces
+      contracts
     } = this.props;
-    const contract = instances[contractName];
-    const ContractABI = interfaces[contractName].interface;
+    const contractOptions = contracts[contractName].options;
+    const transactionHash = contracts[contractName].transactionHash;
+    const ContractABI = contracts[contractName].options.jsonInterface;
     return React__default.createElement("div", {
       className: "contract-content",
       key: index
@@ -3703,19 +3736,19 @@ class ContractExecution extends React__default.Component {
       displayDataTypes: false,
       name: false,
       collapsed: 2
-    })))), contract.transactionHash && React__default.createElement("div", {
+    })))), transactionHash && React__default.createElement("div", {
       id: contractName + '_txHash'
     }, React__default.createElement("span", {
       className: "inline-block highlight"
     }, "Transaction hash:"), React__default.createElement("pre", {
       className: "large-code"
-    }, contract.transactionHash)), !contract.options.address && React__default.createElement("div", {
+    }, transactionHash)), !contractOptions.address && React__default.createElement("div", {
       id: contractName + '_stat'
     }, React__default.createElement("span", {
       className: "stat-mining stat-mining-align"
     }, "waiting to be mined"), React__default.createElement("span", {
       className: "loading loading-spinner-tiny inline-block stat-mining-align"
-    })), contract.options.address && React__default.createElement("div", {
+    })), contractOptions.address && React__default.createElement("div", {
       id: contractName + '_stat'
     }, React__default.createElement("span", {
       className: "inline-block highlight"
@@ -3748,12 +3781,10 @@ const mapStateToProps$5 = ({
   contract
 }) => {
   const {
-    interfaces,
-    instances
+    contracts
   } = contract;
   return {
-    interfaces,
-    instances
+    contracts
   };
 };
 
@@ -5248,11 +5279,12 @@ class CoinbaseView extends React__default.Component {
       coinbase
     } = this.state;
     const {
-      setCoinbase
+      setCoinbase,
+      setPassword
     } = this.props;
 
     if (password.length > 0) {
-      this.props.setPassword({
+      setPassword({
         password
       });
       setCoinbase(coinbase); // TODO: Set web3.eth.defaultAccount on unlock
@@ -5326,8 +5358,8 @@ class CoinbaseView extends React__default.Component {
 CoinbaseView.propTypes = {
   helpers: PropTypes.any.isRequired,
   accounts: PropTypes.arrayOf(PropTypes.string),
-  setCoinbase: PropTypes.any,
-  setPassword: PropTypes.any
+  setCoinbase: PropTypes.function,
+  setPassword: PropTypes.function
 };
 
 const mapStateToProps$e = ({
@@ -8508,6 +8540,7 @@ const INITIAL_STATE$1 = {
   compiling: false,
   deployed: false,
   interfaces: null,
+  contracts: null,
   instances: null,
   gasLimit: 0,
   gasEstimate: 90000
@@ -8572,11 +8605,32 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
         })
       });
 
-    case UPDATE_INTERFACE:
+    case UPDATE_INTERFACE$1:
       return _objectSpread({}, state, {
         interfaces: _objectSpread({}, state.interfaces, {
           [action.payload.contractName]: {
             interface: action.payload.interface
+          }
+        })
+      });
+
+    case UPDATE_OPTIONS:
+      // We want to access contracts like following:
+      // contracts[myContract].options, contracts[myContract].methods, contracts[myContract].events
+      return _objectSpread({}, state, {
+        contracts: _objectSpread({}, state.contracts, {
+          [action.payload.contractName]: {
+            options: action.payload.options
+          }
+        })
+      });
+
+    case ADD_TX_HASH:
+      return _objectSpread({}, state, {
+        contracts: _objectSpread({}, state.contracts, {
+          [action.payload.contractName]: {
+            transactionHash: action.payload.transactionHash,
+            options: state.contracts[action.payload.contractName].options
           }
         })
       });
