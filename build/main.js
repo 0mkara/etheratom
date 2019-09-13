@@ -1331,6 +1331,16 @@ class Web3Helpers {
             options
           }
         });
+
+        if (options.address) {
+          this.store.dispatch({
+            type: SET_DEPLOYED,
+            payload: {
+              contractName,
+              deployed: true
+            }
+          });
+        }
       } else if (message.hasOwnProperty('transactionHash')) {
         console.log("Got txHash");
         const transactionHash = message['transactionHash'];
