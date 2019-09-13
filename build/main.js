@@ -1349,24 +1349,7 @@ class Web3Helpers {
             deployed: true
           }
         });
-      } else if (message.hasOwnProperty('txReceipt')) ; else if (message.hasOwnProperty('confirmationNumber')) ; else if (message.hasOwnProperty('logsEvents')) ; else if (message.hasOwnProperty('dataEvents')) ; else if (message.hasOwnProperty('changedEvent')) ; else if (message.hasOwnProperty('address')) {
-        const {
-          contract
-        } = this;
-        contract.options.address = message['address'];
-        const contractName = message['contractName'];
-        setInstance({
-          contractName,
-          instance: Object.assign({}, contract)
-        });
-        this.store.dispatch({
-          type: 'set_deployed',
-          payload: {
-            contractName,
-            deployed: true
-          }
-        });
-      } else if (message.hasOwnProperty('gasEstimate')) {
+      } else if (message.hasOwnProperty('txReceipt')) ; else if (message.hasOwnProperty('confirmationNumber')) ; else if (message.hasOwnProperty('logsEvents')) ; else if (message.hasOwnProperty('dataEvents')) ; else if (message.hasOwnProperty('changedEvent')) ; else if (message.hasOwnProperty('gasEstimate')) {
         const gasEstimate = message['gasEstimate'];
         this.store.dispatch({
           type: SET_GAS_ESTIMATE,
@@ -1396,9 +1379,11 @@ class Web3Helpers {
           }
         });
       } else if (message.hasOwnProperty('callResult')) {
+        const address = message['address'];
+        const data = message['callResult'];
         this.showOutput({
-          address: this.contract.options.address,
-          data: message['callResult']
+          address,
+          data
         });
       } else if (message.hasOwnProperty('transactionHashonSend')) {
         this.showTransaction({
@@ -1569,7 +1554,7 @@ class Web3Helpers {
         argumentsForCall: args
       });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       throw e;
     }
   }
@@ -3531,9 +3516,9 @@ class FunctionABI extends React__default.Component {
   _handleChange(i, j, event) {
     const {
       contractName,
-      interfaces
+      contracts
     } = this.props;
-    const ContractABI = interfaces[contractName].interface;
+    const ContractABI = contracts[contractName].interface;
     const input = ContractABI[i].inputs[j];
     input.value = event.target.value;
     ContractABI[i].inputs[j] = Object.assign({}, input);
@@ -3552,9 +3537,9 @@ class FunctionABI extends React__default.Component {
       contractName,
       coinbase,
       password,
-      instances
+      contracts
     } = this.props;
-    const contract = instances[contractName];
+    const contract = contracts[contractName];
 
     try {
       this.helpers.call({
@@ -3575,9 +3560,9 @@ class FunctionABI extends React__default.Component {
         contractName,
         coinbase,
         password,
-        instances
+        contracts
       } = this.props;
-      const contract = instances[contractName];
+      const contract = contracts[contractName];
       let params = [];
 
       for (let input of methodItem.inputs) {
@@ -3594,7 +3579,7 @@ class FunctionABI extends React__default.Component {
         params
       });
     } catch (e) {
-      console.log(e);
+      console.error(e);
       this.helpers.showPanelError(e);
     }
   }
@@ -3666,7 +3651,8 @@ FunctionABI.propTypes = {
   updateInterface: PropTypes.func,
   coinbase: PropTypes.string,
   password: PropTypes.string,
-  instances: PropTypes.object
+  instances: PropTypes.object,
+  contracts: PropTypes.object
 };
 
 const mapStateToProps$4 = ({
@@ -3676,7 +3662,7 @@ const mapStateToProps$4 = ({
   const {
     compiled,
     interfaces,
-    instances
+    contracts
   } = contract;
   const {
     coinbase,
@@ -3685,7 +3671,7 @@ const mapStateToProps$4 = ({
   return {
     compiled,
     interfaces,
-    instances,
+    contracts,
     coinbase,
     password
   };
@@ -3754,7 +3740,7 @@ class ContractExecution extends React__default.Component {
       className: "inline-block highlight"
     }, "Mined at:"), React__default.createElement("pre", {
       className: "large-code"
-    }, contract.options.address)), ContractABI.map((abi, i) => {
+    }, contractOptions.address)), ContractABI.map((abi, i) => {
       return React__default.createElement(InputsForm$1, {
         contractName: contractName,
         abi: abi,
