@@ -9,7 +9,7 @@
 describe('Etheratom', async function() {
     describe('Test command eth-interface:activate', function() {
         const workspaceElement = atom.views.getView(atom.workspace);
-        afterEach(async() => {
+        global.window.afterEach(async() => {
             await atom.packages.deactivatePackage('etheratom');
             atom.packages.unloadPackage('etheratom');
         });
@@ -41,7 +41,7 @@ describe('Etheratom', async function() {
 
     describe('Test command eth-interface:toggle', function() {
         const workspaceElement = atom.views.getView(atom.workspace);
-        afterEach(async() => {
+        global.window.afterEach(async() => {
             await atom.packages.deactivatePackage('etheratom');
             atom.packages.unloadPackage('etheratom');
         });
