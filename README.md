@@ -11,10 +11,12 @@ Etheratom is a package for hackable Atom editor. It uses web3js to interact with
 
 # Sponsors
 ![gitcoin](https://s.gitcoin.co/static/v2/images/presskit/GitcoinLogoText.682e2321c67c.svg)
-<img src="https://svgshare.com/i/F0D.svg" alt="ethereumfoundation" data-canonical-src="https://gyazo.com/eb5c5741b6a9a16c692170a41a49c858.png" height="200" />
+<img src="https://svgshare.com/i/F0D.svg" alt="ethereumfoundation" height="200" />
 
 # Support
-  You can join our Telegram group for quick help in solving any issues at https://t.me/etheratom  [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom).
+  You can join our Telegram group for quick help in solving any issues at https://t.me/etheratom  [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom)
+
+  Join our new gitter room for help - https://gitter.im/Ethereum-Devtools-Developers-Studio/etheratom
 
 # Requirements
 
@@ -26,7 +28,7 @@ You can just download binary from [https://geth.ethereum.org/downloads/](https:/
 #### Run go-ethereum client
 Start geth node on testnet using following command:
 
-    geth --testnet --syncmode "fast" --rpc --rpcapi="eth,web3,personal" --ws --wsorigins="*" --wsapi="eth,web3,personal" console
+    geth --goerli --rpc --rpcapi="eth,web3,personal" --ws --wsorigins=*" --wsapi="eth,web3,personal" console
 
 *Note:* Only solidity compilation is supported. `--wsorigins="*"` or `--wsorigins="file://"`  is necessary to allow Atom to connect to go-ethereum websocket endpoint.
 
