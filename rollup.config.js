@@ -21,14 +21,14 @@ export default {
         resolve({
             module: true,
             main: true,
-            extensions: ['.js', '.jsx', '.json'],
+            extensions: [ '.js', '.jsx', '.json' ],
             preferBuiltins: true
         }),
         babel({
             exclude: 'node_modules/**'
         }),
         commonjs({
-            include: ['node_modules/**']
+            include: [ 'node_modules/react-checkbox-tree/**' ]
         }),
         builtins()
     ],
