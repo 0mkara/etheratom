@@ -436,472 +436,6 @@ function _objectSpread(target) {
   return target;
 }
 
-var domain;
-
-// This constructor is used to store event handlers. Instantiating this is
-// faster than explicitly calling `Object.create(null)` to get a "clean" empty
-// object (tested with v8 v4.9).
-function EventHandlers() {}
-EventHandlers.prototype = Object.create(null);
-
-function EventEmitter() {
-  EventEmitter.init.call(this);
-}
-
-// nodejs oddity
-// require('events') === require('events').EventEmitter
-EventEmitter.EventEmitter = EventEmitter;
-
-EventEmitter.usingDomains = false;
-
-EventEmitter.prototype.domain = undefined;
-EventEmitter.prototype._events = undefined;
-EventEmitter.prototype._maxListeners = undefined;
-
-// By default EventEmitters will print a warning if more than 10 listeners are
-// added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
-
-EventEmitter.init = function() {
-  this.domain = null;
-  if (EventEmitter.usingDomains) {
-    // if there is an active domain, then attach to it.
-    if (domain.active && !(this instanceof domain.Domain)) ;
-  }
-
-  if (!this._events || this._events === Object.getPrototypeOf(this)._events) {
-    this._events = new EventHandlers();
-    this._eventsCount = 0;
-  }
-
-  this._maxListeners = this._maxListeners || undefined;
-};
-
-// Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
-  if (typeof n !== 'number' || n < 0 || isNaN(n))
-    throw new TypeError('"n" argument must be a positive number');
-  this._maxListeners = n;
-  return this;
-};
-
-function $getMaxListeners(that) {
-  if (that._maxListeners === undefined)
-    return EventEmitter.defaultMaxListeners;
-  return that._maxListeners;
-}
-
-EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
-  return $getMaxListeners(this);
-};
-
-// These standalone emit* functions are used to optimize calling of event
-// handlers for fast cases because emit() itself often has a variable number of
-// arguments and can be deoptimized because of that. These functions always have
-// the same number of arguments and thus do not get deoptimized, so the code
-// inside them can execute faster.
-function emitNone(handler, isFn, self) {
-  if (isFn)
-    handler.call(self);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self);
-  }
-}
-function emitOne(handler, isFn, self, arg1) {
-  if (isFn)
-    handler.call(self, arg1);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self, arg1);
-  }
-}
-function emitTwo(handler, isFn, self, arg1, arg2) {
-  if (isFn)
-    handler.call(self, arg1, arg2);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self, arg1, arg2);
-  }
-}
-function emitThree(handler, isFn, self, arg1, arg2, arg3) {
-  if (isFn)
-    handler.call(self, arg1, arg2, arg3);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].call(self, arg1, arg2, arg3);
-  }
-}
-
-function emitMany(handler, isFn, self, args) {
-  if (isFn)
-    handler.apply(self, args);
-  else {
-    var len = handler.length;
-    var listeners = arrayClone(handler, len);
-    for (var i = 0; i < len; ++i)
-      listeners[i].apply(self, args);
-  }
-}
-
-EventEmitter.prototype.emit = function emit(type) {
-  var er, handler, len, args, i, events, domain;
-  var doError = (type === 'error');
-
-  events = this._events;
-  if (events)
-    doError = (doError && events.error == null);
-  else if (!doError)
-    return false;
-
-  domain = this.domain;
-
-  // If there is no 'error' event listener then throw.
-  if (doError) {
-    er = arguments[1];
-    if (domain) {
-      if (!er)
-        er = new Error('Uncaught, unspecified "error" event');
-      er.domainEmitter = this;
-      er.domain = domain;
-      er.domainThrown = false;
-      domain.emit('error', er);
-    } else if (er instanceof Error) {
-      throw er; // Unhandled 'error' event
-    } else {
-      // At least give some kind of context to the user
-      var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-      err.context = er;
-      throw err;
-    }
-    return false;
-  }
-
-  handler = events[type];
-
-  if (!handler)
-    return false;
-
-  var isFn = typeof handler === 'function';
-  len = arguments.length;
-  switch (len) {
-    // fast cases
-    case 1:
-      emitNone(handler, isFn, this);
-      break;
-    case 2:
-      emitOne(handler, isFn, this, arguments[1]);
-      break;
-    case 3:
-      emitTwo(handler, isFn, this, arguments[1], arguments[2]);
-      break;
-    case 4:
-      emitThree(handler, isFn, this, arguments[1], arguments[2], arguments[3]);
-      break;
-    // slower
-    default:
-      args = new Array(len - 1);
-      for (i = 1; i < len; i++)
-        args[i - 1] = arguments[i];
-      emitMany(handler, isFn, this, args);
-  }
-
-  return true;
-};
-
-function _addListener(target, type, listener, prepend) {
-  var m;
-  var events;
-  var existing;
-
-  if (typeof listener !== 'function')
-    throw new TypeError('"listener" argument must be a function');
-
-  events = target._events;
-  if (!events) {
-    events = target._events = new EventHandlers();
-    target._eventsCount = 0;
-  } else {
-    // To avoid recursion in the case that type === "newListener"! Before
-    // adding it to the listeners, first emit "newListener".
-    if (events.newListener) {
-      target.emit('newListener', type,
-                  listener.listener ? listener.listener : listener);
-
-      // Re-assign `events` because a newListener handler could have caused the
-      // this._events to be assigned to a new object
-      events = target._events;
-    }
-    existing = events[type];
-  }
-
-  if (!existing) {
-    // Optimize the case of one listener. Don't need the extra array object.
-    existing = events[type] = listener;
-    ++target._eventsCount;
-  } else {
-    if (typeof existing === 'function') {
-      // Adding the second element, need to change to array.
-      existing = events[type] = prepend ? [listener, existing] :
-                                          [existing, listener];
-    } else {
-      // If we've already got an array, just append.
-      if (prepend) {
-        existing.unshift(listener);
-      } else {
-        existing.push(listener);
-      }
-    }
-
-    // Check for listener leak
-    if (!existing.warned) {
-      m = $getMaxListeners(target);
-      if (m && m > 0 && existing.length > m) {
-        existing.warned = true;
-        var w = new Error('Possible EventEmitter memory leak detected. ' +
-                            existing.length + ' ' + type + ' listeners added. ' +
-                            'Use emitter.setMaxListeners() to increase limit');
-        w.name = 'MaxListenersExceededWarning';
-        w.emitter = target;
-        w.type = type;
-        w.count = existing.length;
-        emitWarning(w);
-      }
-    }
-  }
-
-  return target;
-}
-function emitWarning(e) {
-  typeof console.warn === 'function' ? console.warn(e) : console.log(e);
-}
-EventEmitter.prototype.addListener = function addListener(type, listener) {
-  return _addListener(this, type, listener, false);
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.prependListener =
-    function prependListener(type, listener) {
-      return _addListener(this, type, listener, true);
-    };
-
-function _onceWrap(target, type, listener) {
-  var fired = false;
-  function g() {
-    target.removeListener(type, g);
-    if (!fired) {
-      fired = true;
-      listener.apply(target, arguments);
-    }
-  }
-  g.listener = listener;
-  return g;
-}
-
-EventEmitter.prototype.once = function once(type, listener) {
-  if (typeof listener !== 'function')
-    throw new TypeError('"listener" argument must be a function');
-  this.on(type, _onceWrap(this, type, listener));
-  return this;
-};
-
-EventEmitter.prototype.prependOnceListener =
-    function prependOnceListener(type, listener) {
-      if (typeof listener !== 'function')
-        throw new TypeError('"listener" argument must be a function');
-      this.prependListener(type, _onceWrap(this, type, listener));
-      return this;
-    };
-
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener =
-    function removeListener(type, listener) {
-      var list, events, position, i, originalListener;
-
-      if (typeof listener !== 'function')
-        throw new TypeError('"listener" argument must be a function');
-
-      events = this._events;
-      if (!events)
-        return this;
-
-      list = events[type];
-      if (!list)
-        return this;
-
-      if (list === listener || (list.listener && list.listener === listener)) {
-        if (--this._eventsCount === 0)
-          this._events = new EventHandlers();
-        else {
-          delete events[type];
-          if (events.removeListener)
-            this.emit('removeListener', type, list.listener || listener);
-        }
-      } else if (typeof list !== 'function') {
-        position = -1;
-
-        for (i = list.length; i-- > 0;) {
-          if (list[i] === listener ||
-              (list[i].listener && list[i].listener === listener)) {
-            originalListener = list[i].listener;
-            position = i;
-            break;
-          }
-        }
-
-        if (position < 0)
-          return this;
-
-        if (list.length === 1) {
-          list[0] = undefined;
-          if (--this._eventsCount === 0) {
-            this._events = new EventHandlers();
-            return this;
-          } else {
-            delete events[type];
-          }
-        } else {
-          spliceOne(list, position);
-        }
-
-        if (events.removeListener)
-          this.emit('removeListener', type, originalListener || listener);
-      }
-
-      return this;
-    };
-
-EventEmitter.prototype.removeAllListeners =
-    function removeAllListeners(type) {
-      var listeners, events;
-
-      events = this._events;
-      if (!events)
-        return this;
-
-      // not listening for removeListener, no need to emit
-      if (!events.removeListener) {
-        if (arguments.length === 0) {
-          this._events = new EventHandlers();
-          this._eventsCount = 0;
-        } else if (events[type]) {
-          if (--this._eventsCount === 0)
-            this._events = new EventHandlers();
-          else
-            delete events[type];
-        }
-        return this;
-      }
-
-      // emit removeListener for all listeners on all events
-      if (arguments.length === 0) {
-        var keys = Object.keys(events);
-        for (var i = 0, key; i < keys.length; ++i) {
-          key = keys[i];
-          if (key === 'removeListener') continue;
-          this.removeAllListeners(key);
-        }
-        this.removeAllListeners('removeListener');
-        this._events = new EventHandlers();
-        this._eventsCount = 0;
-        return this;
-      }
-
-      listeners = events[type];
-
-      if (typeof listeners === 'function') {
-        this.removeListener(type, listeners);
-      } else if (listeners) {
-        // LIFO order
-        do {
-          this.removeListener(type, listeners[listeners.length - 1]);
-        } while (listeners[0]);
-      }
-
-      return this;
-    };
-
-EventEmitter.prototype.listeners = function listeners(type) {
-  var evlistener;
-  var ret;
-  var events = this._events;
-
-  if (!events)
-    ret = [];
-  else {
-    evlistener = events[type];
-    if (!evlistener)
-      ret = [];
-    else if (typeof evlistener === 'function')
-      ret = [evlistener.listener || evlistener];
-    else
-      ret = unwrapListeners(evlistener);
-  }
-
-  return ret;
-};
-
-EventEmitter.listenerCount = function(emitter, type) {
-  if (typeof emitter.listenerCount === 'function') {
-    return emitter.listenerCount(type);
-  } else {
-    return listenerCount.call(emitter, type);
-  }
-};
-
-EventEmitter.prototype.listenerCount = listenerCount;
-function listenerCount(type) {
-  var events = this._events;
-
-  if (events) {
-    var evlistener = events[type];
-
-    if (typeof evlistener === 'function') {
-      return 1;
-    } else if (evlistener) {
-      return evlistener.length;
-    }
-  }
-
-  return 0;
-}
-
-EventEmitter.prototype.eventNames = function eventNames() {
-  return this._eventsCount > 0 ? Reflect.ownKeys(this._events) : [];
-};
-
-// About 1.5x faster than the two-arg version of Array#splice().
-function spliceOne(list, index) {
-  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1)
-    list[i] = list[k];
-  list.pop();
-}
-
-function arrayClone(arr, i) {
-  var copy = new Array(i);
-  while (i--)
-    copy[i] = arr[i];
-  return copy;
-}
-
-function unwrapListeners(arr) {
-  var ret = new Array(arr.length);
-  for (var i = 0; i < ret.length; ++i) {
-    ret[i] = arr[i].listener || arr[i];
-  }
-  return ret;
-}
-
 // This file is part of Etheratom.
 // Etheratom is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -920,7 +454,7 @@ const SET_COMPILED = 'set_compiled';
 const RESET_COMPILED = 'reset_compiled';
 const SET_PARAMS = 'set_params';
 const ADD_INTERFACE = 'add_interface';
-const UPDATE_INTERFACE$1 = 'update_interface';
+const UPDATE_INTERFACE = 'update_interface';
 const UPDATE_OPTIONS = 'update_options';
 const ADD_TX_HASH = 'add_tx_hash';
 const SET_INSTANCE = 'set_instance';
@@ -1342,7 +876,7 @@ class Web3Helpers {
           });
         }
       } else if (message.hasOwnProperty('transactionHash')) {
-        console.log("Got txHash");
+        console.log('Got txHash');
         const transactionHash = message['transactionHash'];
         const contractName = message['contractName'];
         this.store.dispatch({
@@ -3770,6 +3304,7 @@ ContractExecution.propTypes = {
   bytecode: PropTypes.string,
   index: PropTypes.number,
   instances: PropTypes.any,
+  contracts: PropTypes.any,
   interfaces: PropTypes.object
 };
 
@@ -4358,11 +3893,9 @@ class RemixTest extends React__default.Component {
   }
 
   async _runRemixTests() {
-    console.log(this.props);
     const {
       sources
     } = this.props;
-    console.log(sources);
     this.setState({
       testResults: [],
       testResult: {
@@ -4420,7 +3953,6 @@ class RemixTest extends React__default.Component {
         }
       });
       utWorker.on('error', e => {
-        console.log(e);
         throw e;
       });
       utWorker.on('exit', (code, signal) => {
@@ -4851,7 +4383,8 @@ NodeControl.propTypes = {
   setAccounts: PropTypes.func,
   setCoinbase: PropTypes.func,
   setErrors: PropTypes.string,
-  password: PropTypes.string
+  password: PropTypes.string,
+  store: PropTypes.any
 };
 
 const mapStateToProps$b = ({
@@ -5192,7 +4725,8 @@ var TabView$1 = reactRedux.connect(mapStateToProps$d, {})(TabView);
 class CoinbaseView extends React__default.Component {
   constructor(props) {
     super(props);
-    this.helpers = props.helpers;
+    this.helpers = props.helpers; // const { balance } = props;
+
     this.state = {
       coinbase: props.accounts[0],
       password: '',
@@ -5355,6 +4889,9 @@ CoinbaseView.propTypes = {
   helpers: PropTypes.any.isRequired,
   accounts: PropTypes.arrayOf(PropTypes.string),
   setCoinbase: PropTypes.function,
+  store: PropTypes.any,
+  balance: PropTypes.any,
+  coinbase: PropTypes.any,
   setPassword: PropTypes.function
 };
 
@@ -8142,7 +7679,7 @@ const override = process.env.NODE_ENV === "production" ? {
 } : {
   name: "1uf9cho-override",
   styles: "display:inline-block;margin:0 auto;border-color:red;margin-top:50px;label:override;",
-  map: "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImluZGV4LmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXFCb0IiLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGJhYmVsJztcbi8vIENvcHlyaWdodCAyMDE4IEV0aGVyYXRvbSBBdXRob3JzXG4vLyBUaGlzIGZpbGUgaXMgcGFydCBvZiBFdGhlcmF0b20uXG5cbi8vIEV0aGVyYXRvbSBpcyBmcmVlIHNvZnR3YXJlOiB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5XG4vLyBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieVxuLy8gdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgZWl0aGVyIHZlcnNpb24gMyBvZiB0aGUgTGljZW5zZSwgb3Jcbi8vIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uXG5cbi8vIEV0aGVyYXRvbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSB0aGF0IGl0IHdpbGwgYmUgdXNlZnVsLFxuLy8gYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2Zcbi8vIE1FUkNIQU5UQUJJTElUWSBvciBGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGVcbi8vIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGZvciBtb3JlIGRldGFpbHMuXG5cbi8vIFlvdSBzaG91bGQgaGF2ZSByZWNlaXZlZCBhIGNvcHkgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlXG4vLyBhbG9uZyB3aXRoIEV0aGVyYXRvbS4gIElmIG5vdCwgc2VlIDxodHRwOi8vd3d3LmdudS5vcmcvbGljZW5zZXMvPi5cbmltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBjb25uZWN0IH0gZnJvbSAncmVhY3QtcmVkdXgnO1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJztcbmltcG9ydCBTY2FsZUxvYWRlciBmcm9tICdyZWFjdC1zcGlubmVycy9TY2FsZUxvYWRlcic7XG5pbXBvcnQgeyBjc3MgfSBmcm9tICdAZW1vdGlvbi9jb3JlJztcbmNvbnN0IG92ZXJyaWRlID0gY3NzYFxuICAgIGRpc3BsYXk6IGlubGluZS1ibG9jaztcbiAgICBtYXJnaW46IDAgYXV0bztcbiAgICBib3JkZXItY29sb3I6IHJlZDtcbiAgICBtYXJnaW4tdG9wOjUwcHg7XG5gO1xuY29uc3QgbG9hZGVyQ29udGFpbmVyU3R5bGUgPSB7XG4gICAgdGV4dEFsaWduOiAnY2VudGVyJ1xufTtcblxuY2xhc3MgTG9hZGVyVmlldyBleHRlbmRzIFJlYWN0LkNvbXBvbmVudCB7XG4gICAgY29uc3RydWN0b3IocHJvcHMpIHtcbiAgICAgICAgc3VwZXIocHJvcHMpO1xuICAgICAgICB0aGlzLnN0b3JlID0gdGhpcy5wcm9wcy5zdG9yZTtcbiAgICB9XG4gICAgc3RhdGVDaGFuZ2UoKSB7XG4gICAgfVxuICAgIGNvbXBvbmVudERpZFVwZGF0ZSgpIHtcblxuICAgIH1cbiAgICBjb21wb25lbnRXaWxsUmVjZWl2ZVByb3BzKCkge1xuXG4gICAgfVxuICAgIHJlbmRlcigpIHtcbiAgICAgICAgY29uc3QgeyBjbGllbnRzIH0gPSB0aGlzLnByb3BzO1xuICAgICAgICBjb25zdCB7IGhhc0Nvbm5lY3Rpb24gfSA9IGNsaWVudHNbMF07XG5cbiAgICAgICAgLy8gYWxlcnQoaGFzQ29ubmVjdGlvbik7XG5cbiAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibG9hZGVyX1wiIHN0eWxlPXtsb2FkZXJDb250YWluZXJTdHlsZX0+XG4gICAgICAgICAgICAgICAgPFNjYWxlTG9hZGVyXG4gICAgICAgICAgICAgICAgICAgIGNzcz17b3ZlcnJpZGV9XG4gICAgICAgICAgICAgICAgICAgIHNpemVVbml0PXsncHgnfVxuICAgICAgICAgICAgICAgICAgICBzaXplPXs4MH1cbiAgICAgICAgICAgICAgICAgICAgY29sb3I9eycjNjM2OTczJ31cbiAgICAgICAgICAgICAgICAgICAgbG9hZGluZz17IWhhc0Nvbm5lY3Rpb259XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICApO1xuICAgIH1cbn1cblxuTG9hZGVyVmlldy5wcm9wVHlwZXMgPSB7XG4gICAgY2xpZW50czogUHJvcFR5cGVzLmFueS5pc1JlcXVpcmVkXG59O1xuXG5jb25zdCBtYXBTdGF0ZVRvUHJvcHMgPSAoeyBjbGllbnRSZWR1Y2VyIH0pID0+IHtcbiAgICBjb25zdCB7IGNsaWVudHMgfSA9IGNsaWVudFJlZHVjZXI7XG4gICAgcmV0dXJuIHsgY2xpZW50cyB9O1xufTtcbmV4cG9ydCBkZWZhdWx0IGNvbm5lY3QobWFwU3RhdGVUb1Byb3BzKShMb2FkZXJWaWV3KTtcblxuIl19 */"
+  map: "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImluZGV4LmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXFCb0IiLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGJhYmVsJztcbi8vIENvcHlyaWdodCAyMDE4IEV0aGVyYXRvbSBBdXRob3JzXG4vLyBUaGlzIGZpbGUgaXMgcGFydCBvZiBFdGhlcmF0b20uXG5cbi8vIEV0aGVyYXRvbSBpcyBmcmVlIHNvZnR3YXJlOiB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5XG4vLyBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieVxuLy8gdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgZWl0aGVyIHZlcnNpb24gMyBvZiB0aGUgTGljZW5zZSwgb3Jcbi8vIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uXG5cbi8vIEV0aGVyYXRvbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSB0aGF0IGl0IHdpbGwgYmUgdXNlZnVsLFxuLy8gYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2Zcbi8vIE1FUkNIQU5UQUJJTElUWSBvciBGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGVcbi8vIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGZvciBtb3JlIGRldGFpbHMuXG5cbi8vIFlvdSBzaG91bGQgaGF2ZSByZWNlaXZlZCBhIGNvcHkgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlXG4vLyBhbG9uZyB3aXRoIEV0aGVyYXRvbS4gIElmIG5vdCwgc2VlIDxodHRwOi8vd3d3LmdudS5vcmcvbGljZW5zZXMvPi5cbmltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBjb25uZWN0IH0gZnJvbSAncmVhY3QtcmVkdXgnO1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJztcbmltcG9ydCBTY2FsZUxvYWRlciBmcm9tICdyZWFjdC1zcGlubmVycy9TY2FsZUxvYWRlcic7XG5pbXBvcnQgeyBjc3MgfSBmcm9tICdAZW1vdGlvbi9jb3JlJztcbmNvbnN0IG92ZXJyaWRlID0gY3NzYFxuICAgIGRpc3BsYXk6IGlubGluZS1ibG9jaztcbiAgICBtYXJnaW46IDAgYXV0bztcbiAgICBib3JkZXItY29sb3I6IHJlZDtcbiAgICBtYXJnaW4tdG9wOjUwcHg7XG5gO1xuY29uc3QgbG9hZGVyQ29udGFpbmVyU3R5bGUgPSB7XG4gICAgdGV4dEFsaWduOiAnY2VudGVyJ1xufTtcblxuY2xhc3MgTG9hZGVyVmlldyBleHRlbmRzIFJlYWN0LkNvbXBvbmVudCB7XG4gICAgY29uc3RydWN0b3IocHJvcHMpIHtcbiAgICAgICAgc3VwZXIocHJvcHMpO1xuICAgICAgICB0aGlzLnN0b3JlID0gdGhpcy5wcm9wcy5zdG9yZTtcbiAgICB9XG4gICAgc3RhdGVDaGFuZ2UoKSB7XG4gICAgfVxuICAgIGNvbXBvbmVudERpZFVwZGF0ZSgpIHtcblxuICAgIH1cbiAgICBjb21wb25lbnRXaWxsUmVjZWl2ZVByb3BzKCkge1xuXG4gICAgfVxuICAgIHJlbmRlcigpIHtcbiAgICAgICAgY29uc3QgeyBjbGllbnRzIH0gPSB0aGlzLnByb3BzO1xuICAgICAgICBjb25zdCB7IGhhc0Nvbm5lY3Rpb24gfSA9IGNsaWVudHNbMF07XG5cbiAgICAgICAgLy8gYWxlcnQoaGFzQ29ubmVjdGlvbik7XG5cbiAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibG9hZGVyX1wiIHN0eWxlPXtsb2FkZXJDb250YWluZXJTdHlsZX0+XG4gICAgICAgICAgICAgICAgPFNjYWxlTG9hZGVyXG4gICAgICAgICAgICAgICAgICAgIGNzcz17b3ZlcnJpZGV9XG4gICAgICAgICAgICAgICAgICAgIHNpemVVbml0PXsncHgnfVxuICAgICAgICAgICAgICAgICAgICBzaXplPXs4MH1cbiAgICAgICAgICAgICAgICAgICAgY29sb3I9eycjNjM2OTczJ31cbiAgICAgICAgICAgICAgICAgICAgbG9hZGluZz17IWhhc0Nvbm5lY3Rpb259XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICApO1xuICAgIH1cbn1cblxuTG9hZGVyVmlldy5wcm9wVHlwZXMgPSB7XG4gICAgY2xpZW50czogUHJvcFR5cGVzLmFueS5pc1JlcXVpcmVkLFxuICAgIHN0b3JlOiBQcm9wVHlwZXMuYW55LFxufTtcblxuY29uc3QgbWFwU3RhdGVUb1Byb3BzID0gKHsgY2xpZW50UmVkdWNlciB9KSA9PiB7XG4gICAgY29uc3QgeyBjbGllbnRzIH0gPSBjbGllbnRSZWR1Y2VyO1xuICAgIHJldHVybiB7IGNsaWVudHMgfTtcbn07XG5leHBvcnQgZGVmYXVsdCBjb25uZWN0KG1hcFN0YXRlVG9Qcm9wcykoTG9hZGVyVmlldyk7XG5cbiJdfQ== */"
 };
 const loaderContainerStyle = {
   textAlign: 'center'
@@ -8183,7 +7720,8 @@ class LoaderView extends React__default.Component {
 }
 
 LoaderView.propTypes = {
-  clients: PropTypes.any.isRequired
+  clients: PropTypes.any.isRequired,
+  store: PropTypes.any
 };
 
 const mapStateToProps$h = ({
@@ -8601,7 +8139,7 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
         })
       });
 
-    case UPDATE_INTERFACE$1:
+    case UPDATE_INTERFACE:
       return _objectSpread({}, state, {
         interfaces: _objectSpread({}, state.interfaces, {
           [action.payload.contractName]: {
