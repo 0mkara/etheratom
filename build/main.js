@@ -53,6 +53,11 @@ class AtomSolidityView {
     att.value = 'client-options';
     compilerNode.setAttributeNode(att);
     mainNode.appendChild(compilerNode);
+    let loaderNode = document.createElement('div');
+    att = document.createAttribute('id');
+    att.value = 'loader';
+    loaderNode.setAttributeNode(att);
+    mainNode.appendChild(loaderNode);
     let versionNode = document.createElement('div');
     att = document.createAttribute('id');
     att.value = 'version_selector';
@@ -63,11 +68,6 @@ class AtomSolidityView {
     att.value = 'accounts-list';
     accountsNode.setAttributeNode(att);
     mainNode.appendChild(accountsNode);
-    let loaderNode = document.createElement('div');
-    att = document.createAttribute('id');
-    att.value = 'loader_';
-    loaderNode.setAttributeNode(att);
-    mainNode.appendChild(loaderNode);
     let buttonNode = document.createElement('div');
     att = document.createAttribute('id');
     att.value = 'common-buttons';
@@ -481,6 +481,9 @@ const SET_MINING = 'set_mining';
 const SET_HASH_RATE = 'set_hash_rate'; // Client variables
 
 const SET_CONNECTION_STATUS = 'set_connection_status';
+const FIRST_TIME_CHECK_ENABLE = 'first_time_check_enable';
+const IS_WS_PROVIDER = 'is_ws_provider';
+const IS_HTTP_PROVIDER = 'is_http_provider';
 
 const setParamsInput = ({
   contractName,
@@ -759,9 +762,6 @@ class Web3Helpers {
           type: SET_BALANCE,
           payload: message['ethBalance']
         });
-      } else if (message.hasOwnProperty('error')) {
-        console.log('%c Error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message);
-        this.showPanelError(message.error);
       } else if (message.hasOwnProperty('hasConnection')) {
         let clients = this.getCurrentClients();
         clients[0].hasConnection = message['hasConnection'];
@@ -771,9 +771,9 @@ class Web3Helpers {
         });
         clients[0].firstTimeCheck = false;
         this.store.dispatch({
-          type: 'first_time_check_enable',
+          type: FIRST_TIME_CHECK_ENABLE,
           payload: clients
-        }); // set_connection_status(message['hasConnection']);
+        });
       } else if (message.hasOwnProperty('isWsProvider')) {
         let clients = this.getCurrentClients();
         clients[0].isWsProvider = message['isWsProvider'];
@@ -939,6 +939,9 @@ class Web3Helpers {
           head: 'Transaction recipt:',
           data: message['txReciptonSend']
         });
+      } else if (message.hasOwnProperty('error')) {
+        console.log('%c Error ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message);
+        this.showPanelError(message.error);
       }
     });
   }
@@ -2889,18 +2892,27 @@ class ContractCompiled extends React__default.Component {
   }
 
   async componentDidMount() {
-    try {
-      const {
-        coinbase,
-        bytecode
-      } = this.props;
-      const gas = await this.helpers.getGasEstimate(coinbase, bytecode);
-      this.setState({
-        estimatedGas: gas
-      });
-    } catch (e) {
-      console.error(e);
-      this.helpers.showPanelError(e);
+    const {
+      clients
+    } = this.props;
+    console.log(clients);
+
+    if (!clients[0].hasConnection) {
+      return;
+    } else {
+      try {
+        const {
+          coinbase,
+          bytecode
+        } = this.props;
+        const gas = await this.helpers.getGasEstimate(coinbase, bytecode);
+        this.setState({
+          estimatedGas: gas
+        });
+      } catch (e) {
+        console.error(e);
+        this.helpers.showPanelError(e);
+      }
     }
   }
 
@@ -3025,7 +3037,8 @@ ContractCompiled.propTypes = {
 
 const mapStateToProps$3 = ({
   account,
-  contract
+  contract,
+  clientReducer
 }) => {
   const {
     compiled,
@@ -3035,11 +3048,15 @@ const mapStateToProps$3 = ({
   const {
     coinbase
   } = account;
+  const {
+    clients
+  } = clientReducer;
   return {
     compiled,
     interfaces,
     coinbase,
-    gasEstimate
+    gasEstimate,
+    clients
   };
 };
 
@@ -4063,10 +4080,15 @@ class NodeControl extends React__default.Component {
     this.helpers = props.helpers;
     this.helpers.isWsProvider();
     this.helpers.isHttpProvider();
+    const {
+      clients
+    } = this.props;
+    const client = clients[0];
     this.state = {
-      wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider,
-      httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider,
-      connected: this.props.store.getState().clientReducer.clients[0].hasConnection,
+      // TODO: get values from props
+      wsProvider: client.isWsProvider,
+      httpProvider: client.isHttpProvider,
+      connected: client.hasConnection,
       toAddress: '',
       amount: 0,
       rpcAddress: atom.config.get('etheratom.rpcAddress'),
@@ -4105,10 +4127,14 @@ class NodeControl extends React__default.Component {
   async _refreshSync() {
     await this.helpers.getAccounts();
     this.getNodeInfo();
+    const {
+      clients
+    } = this.props;
+    const client = clients[0];
     this.setState({
-      wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider,
-      httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider,
-      connected: this.props.store.getState().clientReducer.clients[0].hasConnection
+      wsProvider: client.isWsProvider,
+      httpProvider: client.isHttpProvider,
+      connected: client.hasConnection
     });
   }
 
@@ -7679,7 +7705,7 @@ const override = process.env.NODE_ENV === "production" ? {
 } : {
   name: "1uf9cho-override",
   styles: "display:inline-block;margin:0 auto;border-color:red;margin-top:50px;label:override;",
-  map: "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImluZGV4LmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXFCb0IiLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGJhYmVsJztcbi8vIENvcHlyaWdodCAyMDE4IEV0aGVyYXRvbSBBdXRob3JzXG4vLyBUaGlzIGZpbGUgaXMgcGFydCBvZiBFdGhlcmF0b20uXG5cbi8vIEV0aGVyYXRvbSBpcyBmcmVlIHNvZnR3YXJlOiB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5XG4vLyBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieVxuLy8gdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgZWl0aGVyIHZlcnNpb24gMyBvZiB0aGUgTGljZW5zZSwgb3Jcbi8vIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uXG5cbi8vIEV0aGVyYXRvbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSB0aGF0IGl0IHdpbGwgYmUgdXNlZnVsLFxuLy8gYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2Zcbi8vIE1FUkNIQU5UQUJJTElUWSBvciBGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGVcbi8vIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGZvciBtb3JlIGRldGFpbHMuXG5cbi8vIFlvdSBzaG91bGQgaGF2ZSByZWNlaXZlZCBhIGNvcHkgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlXG4vLyBhbG9uZyB3aXRoIEV0aGVyYXRvbS4gIElmIG5vdCwgc2VlIDxodHRwOi8vd3d3LmdudS5vcmcvbGljZW5zZXMvPi5cbmltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBjb25uZWN0IH0gZnJvbSAncmVhY3QtcmVkdXgnO1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJztcbmltcG9ydCBTY2FsZUxvYWRlciBmcm9tICdyZWFjdC1zcGlubmVycy9TY2FsZUxvYWRlcic7XG5pbXBvcnQgeyBjc3MgfSBmcm9tICdAZW1vdGlvbi9jb3JlJztcbmNvbnN0IG92ZXJyaWRlID0gY3NzYFxuICAgIGRpc3BsYXk6IGlubGluZS1ibG9jaztcbiAgICBtYXJnaW46IDAgYXV0bztcbiAgICBib3JkZXItY29sb3I6IHJlZDtcbiAgICBtYXJnaW4tdG9wOjUwcHg7XG5gO1xuY29uc3QgbG9hZGVyQ29udGFpbmVyU3R5bGUgPSB7XG4gICAgdGV4dEFsaWduOiAnY2VudGVyJ1xufTtcblxuY2xhc3MgTG9hZGVyVmlldyBleHRlbmRzIFJlYWN0LkNvbXBvbmVudCB7XG4gICAgY29uc3RydWN0b3IocHJvcHMpIHtcbiAgICAgICAgc3VwZXIocHJvcHMpO1xuICAgICAgICB0aGlzLnN0b3JlID0gdGhpcy5wcm9wcy5zdG9yZTtcbiAgICB9XG4gICAgc3RhdGVDaGFuZ2UoKSB7XG4gICAgfVxuICAgIGNvbXBvbmVudERpZFVwZGF0ZSgpIHtcblxuICAgIH1cbiAgICBjb21wb25lbnRXaWxsUmVjZWl2ZVByb3BzKCkge1xuXG4gICAgfVxuICAgIHJlbmRlcigpIHtcbiAgICAgICAgY29uc3QgeyBjbGllbnRzIH0gPSB0aGlzLnByb3BzO1xuICAgICAgICBjb25zdCB7IGhhc0Nvbm5lY3Rpb24gfSA9IGNsaWVudHNbMF07XG5cbiAgICAgICAgLy8gYWxlcnQoaGFzQ29ubmVjdGlvbik7XG5cbiAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibG9hZGVyX1wiIHN0eWxlPXtsb2FkZXJDb250YWluZXJTdHlsZX0+XG4gICAgICAgICAgICAgICAgPFNjYWxlTG9hZGVyXG4gICAgICAgICAgICAgICAgICAgIGNzcz17b3ZlcnJpZGV9XG4gICAgICAgICAgICAgICAgICAgIHNpemVVbml0PXsncHgnfVxuICAgICAgICAgICAgICAgICAgICBzaXplPXs4MH1cbiAgICAgICAgICAgICAgICAgICAgY29sb3I9eycjNjM2OTczJ31cbiAgICAgICAgICAgICAgICAgICAgbG9hZGluZz17IWhhc0Nvbm5lY3Rpb259XG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICApO1xuICAgIH1cbn1cblxuTG9hZGVyVmlldy5wcm9wVHlwZXMgPSB7XG4gICAgY2xpZW50czogUHJvcFR5cGVzLmFueS5pc1JlcXVpcmVkLFxuICAgIHN0b3JlOiBQcm9wVHlwZXMuYW55LFxufTtcblxuY29uc3QgbWFwU3RhdGVUb1Byb3BzID0gKHsgY2xpZW50UmVkdWNlciB9KSA9PiB7XG4gICAgY29uc3QgeyBjbGllbnRzIH0gPSBjbGllbnRSZWR1Y2VyO1xuICAgIHJldHVybiB7IGNsaWVudHMgfTtcbn07XG5leHBvcnQgZGVmYXVsdCBjb25uZWN0KG1hcFN0YXRlVG9Qcm9wcykoTG9hZGVyVmlldyk7XG5cbiJdfQ== */"
+  map: "/*# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImluZGV4LmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQXFCb0IiLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGJhYmVsJztcbi8vIENvcHlyaWdodCAyMDE4IEV0aGVyYXRvbSBBdXRob3JzXG4vLyBUaGlzIGZpbGUgaXMgcGFydCBvZiBFdGhlcmF0b20uXG5cbi8vIEV0aGVyYXRvbSBpcyBmcmVlIHNvZnR3YXJlOiB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5XG4vLyBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieVxuLy8gdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgZWl0aGVyIHZlcnNpb24gMyBvZiB0aGUgTGljZW5zZSwgb3Jcbi8vIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uXG5cbi8vIEV0aGVyYXRvbSBpcyBkaXN0cmlidXRlZCBpbiB0aGUgaG9wZSB0aGF0IGl0IHdpbGwgYmUgdXNlZnVsLFxuLy8gYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2Zcbi8vIE1FUkNIQU5UQUJJTElUWSBvciBGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGVcbi8vIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGZvciBtb3JlIGRldGFpbHMuXG5cbi8vIFlvdSBzaG91bGQgaGF2ZSByZWNlaXZlZCBhIGNvcHkgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlXG4vLyBhbG9uZyB3aXRoIEV0aGVyYXRvbS4gIElmIG5vdCwgc2VlIDxodHRwOi8vd3d3LmdudS5vcmcvbGljZW5zZXMvPi5cbmltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBjb25uZWN0IH0gZnJvbSAncmVhY3QtcmVkdXgnO1xuaW1wb3J0IFByb3BUeXBlcyBmcm9tICdwcm9wLXR5cGVzJztcbmltcG9ydCBTY2FsZUxvYWRlciBmcm9tICdyZWFjdC1zcGlubmVycy9TY2FsZUxvYWRlcic7XG5pbXBvcnQgeyBjc3MgfSBmcm9tICdAZW1vdGlvbi9jb3JlJztcbmNvbnN0IG92ZXJyaWRlID0gY3NzYFxuICAgIGRpc3BsYXk6IGlubGluZS1ibG9jaztcbiAgICBtYXJnaW46IDAgYXV0bztcbiAgICBib3JkZXItY29sb3I6IHJlZDtcbiAgICBtYXJnaW4tdG9wOjUwcHg7XG5gO1xuY29uc3QgbG9hZGVyQ29udGFpbmVyU3R5bGUgPSB7XG4gICAgdGV4dEFsaWduOiAnY2VudGVyJ1xufTtcblxuY2xhc3MgTG9hZGVyVmlldyBleHRlbmRzIFJlYWN0LkNvbXBvbmVudCB7XG4gICAgY29uc3RydWN0b3IocHJvcHMpIHtcbiAgICAgICAgc3VwZXIocHJvcHMpO1xuICAgICAgICB0aGlzLnN0b3JlID0gdGhpcy5wcm9wcy5zdG9yZTtcbiAgICB9XG4gICAgc3RhdGVDaGFuZ2UoKSB7XG4gICAgfVxuICAgIGNvbXBvbmVudERpZFVwZGF0ZSgpIHtcblxuICAgIH1cbiAgICBjb21wb25lbnRXaWxsUmVjZWl2ZVByb3BzKCkge1xuXG4gICAgfVxuICAgIHJlbmRlcigpIHtcbiAgICAgICAgY29uc3QgeyBjbGllbnRzIH0gPSB0aGlzLnByb3BzO1xuICAgICAgICBjb25zdCB7IGhhc0Nvbm5lY3Rpb24gfSA9IGNsaWVudHNbMF07XG5cbiAgICAgICAgLy8gYWxlcnQoaGFzQ29ubmVjdGlvbik7XG5cbiAgICAgICAgcmV0dXJuIChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibG9hZGVyXCIgc3R5bGU9e2xvYWRlckNvbnRhaW5lclN0eWxlfT5cbiAgICAgICAgICAgICAgICA8U2NhbGVMb2FkZXJcbiAgICAgICAgICAgICAgICAgICAgY3NzPXtvdmVycmlkZX1cbiAgICAgICAgICAgICAgICAgICAgc2l6ZVVuaXQ9eydweCd9XG4gICAgICAgICAgICAgICAgICAgIHNpemU9ezgwfVxuICAgICAgICAgICAgICAgICAgICBjb2xvcj17JyM2MzY5NzMnfVxuICAgICAgICAgICAgICAgICAgICBsb2FkaW5nPXshaGFzQ29ubmVjdGlvbn1cbiAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICk7XG4gICAgfVxufVxuXG5Mb2FkZXJWaWV3LnByb3BUeXBlcyA9IHtcbiAgICBjbGllbnRzOiBQcm9wVHlwZXMuYW55LmlzUmVxdWlyZWQsXG4gICAgc3RvcmU6IFByb3BUeXBlcy5hbnksXG59O1xuXG5jb25zdCBtYXBTdGF0ZVRvUHJvcHMgPSAoeyBjbGllbnRSZWR1Y2VyIH0pID0+IHtcbiAgICBjb25zdCB7IGNsaWVudHMgfSA9IGNsaWVudFJlZHVjZXI7XG4gICAgcmV0dXJuIHsgY2xpZW50cyB9O1xufTtcbmV4cG9ydCBkZWZhdWx0IGNvbm5lY3QobWFwU3RhdGVUb1Byb3BzKShMb2FkZXJWaWV3KTtcbiJdfQ== */"
 };
 const loaderContainerStyle = {
   textAlign: 'center'
@@ -7706,7 +7732,7 @@ class LoaderView extends React__default.Component {
     } = clients[0]; // alert(hasConnection);
 
     return React__default.createElement("div", {
-      className: "loader_",
+      className: "loader",
       style: loaderContainerStyle
     }, React__default.createElement(ScaleLoader$1, {
       css: override,
@@ -7793,7 +7819,7 @@ class View {
   createLoaderView() {
     ReactDOM.render(React__default.createElement(LoaderView$1, {
       store: this.store
-    }), document.getElementById('loader_'));
+    }), document.getElementById('loader'));
   }
 
   createTextareaR(text) {
@@ -7812,9 +7838,8 @@ class Web3Env {
     this.subscriptions = new atom$1.CompositeDisposable();
     this.web3Subscriptions = new atom$1.CompositeDisposable();
     this.saveSubscriptions = new atom$1.CompositeDisposable();
-    this.compileSubscriptions = new atom$1.CompositeDisposable(); //binding local functions
+    this.compileSubscriptions = new atom$1.CompositeDisposable(); // binding local functions
 
-    this.checkConnection = this.checkConnection.bind(this);
     this.checkReduxState = this.checkReduxState.bind(this);
     this.subscribeToWeb3Commands = this.subscribeToWeb3Commands.bind(this);
     this.subscribeToWeb3Events = this.subscribeToWeb3Events.bind(this);
@@ -7902,18 +7927,26 @@ class Web3Env {
       return;
     }
 
+    const state = this.store.getState();
+    const {
+      clients
+    } = state.clientReducer;
+    const client = clients[0];
     this.view = new View(this.store);
-    await this.checkConnection((error, connection) => {
-      if (error) {
-        this.view.createLoaderView();
-        showPanelError(error);
-      } else if (connection) {
-        this.view.createCoinbaseView();
-        this.view.createButtonsView();
-        this.view.createTabView();
-        this.view.createVersionSelector();
-      }
-    });
+    console.log(client);
+
+    if (!client.hasConnection) {
+      this.view.createLoaderView();
+      this.view.createButtonsView();
+      this.view.createTabView();
+      this.view.createVersionSelector();
+    } else if (client.hasConnection) {
+      this.view.createCoinbaseView();
+      this.view.createButtonsView();
+      this.view.createTabView();
+      this.view.createVersionSelector();
+    }
+
     this.web3Subscriptions.add(atom.workspace.observeTextEditors(editor => {
       if (!editor || !editor.getBuffer()) {
         return;
@@ -7969,14 +8002,6 @@ class Web3Env {
     }));
   } // common functions
 
-
-  async checkConnection(callback) {
-    if (!this.havConnection) {
-      return callback(new Error('Error could not connect to local geth instance!'), null);
-    } else {
-      return callback(null, true);
-    }
-  }
 
   async setSources(editor) {
     const filePath = editor.getPath();
@@ -8279,22 +8304,23 @@ const INITIAL_STATE$5 = {
 };
 var ClientReducer = ((state = INITIAL_STATE$5, action) => {
   switch (action.type) {
-    case 'set_connection_status':
+    case SET_CONNECTION_STATUS:
       return _objectSpread({}, state, {
         clients: action.payload
       });
 
-    case 'first_time_check_enable':
+    case FIRST_TIME_CHECK_ENABLE:
+      // TODO: modify only one key:value
       return _objectSpread({}, state, {
         clients: action.payload
       });
 
-    case 'is_ws_provider':
+    case IS_WS_PROVIDER:
       return _objectSpread({}, state, {
         clients: action.payload
       });
 
-    case 'is_http_provider':
+    case IS_HTTP_PROVIDER:
       return _objectSpread({}, state, {
         clients: action.payload
       });
