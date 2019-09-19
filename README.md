@@ -11,7 +11,7 @@ Etheratom is a package for hackable Atom editor. It uses web3js to interact with
 
 # Sponsors
 ![gitcoin](https://s.gitcoin.co/static/v2/images/presskit/GitcoinLogoText.682e2321c67c.svg)
-<img src="https://gdurl.com/Js9x" alt="ethereumfoundation" height="300" style="margin-left: 100px" />
+<img src="https://gdurl.com/Js9x" alt="ethereumfoundation" height="300" hspace="40" />
 
 # Support
 You can join our Telegram group for quick help in solving any issues at https://t.me/etheratom  [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom)
