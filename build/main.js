@@ -713,7 +713,7 @@ class Web3Helpers {
 
   web3ProcessHandler() {
     this.hookWeb3ChildProcess.on('message', message => {
-      console.log('New Message:', message);
+      console.log('%c New Message:', 'background: rgba(36, 194, 203, 0.3); color: #EF525B', message);
 
       if (message.hasOwnProperty('transaction')) {
         this.store.dispatch({
@@ -3032,7 +3032,8 @@ ContractCompiled.propTypes = {
   addInterface: PropTypes.func,
   bytecode: PropTypes.string,
   index: PropTypes.number,
-  coinbase: PropTypes.string
+  coinbase: PropTypes.string,
+  clients: PropTypes.array.isRequired
 };
 
 const mapStateToProps$3 = ({
@@ -3079,7 +3080,7 @@ class FunctionABI extends React__default.Component {
       contractName,
       contracts
     } = this.props;
-    const ContractABI = contracts[contractName].interface;
+    const ContractABI = contracts[contractName].options.jsonInterface;
     const input = ContractABI[i].inputs[j];
     input.value = event.target.value;
     ContractABI[i].inputs[j] = Object.assign({}, input);
@@ -4410,6 +4411,7 @@ NodeControl.propTypes = {
   setCoinbase: PropTypes.func,
   setErrors: PropTypes.string,
   password: PropTypes.string,
+  clients: PropTypes.array.isRequired,
   store: PropTypes.any
 };
 
