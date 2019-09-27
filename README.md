@@ -1,15 +1,25 @@
-# Etheratom - compile and deploy solidity code from atom editor
+# Etheratom
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/0mkara/etheratom.svg?branch=master)](https://travis-ci.org/0mkara/etheratom)
+[![Gitter](https://badges.gitter.im/Ethereum-Devtools-Developers-Studio/etheratom.svg)](https://gitter.im/Ethereum-Devtools-Developers-Studio/etheratom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom)
 
-Etheratom is a package for hackable Atom editor. It uses web3js to interact with Ethereum node.
+Ethereum IDE plugin for hackable Atom editor. Compile smart contracts, deploy them to Ethereum networks. Efficient contract management interface. Integrated test suite for smart contracts.
 
 ![A screenshot of Etheratom package](https://user-images.githubusercontent.com/13261372/37828365-f43a0c8c-2ec0-11e8-8d09-d1c29d7168d3.png)
 
+# Sponsors
+![gitcoin](https://s.gitcoin.co/static/v2/images/presskit/GitcoinLogoText.682e2321c67c.svg)
+<img src="https://gdurl.com/Js9x" alt="ethereumfoundation" height="300" hspace="40" />
+
 # Support
-  You can join our Telegram group for quick help in solving any issues at https://t.me/etheratom  [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom).
+You can join our Telegram group for quick help in solving any issues at https://t.me/etheratom  [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom)
+
+Join our new gitter room for help - https://gitter.im/Ethereum-Devtools-Developers-Studio/etheratom
+
+#### Quick help
+Follow our [quick troubleshooting issue](https://github.com/0mkara/etheratom/issues/282) to get help about some known bugs and issues.
 
 # Requirements
 
@@ -21,7 +31,7 @@ You can just download binary from [https://geth.ethereum.org/downloads/](https:/
 #### Run go-ethereum client
 Start geth node on testnet using following command:
 
-    geth --testnet --syncmode "fast" --rpc --rpcapi="eth,web3,personal" --ws --wsorigins="*" --wsapi="eth,web3,personal" console
+    geth --goerli --rpc --rpcapi="eth,web3,personal" --ws --wsorigins=*" --wsapi="eth,web3,personal" console
 
 *Note:* Only solidity compilation is supported. `--wsorigins="*"` or `--wsorigins="file://"`  is necessary to allow Atom to connect to go-ethereum websocket endpoint.
 
