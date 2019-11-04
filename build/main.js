@@ -4075,6 +4075,26 @@ var RemixTest$1 = reactRedux.connect(mapStateToProps$a, {
   resetErrors
 })(RemixTest);
 
+class RemixDebugger extends React__default.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    return React__default.createElement(reactRedux.Provider, {
+      store: this.props.store
+    }, React__default.createElement("div", {
+      id: "remix-Debugger"
+    }, React__default.createElement("h3", null, "Welcome to Debugger not implemented yet")));
+  }
+
+}
+
+RemixDebugger.propTypes = {
+  store: PropTypes.any.isRequired
+};
+var RemixDebugger$1 = reactRedux.connect(null, {})(RemixDebugger);
+
 class NodeControl extends React__default.Component {
   constructor(props) {
     super(props);
@@ -4682,6 +4702,8 @@ class TabView extends React__default.Component {
     }, "Transaction analyzer", newTxCounter > 0 && React__default.createElement("span", {
       className: "badge badge-small badge-error notify-badge"
     }, newTxCounter))), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
+      className: "btn"
+    }, "Debugger")), React__default.createElement(reactTabs.Tab, null, React__default.createElement("div", {
       className: eventBtnStyle
     }, "Events", newEventCounter > 0 && React__default.createElement("span", {
       className: "badge badge-small badge-error notify-badge"
@@ -4701,6 +4723,8 @@ class TabView extends React__default.Component {
     })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(TxAnalyzer$1, {
       store: this.props.store,
       helpers: this.helpers
+    })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(RemixDebugger$1, {
+      store: this.props.store
     })), React__default.createElement(reactTabs.TabPanel, null, React__default.createElement(Events$1, {
       store: this.props.store,
       helpers: this.helpers
