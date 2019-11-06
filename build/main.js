@@ -4075,12 +4075,32 @@ var RemixTest$1 = reactRedux.connect(mapStateToProps$a, {
   resetErrors
 })(RemixTest);
 
+// import { setErrors, resetErrors } from '../../actions';
+
 class RemixDebugger extends React__default.Component {
   constructor(props) {
     super(props);
-  }
+  } // async startDebugging (blockNumber, txNumber, tx) {
+  //     // if (this.debugger) this.unLoad()
+  //     let compilers = this.props.compiled
+  //     let lastCompilationResult
+  //     if (this.props.compiled) lastCompilationResult = this.props.compiled
+  //     let web3 = await this.getDebugWeb3()
+  //     this.debugger = new Debugger({
+  //       web3,
+  //       offsetToLineColumnConverter: this.registry.get('offsettolinecolumnconverter').api,
+  //       compiler: { lastCompilationResult }
+  //     })
+  //     this.debugger.debug(blockNumber, txNumber, tx, () => {
+  //         console.log("debugger detected");
+  //     }).catch((error) => {
+  //         console.log("error detected");
+  //     })
+  // }
+
 
   render() {
+    console.log("hhhhhhhhhhhhhhh", this.props.compiled);
     return React__default.createElement(reactRedux.Provider, {
       store: this.props.store
     }, React__default.createElement("div", {
@@ -4091,9 +4111,22 @@ class RemixDebugger extends React__default.Component {
 }
 
 RemixDebugger.propTypes = {
-  store: PropTypes.any.isRequired
+  compiled: PropTypes.object,
+  store: PropTypes.any
 };
-var RemixDebugger$1 = reactRedux.connect(null, {})(RemixDebugger);
+
+const mapStateToProps$b = ({
+  contract
+}) => {
+  const {
+    compiled
+  } = contract;
+  return {
+    compiled
+  };
+};
+
+var RemixDebugger$1 = reactRedux.connect(mapStateToProps$b, {})(RemixDebugger);
 
 class NodeControl extends React__default.Component {
   constructor(props) {
@@ -4435,7 +4468,7 @@ NodeControl.propTypes = {
   store: PropTypes.any
 };
 
-const mapStateToProps$b = ({
+const mapStateToProps$c = ({
   account,
   node,
   clientReducer
@@ -4464,7 +4497,7 @@ const mapStateToProps$b = ({
   };
 };
 
-var NodeControl$1 = reactRedux.connect(mapStateToProps$b, {
+var NodeControl$1 = reactRedux.connect(mapStateToProps$c, {
   setAccounts,
   setCoinbase,
   setSyncStatus,
@@ -4614,7 +4647,7 @@ StaticAnalysis.propTypes = {
   compiled: PropTypes.object
 };
 
-const mapStateToProps$c = ({
+const mapStateToProps$d = ({
   contract
 }) => {
   const {
@@ -4625,7 +4658,7 @@ const mapStateToProps$c = ({
   };
 };
 
-var StaticAnalysis$1 = reactRedux.connect(mapStateToProps$c, {})(StaticAnalysis);
+var StaticAnalysis$1 = reactRedux.connect(mapStateToProps$d, {})(StaticAnalysis);
 
 class TabView extends React__default.Component {
   constructor(props) {
@@ -4754,7 +4787,7 @@ TabView.propTypes = {
   events: PropTypes.array
 };
 
-const mapStateToProps$d = ({
+const mapStateToProps$e = ({
   contract,
   eventReducer
 }) => {
@@ -4772,7 +4805,7 @@ const mapStateToProps$d = ({
   };
 };
 
-var TabView$1 = reactRedux.connect(mapStateToProps$d, {})(TabView);
+var TabView$1 = reactRedux.connect(mapStateToProps$e, {})(TabView);
 
 class CoinbaseView extends React__default.Component {
   constructor(props) {
@@ -4947,7 +4980,7 @@ CoinbaseView.propTypes = {
   setPassword: PropTypes.function
 };
 
-const mapStateToProps$e = ({
+const mapStateToProps$f = ({
   account
 }) => {
   const {
@@ -4964,7 +4997,7 @@ const mapStateToProps$e = ({
   };
 };
 
-var CoinbaseView$1 = reactRedux.connect(mapStateToProps$e, {
+var CoinbaseView$1 = reactRedux.connect(mapStateToProps$f, {
   setCoinbase,
   setPassword
 })(CoinbaseView);
@@ -5024,7 +5057,7 @@ VersionSelector.propTypes = {
   selectedVersion: PropTypes.string
 };
 
-const mapStateToProps$f = ({
+const mapStateToProps$g = ({
   contract
 }) => {
   const {
@@ -5035,7 +5068,7 @@ const mapStateToProps$f = ({
   };
 };
 
-var VersionSelector$1 = reactRedux.connect(mapStateToProps$f, {})(VersionSelector);
+var VersionSelector$1 = reactRedux.connect(mapStateToProps$g, {})(VersionSelector);
 
 class CompileBtn extends React__default.Component {
   constructor(props) {
@@ -5073,7 +5106,7 @@ CompileBtn.propTypes = {
   compiling: PropTypes.bool
 };
 
-const mapStateToProps$g = ({
+const mapStateToProps$h = ({
   contract
 }) => {
   const {
@@ -5084,7 +5117,7 @@ const mapStateToProps$g = ({
   };
 };
 
-var CompileBtn$1 = reactRedux.connect(mapStateToProps$g, {})(CompileBtn);
+var CompileBtn$1 = reactRedux.connect(mapStateToProps$h, {})(CompileBtn);
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x.default : x;
@@ -7783,7 +7816,7 @@ LoaderView.propTypes = {
   store: PropTypes.any
 };
 
-const mapStateToProps$h = ({
+const mapStateToProps$i = ({
   clientReducer
 }) => {
   const {
@@ -7794,7 +7827,7 @@ const mapStateToProps$h = ({
   };
 };
 
-var LoaderView$1 = reactRedux.connect(mapStateToProps$h)(LoaderView);
+var LoaderView$1 = reactRedux.connect(mapStateToProps$i)(LoaderView);
 
 class View {
   constructor(store) {
