@@ -25,8 +25,16 @@ If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
  - OS: [ Linux, Windows, OSX ]
- - Atom IDE
- - Version 0.4.5
+ - Etheratom version 4.5.3
+- apm version
+```
+apm  2.1.7
+npm  6.2.0
+node 8.9.3 x64
+atom 1.37.0
+python 2.7.16
+git 2.21.0
+```
 
 **Additional context**
 Add any other context about the problem here.
