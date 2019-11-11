@@ -1,6 +1,6 @@
 {
   "name": "etheratom",
-  "main": "build/main.js",
+  "main": "index.js",
   "version": "4.5.3",
   "description": "Solidity compilation and Ethereum contract execution interface for hackable atom editor.",
   "keywords": [
@@ -60,8 +60,11 @@
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
     "remix-analyzer": "^0.3.1",
+    "remix-debug": "^0.3.16",
+    "remix-lib": "^0.4.14",
     "remix-solidity": "0.3.1",
     "remix-tests": "0.1.14",
+    "shelljs": "^0.8.3",
     "solc": "^0.5.12",
     "valid-url": "^1.0.9",
     "web3": "^1.0.0-beta.35"
