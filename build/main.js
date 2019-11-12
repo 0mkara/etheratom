@@ -1079,29 +1079,17 @@ class Web3Helpers {
   }
 
   async compileVyper(sources) {
-    console.log("invoked vyper compiler", sources); // TODO: vyper compiler code goes bellow, as follows
-
-    const vyperWorker = this.createVyperWorker(); // console.dir("WorkerID: ", vyperWorker.pid);
-    // console.dir("Compiling with solidity version ", this.version);
-    // this._panel.webview.postMessage({ processMessage: "Compiling..." });
-
+    // TODO: vyper compiler code goes bellow, as follows
+    const vyperWorker = this.createVyperWorker();
+    vyperWorker.on('message', m => {
+      if (m.compiled) {
+        console.log("compiled", m.compiled);
+      }
+    });
     vyperWorker.send({
       command: "compile",
       source: sources,
       version: this.version
-    });
-    vyperWorker.on('message', m => {
-      console.log("hhhhhhhhhhhhhhhhh", m);
-
-      if (m.compiled) {
-        console.log(m.compiled); // console.dir(JSON.stringify(sources));
-        // context.workspaceState.update("sources", JSON.stringify(sources));
-        // this._panel.webview.postMessage({ compiled: m.compiled, sources });
-        // vyperWorker.kill();
-      } // if (m.processMessage) {
-      // 	this._panel.webview.postMessage({ processMessage: m.processMessage });
-      // }
-
     });
   }
 
@@ -8153,7 +8141,7 @@ class Web3Env {
       return;
     }
 
-    this.compileSubscriptions.add(atom.workspace.observeTextEditors(editor => {
+    this.compileSubscriptions.add(atom.workspace.observeActiveTextEditor(editor => {
       if (!editor || !editor.getBuffer()) {
         return;
       }
@@ -8164,15 +8152,12 @@ class Web3Env {
 
 
   async setSources(editor) {
-    console.log("setting sources", editor.getPath());
     const filePath = editor.getPath();
-    console.log("setting sources", editor.getPath());
     const filename = filePath.replace(/^.*[\\/]/, '');
     const regexVyp = /([a-zA-Z0-9\s_\\.\-\(\):])+(.vy|.v.py|.vyper.py)$/g;
 
     if (filePath.split('.').pop() == 'sol' || filePath.match(regexVyp)) {
       try {
-        console.log("hellooellleoo");
         const dir = path.dirname(filePath);
         var sources = {};
         sources[filename] = {
@@ -8192,7 +8177,6 @@ class Web3Env {
 
   async compile(editor) {
     const filePath = editor.getPath();
-    console.log("ggggggggggggggg", filePath);
     const regexVyp = /([a-zA-Z0-9\s_\\.\-\(\):])+(.vy|.v.py|.vyper.py)$/g; // Reset redux store
     // this.store.dispatch({ type: SET_COMPILED, payload: null });
 
@@ -8241,7 +8225,6 @@ class Web3Env {
         const {
           sources
         } = state.files;
-        console.log("hsdjjjjjjjjjjjjjjjj", sources);
         this.helpers.compileVyper(sources);
       } catch (e) {
         console.error(e);
