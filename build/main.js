@@ -1083,7 +1083,6 @@ class Web3Helpers {
     const vyperWorker = this.createVyperWorker();
     vyperWorker.on('message', m => {
       if (m.compiled) {
-        console.log("compiled", JSON.parse(m.compiled));
         this.store.dispatch({
           type: SET_COMPILED,
           payload: JSON.parse(m.compiled)
@@ -3473,7 +3472,8 @@ class CollapsedFile extends React__default.Component {
     }, toggleBtnTxt))), React__default.createElement(reactCollapse.Collapse, {
       isOpened: isOpened
     }, Object.keys(compiled.contracts[fileName]).map((contractName, index) => {
-      const bytecode = compiled.contracts[fileName][contractName].evm.bytecode.object;
+      const regexVyp = /([a-zA-Z0-9\s_\\.\-\(\):])+(.vy|.v.py|.vyper.py)$/g;
+      const bytecode = fileName.match(regexVyp) ? compiled.contracts[fileName][contractName].evm.bytecode.object.substring(2) : compiled.contracts[fileName][contractName].evm.bytecode.object;
       return React__default.createElement("div", {
         id: contractName,
         className: "contract-container",
