@@ -1083,7 +1083,15 @@ class Web3Helpers {
     const vyperWorker = this.createVyperWorker();
     vyperWorker.on('message', m => {
       if (m.compiled) {
-        console.log("compiled", m.compiled);
+        console.log("compiled", JSON.parse(m.compiled));
+        this.store.dispatch({
+          type: SET_COMPILED,
+          payload: JSON.parse(m.compiled)
+        });
+        this.store.dispatch({
+          type: SET_COMPILING,
+          payload: false
+        });
       }
     });
     vyperWorker.send({
@@ -8177,7 +8185,8 @@ class Web3Env {
 
   async compile(editor) {
     const filePath = editor.getPath();
-    const regexVyp = /([a-zA-Z0-9\s_\\.\-\(\):])+(.vy|.v.py|.vyper.py)$/g; // Reset redux store
+    const regexVyp = /([a-zA-Z0-9\s_\\.\-\(\):])+(.vy|.v.py|.vyper.py)$/g;
+    const regexSol = /([a-zA-Z0-9\s_\\.\-\(\):])+(.sol|.solidity)$/g; // Reset redux store
     // this.store.dispatch({ type: SET_COMPILED, payload: null });
 
     this.store.dispatch({
@@ -8192,7 +8201,7 @@ class Web3Env {
       payload: []
     });
 
-    if (filePath.split('.').pop() == 'sol') {
+    if (filePath.match(regexSol)) {
       console.log('%c Compiling contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
       this.store.dispatch({
         type: SET_COMPILING,
