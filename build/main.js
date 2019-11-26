@@ -3286,6 +3286,7 @@ class ContractExecution extends React__default.Component {
       contracts
     } = this.props;
     const contractOptions = contracts[contractName].options;
+    console.log(contracts[contractName]);
     const transactionHash = contracts[contractName].transactionHash;
     const ContractABI = contracts[contractName].options.jsonInterface;
     return React__default.createElement("div", {
@@ -8297,7 +8298,8 @@ var ContractReducer = ((state = INITIAL_STATE$1, action) => {
       return _objectSpread({}, state, {
         contracts: _objectSpread({}, state.contracts, {
           [action.payload.contractName]: {
-            options: action.payload.options
+            options: action.payload.options,
+            transactionHash: state.contracts && state.contracts[action.payload.contractName] ? state.contracts[action.payload.contractName].transactionHash : null
           }
         })
       });
