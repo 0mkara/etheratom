@@ -878,7 +878,6 @@ class Web3Helpers {
           });
         }
       } else if (message.hasOwnProperty('transactionHash')) {
-        console.log('Got txHash');
         const transactionHash = message['transactionHash'];
         const contractName = message['contractName'];
         this.store.dispatch({
@@ -3286,7 +3285,6 @@ class ContractExecution extends React__default.Component {
       contracts
     } = this.props;
     const contractOptions = contracts[contractName].options;
-    console.log(contracts[contractName]);
     const transactionHash = contracts[contractName].transactionHash;
     const ContractABI = contracts[contractName].options.jsonInterface;
     return React__default.createElement("div", {
