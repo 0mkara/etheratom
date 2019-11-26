@@ -4113,7 +4113,7 @@ class RemixDebugger extends React__default.Component {
       }
     });
     this.debugger.debug(blockNumber, txNumber, tx, () => {
-      console.log("debugger detected");
+      console.log('debugger detected');
     }).catch(error => {
       console.error(error);
     });
