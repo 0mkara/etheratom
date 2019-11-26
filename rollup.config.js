@@ -4,6 +4,7 @@ import commonjs from 'rollup-plugin-commonjs';
 import fs from 'fs';
 import path from 'path';
 import builtins from 'rollup-plugin-node-builtins';
+import json from '@rollup/plugin-json';
 const pkg = JSON.parse(fs.readFileSync(path.resolve('./package.json'), 'utf-8'));
 const external = Object.keys(pkg.dependencies || {});
 external.push('atom');
@@ -29,7 +30,8 @@ export default {
         commonjs({
             include: ['node_modules/**']
         }),
-        builtins()
+        builtins(),
+        json()
     ],
     external
 };
