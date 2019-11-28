@@ -8056,8 +8056,6 @@ class Web3Env {
       }
 
       this.web3Subscriptions.add(atom.config.observe('etheratom.compileOnSave', compileOnSave => {
-        console.log("Compiling on save");
-
         if (this.saveSubscriptions) {
           this.saveSubscriptions.dispose();
         }
