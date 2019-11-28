@@ -1093,7 +1093,7 @@ class Web3Helpers {
       }
     });
     vyperWorker.send({
-      command: "compile",
+      command: 'compile',
       source: sources,
       version: this.version
     });
@@ -3471,7 +3471,7 @@ class CollapsedFile extends React__default.Component {
     }, toggleBtnTxt))), React__default.createElement(reactCollapse.Collapse, {
       isOpened: isOpened
     }, Object.keys(compiled.contracts[fileName]).map((contractName, index) => {
-      const regexVyp = /([a-zA-Z0-9\s_\\.\-\(\):])+(.vy|.v.py|.vyper.py)$/g;
+      const regexVyp = /([a-zA-Z0-9\s_\\.\-():])+(.vy|.v.py|.vyper.py)$/g;
       const bytecode = fileName.match(regexVyp) ? compiled.contracts[fileName][contractName].evm.bytecode.object.substring(2) : compiled.contracts[fileName][contractName].evm.bytecode.object;
       return React__default.createElement("div", {
         id: contractName,
@@ -4152,10 +4152,7 @@ class RemixDebugger extends React__default.Component {
       store: this.props.store
     }, React__default.createElement("div", {
       id: "remix-Debugger"
-    }, React__default.createElement("h3", null, "Remix-Debugger"), "// ", React__default.createElement("button", {
-      className: "btn btn-primary inline-block-tight",
-      onClick: () => this._runRemixDebugging(blockNumber, txNumber, tx)
-    }, "//     Run debug // "), React__default.createElement("button", {
+    }, React__default.createElement("h3", null, "Remix-Debugger"), React__default.createElement("button", {
       className: "btn btn-primary inline-block-tight"
     }, "Run debug")));
   }
