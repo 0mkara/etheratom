@@ -4140,22 +4140,23 @@ class RemixDebugger extends React__default.Component {
       }
     });
     this.debugger.debug(blockNumber, txNumber, tx, () => {
-      console.log("debugger detected");
+      console.log('debugger detected');
     }).catch(error => {
-      console.error("error detected", error);
+      console.error(error);
     });
   }
 
   render() {
-    let blockNumber = null;
-    let tx = null;
+    // const { blockNumber, txNumber, tx } = this.props;
     return React__default.createElement(reactRedux.Provider, {
       store: this.props.store
     }, React__default.createElement("div", {
       id: "remix-Debugger"
-    }, React__default.createElement("h3", null, "Remix-Debugger"), React__default.createElement("button", {
+    }, React__default.createElement("h3", null, "Remix-Debugger"), "// ", React__default.createElement("button", {
       className: "btn btn-primary inline-block-tight",
       onClick: () => this._runRemixDebugging(blockNumber, txNumber, tx)
+    }, "//     Run debug // "), React__default.createElement("button", {
+      className: "btn btn-primary inline-block-tight"
     }, "Run debug")));
   }
 
