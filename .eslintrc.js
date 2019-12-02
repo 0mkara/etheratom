@@ -8,7 +8,7 @@ module.exports = {
         "es6": true,
         "node": true
     },
-    "extends": ["standard", "eslint:recommended", "plugin:react/recommended"],
+    "extends": ["standard", "eslint:recommended", "plugin:react/recommended", 'plugin:import/errors', 'plugin:import/warnings'],
     globals: {
       __static: true,
       atom: true
@@ -27,7 +27,8 @@ module.exports = {
     },
     "plugins": [
         "react",
-        "babel"
+        "babel",
+        "import"
     ],
     "rules": {
         "strict": 0,
@@ -45,6 +46,10 @@ module.exports = {
         // allow paren-less arrow functions
         'arrow-parens': 0,
         'space-before-function-paren': ["error", "never"],
-        'no-console': ["error", { allow: ["warn", "error", "log"] }]
+        'no-console': ["error", { allow: ["warn", "error", "log"] }],
+        'import/named': 2,
+        'import/namespace': 2,
+        'import/default': 2,
+        'import/export': 2,
     }
 };
