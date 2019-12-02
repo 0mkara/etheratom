@@ -8153,9 +8153,10 @@ class Web3Env {
   async setSources(editor) {
     const filePath = editor.getPath();
     const filename = filePath.replace(/^.*[\\/]/, '');
+    const regexSol = /([a-zA-Z0-9\s_\\.\-\(\):])+(.sol|.solidity)$/g;
     const regexVyp = /([a-zA-Z0-9\s_\\.\-\(\):])+(.vy|.v.py|.vyper.py)$/g;
 
-    if (filePath.split('.').pop() == 'sol' || filePath.match(regexVyp)) {
+    if (filePath.match(regexSol) || filePath.match(regexVyp)) {
       try {
         const dir = path.dirname(filePath);
         var sources = {};
