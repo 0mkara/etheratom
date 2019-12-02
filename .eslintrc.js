@@ -51,5 +51,6 @@ module.exports = {
         'import/namespace': 2,
         'import/default': 2,
         'import/export': 2,
+        'import/no-unresolved': 'off'
     }
 };
