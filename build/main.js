@@ -5135,7 +5135,7 @@ class CompileBtn extends React__default.Component {
       compiling
     } = this.props;
     return React__default.createElement("form", {
-      className: "row",
+      className: "row form-btn",
       onSubmit: this._handleSubmit
     }, compiling && React__default.createElement("input", {
       type: "submit",
@@ -7941,9 +7941,13 @@ class View {
   }
 
   createButtonsView() {
-    ReactDOM.render(React__default.createElement(CompileBtn$1, {
+    ReactDOM.render(React__default.createElement("div", null, React__default.createElement(CompileBtn$1, {
       store: this.store
-    }), document.getElementById('compile_btn'));
+    }), React__default.createElement("label", {
+      style: {
+        marginTop: "5px"
+      }
+    }, React__default.createElement("b", null, "Ctrl-S"), " to save and compile")), document.getElementById('compile_btn'));
   }
 
   createTabView() {
