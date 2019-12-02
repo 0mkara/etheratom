@@ -7945,7 +7945,7 @@ class View {
       store: this.store
     }), React__default.createElement("label", {
       style: {
-        marginTop: "5px"
+        marginTop: '5px'
       }
     }, React__default.createElement("b", null, "Ctrl-S"), " to save and compile")), document.getElementById('compile_btn'));
   }
@@ -8173,7 +8173,7 @@ class Web3Env {
         showPanelError(e);
       }
     } else {
-      const err = new Error("file type is not recognized as solidity or vyper file");
+      const err = new Error('file type is not recognized as solidity or vyper file');
       console.error(err);
       showPanelError(err);
     }
@@ -8242,7 +8242,7 @@ class Web3Env {
         showPanelError(e);
       }
     } else {
-      const err = new Error("file type is not recognized as solidity or vyper file");
+      const err = new Error('file type is not recognized as solidity or vyper file');
       console.error(err);
       showPanelError(err);
       return;
