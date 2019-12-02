@@ -5269,6 +5269,8 @@ function memoize(fn) {
   };
 }
 
+var ILLEGAL_ESCAPE_SEQUENCE_ERROR = "You have illegal escape sequence in your template literal, most likely inside content's property value.\nBecause you write your CSS inside a JavaScript string you actually have to do double escaping, so for example \"content: '\\00d7';\" should become \"content: '\\\\00d7';\".\nYou can read more about this here:\nhttps://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#ES2018_revision_of_illegal_escape_sequences";
+var UNDEFINED_AS_OBJECT_KEY_ERROR = "You have passed in falsy value as style object's key (can happen when in example you pass unexported component as computed key).";
 var hyphenateRegex = /[A-Z]|^ms/g;
 var animationRegex = /_EMO_([^_]+?)_([^]*?)_EMO_/g;
 
@@ -5276,15 +5278,15 @@ var isCustomProperty = function isCustomProperty(property) {
   return property.charCodeAt(1) === 45;
 };
 
+var isProcessableValue = function isProcessableValue(value) {
+  return value != null && typeof value !== 'boolean';
+};
+
 var processStyleName = memoize(function (styleName) {
   return isCustomProperty(styleName) ? styleName : styleName.replace(hyphenateRegex, '-$&').toLowerCase();
 });
 
 var processStyleValue = function processStyleValue(key, value) {
-  if (value == null || typeof value === 'boolean') {
-    return '';
-  }
-
   switch (key) {
     case 'animation':
     case 'animationName':
@@ -5328,8 +5330,8 @@ if (process.env.NODE_ENV !== 'production') {
 
     if (processed !== '' && !isCustomProperty(key) && key.indexOf('-') !== -1 && hyphenatedCache[key] === undefined) {
       hyphenatedCache[key] = true;
-      console.error("Using kebab-case for css properties in objects is not supported. Did you mean " + key.replace(msPattern, 'ms-').replace(hyphenPattern, function (str, char) {
-        return char.toUpperCase();
+      console.error("Using kebab-case for css properties in objects is not supported. Did you mean " + key.replace(msPattern, 'ms-').replace(hyphenPattern, function (str, _char) {
+        return _char.toUpperCase();
       }) + "?");
     }
 
@@ -5385,7 +5387,7 @@ function handleInterpolation(mergedProps, registered, interpolation, couldBeSele
             }
           }
 
-          var styles = interpolation.styles;
+          var styles = interpolation.styles + ";";
 
           if (process.env.NODE_ENV !== 'production' && interpolation.map !== undefined) {
             styles += interpolation.map;
@@ -5407,25 +5409,40 @@ function handleInterpolation(mergedProps, registered, interpolation, couldBeSele
         } else if (process.env.NODE_ENV !== 'production') {
           console.error('Functions that are interpolated in css calls will be stringified.\n' + 'If you want to have a css call based on props, create a function that returns a css call like this\n' + 'let dynamicStyle = (props) => css`color: ${props.color}`\n' + 'It can be called directly with props or interpolated in a styled call like this\n' + "let SomeComponent = styled('div')`${dynamicStyle}`");
         }
+
+        break;
       }
-    // eslint-disable-next-line no-fallthrough
 
-    default:
-      {
-        if (registered == null) {
-          return interpolation;
+    case 'string':
+      if (process.env.NODE_ENV !== 'production') {
+        var matched = [];
+        var replaced = interpolation.replace(animationRegex, function (match, p1, p2) {
+          var fakeVarName = "animation" + matched.length;
+          matched.push("const " + fakeVarName + " = keyframes`" + p2.replace(/^@keyframes animation-\w+/, '') + "`");
+          return "${" + fakeVarName + "}";
+        });
+
+        if (matched.length) {
+          console.error('`keyframes` output got interpolated into plain string, please wrap it with `css`.\n\n' + 'Instead of doing this:\n\n' + [].concat(matched, ["`" + replaced + "`"]).join('\n') + '\n\nYou should wrap it with `css` like this:\n\n' + ("css`" + replaced + "`"));
         }
-
-        var cached = registered[interpolation];
-
-        if (process.env.NODE_ENV !== 'production' && couldBeSelectorInterpolation && shouldWarnAboutInterpolatingClassNameFromCss && cached !== undefined) {
-          console.error('Interpolating a className from css`` is not recommended and will cause problems with composition.\n' + 'Interpolating a className from css`` will be completely unsupported in a future major version of Emotion');
-          shouldWarnAboutInterpolatingClassNameFromCss = false;
-        }
-
-        return cached !== undefined && !couldBeSelectorInterpolation ? cached : interpolation;
       }
+
+      break;
+  } // finalize string values (regular strings and functions interpolated into css calls)
+
+
+  if (registered == null) {
+    return interpolation;
   }
+
+  var cached = registered[interpolation];
+
+  if (process.env.NODE_ENV !== 'production' && couldBeSelectorInterpolation && shouldWarnAboutInterpolatingClassNameFromCss && cached !== undefined) {
+    console.error('Interpolating a className from css`` is not recommended and will cause problems with composition.\n' + 'Interpolating a className from css`` will be completely unsupported in a future major version of Emotion');
+    shouldWarnAboutInterpolatingClassNameFromCss = false;
+  }
+
+  return cached !== undefined && !couldBeSelectorInterpolation ? cached : interpolation;
 }
 
 function createStringFromObject(mergedProps, registered, obj) {
@@ -5442,7 +5459,7 @@ function createStringFromObject(mergedProps, registered, obj) {
       if (typeof value !== 'object') {
         if (registered != null && registered[value] !== undefined) {
           string += _key + "{" + registered[value] + "}";
-        } else {
+        } else if (isProcessableValue(value)) {
           string += processStyleName(_key) + ":" + processStyleValue(_key, value) + ";";
         }
       } else {
@@ -5452,7 +5469,9 @@ function createStringFromObject(mergedProps, registered, obj) {
 
         if (Array.isArray(value) && typeof value[0] === 'string' && (registered == null || registered[value[0]] === undefined)) {
           for (var _i = 0; _i < value.length; _i++) {
-            string += processStyleName(_key) + ":" + processStyleValue(_key, value[_i]) + ";";
+            if (isProcessableValue(value[_i])) {
+              string += processStyleName(_key) + ":" + processStyleValue(_key, value[_i]) + ";";
+            }
           }
         } else {
           var interpolated = handleInterpolation(mergedProps, registered, value, false);
@@ -5467,6 +5486,10 @@ function createStringFromObject(mergedProps, registered, obj) {
 
             default:
               {
+                if (process.env.NODE_ENV !== 'production' && _key === 'undefined') {
+                  console.error(UNDEFINED_AS_OBJECT_KEY_ERROR);
+                }
+
                 string += _key + "{" + interpolated + "}";
               }
           }
@@ -5502,6 +5525,10 @@ var serializeStyles = function serializeStyles(args, registered, mergedProps) {
     stringMode = false;
     styles += handleInterpolation(mergedProps, registered, strings, false);
   } else {
+    if (process.env.NODE_ENV !== 'production' && strings[0] === undefined) {
+      console.error(ILLEGAL_ESCAPE_SEQUENCE_ERROR);
+    }
+
     styles += strings[0];
   } // we start at 1 since we've already handled the first arg
 
@@ -5510,6 +5537,10 @@ var serializeStyles = function serializeStyles(args, registered, mergedProps) {
     styles += handleInterpolation(mergedProps, registered, args[i], styles.charCodeAt(styles.length - 1) === 46);
 
     if (stringMode) {
+      if (process.env.NODE_ENV !== 'production' && strings[i] === undefined) {
+        console.error(ILLEGAL_ESCAPE_SEQUENCE_ERROR);
+      }
+
       styles += strings[i];
     }
   }
@@ -5536,11 +5567,15 @@ var serializeStyles = function serializeStyles(args, registered, mergedProps) {
   var name = murmurhash2_32_gc(styles) + identifierName;
 
   if (process.env.NODE_ENV !== 'production') {
+    // $FlowFixMe SerializedStyles type doesn't have toString property (and we don't want to add it)
     return {
       name: name,
       styles: styles,
       map: sourceMap,
-      next: cursor
+      next: cursor,
+      toString: function toString() {
+        return "You have tried to stringify object returned from `css` function. It isn't supposed to be used directly (e.g. as value of the `className` prop), but rather handed to emotion so it can handle it (e.g. as value of `css` prop).";
+      }
     };
   }
 
@@ -6585,7 +6620,7 @@ var createCache = function createCache(options) {
             var flag = 'emotion-disable-server-rendering-unsafe-selector-warning-please-do-not-use-this-the-warning-exists-for-a-reason';
             var unsafePseudoClasses = content.match(/(:first|:nth|:nth-last)-child/g);
 
-            if (unsafePseudoClasses) {
+            if (unsafePseudoClasses && cache.compat !== true) {
               unsafePseudoClasses.forEach(function (unsafePseudoClass) {
                 var ignoreRegExp = new RegExp(unsafePseudoClass + ".*\\/\\* " + flag + " \\*\\/");
                 var ignore = ignoreRegExp.test(content);
@@ -6668,14 +6703,19 @@ var insertStyles = function insertStyles(cache, serialized, isStringTag) {
 
 var isBrowser$2 = typeof document !== 'undefined';
 
-var EmotionCacheContext = React.createContext(isBrowser$2 ? createCache() : null);
+var EmotionCacheContext = React.createContext( // we're doing this to avoid preconstruct's dead code elimination in this one case
+// because this module is primarily intended for the browser and node
+// but it's also required in react native and similar environments sometimes
+// and we could have a special build just for that
+// but this is much easier and the native packages
+// might use a different theme context in the future anyway
+typeof HTMLElement !== 'undefined' ? createCache() : null);
 var ThemeContext = React.createContext({});
 var CacheProvider = EmotionCacheContext.Provider;
 
 var withEmotionCache = function withEmotionCache(func) {
   var render = function render(props, ref) {
-    return React.createElement(EmotionCacheContext.Consumer, null, function ( // $FlowFixMe we know it won't be null
-    cache) {
+    return React.createElement(EmotionCacheContext.Consumer, null, function (cache) {
       return func(props, cache, ref);
     });
   }; // $FlowFixMe
@@ -6735,9 +6775,6 @@ var labelPropName = '__EMOTION_LABEL_PLEASE_DO_NOT_USE__';
 var hasOwnProperty$1 = Object.prototype.hasOwnProperty;
 
 var render = function render(cache, props, theme, ref) {
-  var type = props[typePropName];
-  var registeredStyles = [];
-  var className = '';
   var cssProp = theme === null ? props.css : props.css(theme); // so that using `css` from `emotion` and passing the result to the css prop works
   // not passing the registered cache to serializeStyles because it would
   // make certain babel optimisations not possible
@@ -6746,10 +6783,14 @@ var render = function render(cache, props, theme, ref) {
     cssProp = cache.registered[cssProp];
   }
 
-  registeredStyles.push(cssProp);
+  var type = props[typePropName];
+  var registeredStyles = [cssProp];
+  var className = '';
 
-  if (props.className !== undefined) {
+  if (typeof props.className === 'string') {
     className = getRegisteredStyles(cache.registered, registeredStyles, props.className);
+  } else if (props.className != null) {
+    className = props.className + " ";
   }
 
   var serialized = serializeStyles(registeredStyles);
@@ -6795,7 +6836,9 @@ var render = function render(cache, props, theme, ref) {
   return ele;
 };
 
-var Emotion = withEmotionCache(function (props, cache, ref) {
+var Emotion =
+/* #__PURE__ */
+withEmotionCache(function (props, cache, ref) {
   // use Context.read for the theme when it's stable
   if (typeof props.css === 'function') {
     return React.createElement(ThemeContext.Consumer, null, function (theme) {
@@ -6814,7 +6857,7 @@ if (process.env.NODE_ENV !== 'production') {
 var jsx = function jsx(type, props) {
   var args = arguments;
 
-  if (props == null || props.css == null) {
+  if (props == null || !hasOwnProperty$1.call(props, 'css')) {
     // $FlowFixMe
     return React.createElement.apply(undefined, args);
   }
@@ -6842,7 +6885,7 @@ var jsx = function jsx(type, props) {
 
     if (error.stack) {
       // chrome
-      var match = error.stack.match(/at jsx.*\n\s+at ([A-Z][A-Za-z$]+) /);
+      var match = error.stack.match(/at (?:Object\.|)jsx.*\n\s+at ([A-Z][A-Za-z$]+) /);
 
       if (!match) {
         // safari and firefox
@@ -8124,6 +8167,10 @@ class Web3Env {
         console.error(e);
         showPanelError(e);
       }
+    } else {
+      const err = new Error("file type is not recognized as solidity or vyper file");
+      console.error(err);
+      showPanelError(err);
     }
   }
 
@@ -8169,10 +8216,16 @@ class Web3Env {
         this.helpers.compileWeb3(sources);
         await this.helpers.getGasLimit();
       } catch (e) {
-        console.log(e);
+        console.error(e);
         showPanelError(e);
       }
     } else if (filePath.match(regexVyp)) {
+      console.log('%c Compiling contract... ', 'background: rgba(36, 194, 203, 0.3); color: #EF525B');
+      this.store.dispatch({
+        type: SET_COMPILING,
+        payload: true
+      });
+
       try {
         const state = this.store.getState();
         const {
@@ -8181,8 +8234,12 @@ class Web3Env {
         this.helpers.compileVyper(sources);
       } catch (e) {
         console.error(e);
+        showPanelError(e);
       }
     } else {
+      const err = new Error("file type is not recognized as solidity or vyper file");
+      console.error(err);
+      showPanelError(err);
       return;
     }
   }
