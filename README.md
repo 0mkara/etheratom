@@ -2,7 +2,7 @@
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/0mkara/etheratom.svg?branch=master)](https://travis-ci.org/0mkara/etheratom)
-[![Gitter](https://badges.gitter.im/Ethereum-Devtools-Developers-Studio/etheratom.svg)](https://gitter.im/Ethereum-Devtools-Developers-Studio/etheratom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Gitter](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/Ethereum-Devtools-Developers-Studio/etheratom?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![telegram](https://png.icons8.com/color/24/000000/telegram-app.png)](https://t.me/etheratom)
 
 Ethereum IDE plugin for hackable Atom editor. Compile smart contracts, deploy them to Ethereum networks. Efficient contract management interface. Integrated test suite for smart contracts.
