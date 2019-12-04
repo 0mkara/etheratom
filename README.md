@@ -31,7 +31,7 @@ You can just download binary from [https://geth.ethereum.org/downloads/](https:/
 #### Run go-ethereum client
 Start geth node on testnet using following command:
 
-    geth --goerli --rpc --rpcapi="eth,web3,personal" --ws --wsorigins=*" --wsapi="eth,web3,personal" console
+    geth --goerli --rpc --rpcapi="eth,web3,personal" --ws --wsorigins="*" --wsapi="eth,web3,personal" console
 
 *Note:* Only solidity compilation is supported. `--wsorigins="*"` or `--wsorigins="file://"`  is necessary to allow Atom to connect to go-ethereum websocket endpoint.
 
