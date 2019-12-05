@@ -970,21 +970,23 @@ class Web3Helpers {
           });
 
           if (message['node_type'] === 'node_ws') {
-            this.showPanelSuccess('Connection Re-established with Web socket');
             clients[0].isWsProvider = true;
             clients[0].isHttpProvider = false;
             this.store.dispatch({
               type: 'is_ws_provider',
               payload: clients
             });
+            this.showPanelSuccess('Connection Re-established with Web socket');
+            this.checkConnection();
           } else if (message['node_type'] === 'node_rpc') {
-            this.showPanelSuccess('Connection Re-established with rpc');
             clients[0].isHttpProvider = true;
             clients[0].isWsProvider = false;
             this.store.dispatch({
               type: 'is_http_provider',
               payload: clients
             });
+            this.showPanelSuccess('Connection Re-established with rpc');
+            this.checkConnection();
           }
         } catch (e) {
           if (message['node_type'] === 'node_ws') {
@@ -4375,15 +4377,19 @@ class NodeControl extends React__default.Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    if (this.state.httpProvider !== this.props.store.getState().clientReducer.clients[0].isHttpProvider) {
+    const client = this.props.store.getState().clientReducer.clients[0];
+
+    if (this.state.httpProvider !== client.isHttpProvider) {
       this.setState({
-        httpProvider: this.props.store.getState().clientReducer.clients[0].isHttpProvider
+        httpProvider: client.isHttpProvider,
+        connected: client.hasConnection
       });
     }
 
-    if (this.state.wsProvider !== this.props.store.getState().clientReducer.clients[0].isWsProvider) {
+    if (this.state.wsProvider !== client.isWsProvider) {
       this.setState({
-        wsProvider: this.props.store.getState().clientReducer.clients[0].isWsProvider
+        wsProvider: client.isWsProvider,
+        connected: client.hasConnection
       });
     }
   }
