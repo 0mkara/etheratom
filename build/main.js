@@ -1321,7 +1321,7 @@ class Web3Helpers {
     });
   }
 
-  showPanelError(err_message) {
+  showPanelError(err_message, timer = 10000) {
     let messages;
     messages = new atomMessagePanel.MessagePanelView({
       title: 'Etheratom report'
@@ -1331,10 +1331,10 @@ class Web3Helpers {
       message: err_message,
       className: 'red-message'
     }));
-    setTimeout$1(() => {
+    if (timer >= 0) setTimeout$1(() => {
       console.log("closing the error panel");
       messages.close();
-    }, 10000);
+    }, timer);
   }
 
   showPanelSuccess(err_message) {
@@ -3100,7 +3100,7 @@ class ContractCompiled extends React__default.Component {
         });
       } catch (e) {
         console.error(e);
-        this.helpers.showPanelError(e);
+        this.helpers.showPanelError(e, -1);
       }
     }
   }
