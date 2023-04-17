@@ -1,3 +1,5 @@
+# Use [ethcode](https://marketplace.visualstudio.com/items?itemName=7finney.ethcode) in vscode for better development experience.
+
 # Etheratom
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/0mkara/etheratom.svg)](https://greenkeeper.io/)
